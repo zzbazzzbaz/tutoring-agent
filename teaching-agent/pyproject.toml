@@ -1,0 +1,20 @@
+[project]
+name = "teaching-agent"
+version = "0.1.0"
+description = "教学 Agent 原型 -- 苏格拉底式追问 + 实时出题 + 错题沉淀 + 跨会话画像"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "greenlet>=3.5.3",
+    "ipywidgets>=8.1.8",
+    "jupyter>=1.1.1",
+    "langchain>=1.3.14",
+    "langchain-openai>=1.3.5",
+    "langgraph>=1.2.9",
+    "langgraph-checkpoint-postgres>=3.1.0",
+    "pgvector>=0.5.0",
+    "psycopg2-binary>=2.9.12",
+    "pydantic-settings>=2.14.2",
+    "sqlmodel>=0.0.24",
+]
