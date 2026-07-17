@@ -1,2 +1,17 @@
 # Chat logs
 docs/_chat/
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environment
+.env
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/

@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v2.1 |
+| 版本 | v2.3 |
 | 日期 | 2026-07-17 |
 | 状态 | 设计定稿 |
 | 目标 | 从 0 到 1 搭建教学 Agent 原型，用 Jupyter Notebook 调试，验证教学效果 |
@@ -23,7 +23,7 @@
 ### 1.2 关键约束
 
 - **无前端**：Notebook 是唯一交互界面（ipywidgets 聊天 + 逐 cell 透明调试）
-- **完整生产栈**：LangGraph + PostgreSQL/pgvector + AsyncPostgresSaver
+- **完整生产栈**：LangChain+LangGraph + PostgreSQL/pgvector + AsyncPostgresSaver
 - **uv 工程**，**LangChain/LangGraph 1.x**（严禁 0.3.x API）
 - **首个实例**：《计算机网络》，先用示例知识库内容
 
@@ -36,7 +36,7 @@
 | langgraph | 1.2.9 | interrupt/resume + AsyncPostgresSaver |
 | langchain-openai | 1.3.5 | OpenAI 兼容模式接入 DashScope |
 | langgraph-checkpoint-postgres | 3.1.0 | AsyncPostgresSaver |
-| SQLAlchemy | 2.0.51 | async ORM |
+| SQLModel | latest | ORM + Pydantic 合一（底层 SQLAlchemy async） |
 | pgvector | 0.5.0 | vector(1024) + HNSW |
 | DashScope LLM | qwen3.5-flash | `extra_body={"enable_thinking": False}` |
 | DashScope Embedding | text-embedding-v4 | `check_embedding_ctx_length=False`，维度 1024 |
@@ -56,7 +56,7 @@
 │              teaching_agent/ (Python 包)              │
 │                                                       │
 │  config.py     pydantic-settings (.env 驱动)          │
-│  models.py     SQLAlchemy async ORM + pgvector        │
+│  models.py     SQLModel ORM + pgvector (sa_column)    │
 │  db.py         async engine + session factory         │
 │                                                       │
 │  rag/                                                │
@@ -124,6 +124,34 @@
 | ChunkKnowledgePoint | chunk_id, kp_id | N:N 关联表；一个 chunk 可关联多个知识点 |
 
 通用约定：时间字段 timestamptz；LangGraph checkpoint 表由 AsyncPostgresSaver.setup() 自建。
+
+### 3.1.1 SQLModel 用法
+
+DB 实体用 SQLModel（`table=True`），一个类同时是 ORM 模型和 Pydantic schema。pgvector 的 `Vector` 类型通过 `sa_column` 注入：
+
+```python
+from sqlmodel import SQLModel, Field, Column
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import JSON
+
+class Chunk(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    content: str
+    heading_path: str
+    chunk_index: int
+    scope: str
+    project_id: str | None = None
+    embedding: list[float] = Field(sa_column=Column(Vector(1024)))  # pgvector
+
+class StudentProfile(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    user_id: str = Field(unique=True)
+    summary: str
+    weak_points: list = Field(sa_column=Column(JSON))  # [{kp_id, score, misconception}]
+    learning_style: str
+```
+
+LLM 结构化输出 schema（QuizOutput / EvaluationOutput / ConsolidationOutput / ChunkAnalysis）仍然是纯 Pydantic BaseModel，不继承 SQLModel。GraphRAG 的 raw SQL 查询用 `session.execute(text(...))` 不变。
 
 ### 3.2 知识图谱结构
 
@@ -358,7 +386,14 @@ def create_review_agent(mistake, checkpointer):
 def make_search_tool(session_type, session_context):
     @tool
     async def search_knowledge_base(query: str) -> str:
-        """检索课程知识库，返回相关知识片段"""
+        """检索课程知识库，返回与查询相关的知识片段。
+
+        当学生提问或讨论某个概念时，先调用此工具检索相关知识，
+        再基于检索内容设计苏格拉底式追问。检索结果包含向量匹配和知识图谱扩展的片段。
+
+        Args:
+            query: 检索关键词，需包含完整上下文（消除代词指代）
+        """
         # 1. 向量检索
         chunks = await vector_retrieve(query, session_type, session_context)
         # 2. GraphRAG: 从 chunk 的 KP 图遍历扩展
@@ -370,31 +405,73 @@ def make_search_tool(session_type, session_context):
     return search_knowledge_base
 ```
 
-#### quiz_flow（出题 + interrupt + 评估三合一）
+#### end_session（错题整理）
+
+```python
+def make_end_session_tool(session_type, session_context):
+    @tool
+    async def end_session() -> str:
+        """结束当前学习会话，自动整理错题并更新学生画像。
+
+        当学生说"结束"、"再见"、"不学了"或明确要求结束时调用。
+        调用后会回顾全程对话，提炼错题加入错题本，更新画像和知识点掌握度。
+        """
+        result = await consolidate_session()  # with_structured_output
+        await save_mistakes(result.mistakes)
+        await update_profile(result.profile_summary, result.weak_points)
+        if session_type == "review":
+            await update_mistake_mastery(session_context["mistake_id"], result)
+        await update_session_title_summary(result.title, result.summary)
+        return f"会话已结束。{result.summary}"
+    return end_session
+```
+
+**关键**：`interrupt()` 恢复时，工具函数从头重新执行。`interrupt()` 之前的代码会重跑。必须用 check-before-create 模式保证幂等。
 
 ```python
 def make_quiz_tool(session_type, session_context):
     @tool
     async def quiz_flow(topic: str) -> str:
-        """出一道题并等待学生作答，返回评估结果"""
-        # 1. 出题Agent (with_structured_output)
-        quiz = await generate_quiz(topic, session_type, session_context)
-        # 2. 写入Question表
-        question = await save_question(quiz)
-        # 3. interrupt -- agent挂起
+        """出一道关于指定知识点的题目，等待学生作答后返回评估结果。
+        
+        当学生说"考考我"、需要检验理解程度、或你判断时机成熟时调用此工具。
+        调用后会暂停等待学生答题，学生提交答案后自动判分。
+        
+        Args:
+            topic: 要出题的知识点名称
+        """
+        # 幂等检查：是否已有该 session+topic 的 pending 题目
+        # 首次调用返回 None；resume 时返回已保存的题目
+        pending = await get_pending_question(session_id, topic)
+
+        if pending:
+            # resume 路径：复用已生成的题目，不调 LLM
+            quiz_data = pending
+        else:
+            # 首次调用：生成题目（with_structured_output）
+            quiz_data = await generate_quiz(topic, session_type, session_context)
+            # upsert 保存（幂等：同一 session+topic+pending 只创建一次）
+            await upsert_question(session_id, topic, quiz_data, status="pending")
+
+        # interrupt：首次调用 raise（暂停）；resume 时返回学生答案
         student_answer = interrupt({
-            "question_id": question.id, "q_type": quiz.q_type,
-            "stem": quiz.stem, "options": quiz.options,
+            "question_id": quiz_data.id,
+            "q_type": quiz_data.q_type,
+            "stem": quiz_data.stem,
+            "options": quiz_data.options,
         })
-        # 4. 跳过处理
+
+        # 以下只在 resume 时执行一次
         if student_answer.get("action") == "skip":
+            await update_question_status(quiz_data.id, "skipped")
             return "学生跳过了本题"
-        # 5. 评估Agent (with_structured_output)
-        result = await evaluate_answer(question, student_answer["answer"])
-        # 6. 写入AnswerRecord
-        await save_answer_record(question, student_answer["answer"], result)
-        # 7. 返回给引导Agent
+
+        # 评估Agent判分（with_structured_output）
+        result = await evaluate_answer(quiz_data, student_answer["answer"])
+        await save_answer_record(quiz_data, student_answer["answer"], result)
+        await update_question_status(quiz_data.id, "answered")
         return f"判定: {result.verdict}\n错因: {result.diagnosis}\n正确答案: {result.correct_answer}"
+
     return quiz_flow
 ```
 
@@ -642,7 +719,11 @@ def get_embedder() -> OpenAIEmbeddings:
 ```
 学生发消息
   -> 写入 Message 表（user 消息）
-  -> agent.ainvoke({"messages": [user_msg]}, config={"thread_id": session_id})
+  -> agent.ainvoke({"messages": [user_msg]}, config)
+     config = {
+       "configurable": {"thread_id": session_id},
+       "recursion_limit": 15,  # 防止 agent 无限循环
+     }
   -> Agent自主决策：search_knowledge_base / 直接追问 / quiz_flow / end_session
   -> 写入 Message 表（agent 回复）
   -> 如果quiz_flow触发interrupt -> 返回quiz事件
@@ -671,6 +752,12 @@ else:
 ```
 
 checkpointer：AsyncPostgresSaver，`thread_id = session_id`。checkpoint 保证 interrupt 之前的工具调用不重复执行。
+
+**interrupt 幂等性原则**（来自 langgraph-human-in-the-loop skill）：
+- `interrupt()` 恢复时，工具函数从头重新执行，`interrupt()` 之前的代码会重跑
+- `interrupt()` 之前只做幂等操作（check-before-create / upsert）
+- `interrupt()` 之后做非幂等操作（评估、保存答案记录）
+- quiz_flow 已按此模式设计：首次生成题目并 upsert，resume 时复用已有题目
 
 ---
 
@@ -792,7 +879,7 @@ TEACHING_STYLE=苏格拉底式追问，不直接给答案，引导学生自己�
 - langgraph >= 1.2
 - langgraph-checkpoint-postgres >= 3.1
 - langchain-openai >= 1.3
-- sqlalchemy >= 2.0
+- sqlmodel (含 sqlalchemy 依赖)
 - asyncpg, pgvector, greenlet
 - pydantic-settings
 - jupyter, ipywidgets
