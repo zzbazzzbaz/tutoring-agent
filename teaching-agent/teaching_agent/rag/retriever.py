@@ -156,3 +156,25 @@ async def graphrag_search(
 
     # 限制最多 10 个
     return chunks[:10]
+
+
+def format_chunks(chunks: list[dict]) -> str:
+    """格式化检索结果为 Agent 可读的文本。
+
+    Args:
+        chunks: graphrag_search 返回的 chunk 列表
+
+    Returns:
+        格式化的文本，空列表时返回兜底提示
+    """
+    if not chunks:
+        return "未检索到相关内容，该问题可能超出当前课程知识库范围"
+
+    parts = []
+    for i, chunk in enumerate(chunks, 1):
+        parts.append(
+            f"【片段{i}】(来源: {chunk['source']}, 相似度: {1 - chunk['dist']:.2f})\n"
+            f"标题路径: {chunk['heading_path']}\n"
+            f"内容: {chunk['content']}"
+        )
+    return "\n\n".join(parts)
