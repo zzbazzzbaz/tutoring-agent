@@ -1,12 +1,11 @@
 """示例知识库内容，从 docs/test-input-docs/ 加载。
 
-原型阶段使用物理层、数据链路层的真实教学文档作为知识库，
-验证 RAG 入库与检索效果。
+测试用数据，不属于生产代码。notebook 入库时用这些文档验证 RAG 流程。
 """
 from pathlib import Path
 
-# 知识库文档目录：teaching_agent/knowledge/ -> teaching_agent/ -> teaching-agent/ -> 教学Agent/ -> docs/test-input-docs/
-_DOCS_DIR = Path(__file__).parent.parent.parent.parent / "docs" / "test-input-docs"
+# 知识库文档目录：test_utils/ -> teaching-agent/ -> 教学Agent/ -> docs/test-input-docs
+_DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "docs" / "test-input-docs"
 
 # 课程级文档文件列表
 _COURSE_DOC_FILES = [
