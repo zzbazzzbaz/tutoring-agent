@@ -1,6 +1,5 @@
 """GraphRAG 检索：向量检索 + 知识图谱 1 跳遍历 + 合并排序。
 
-参考 spec 4.4 节五步检索流程：
 1. 向量检索 top-5 chunk
 2. 从 chunk 提取入口知识点
 3. 沿 KnowledgeEdge 1 跳遍历找相邻 KP 的 chunk

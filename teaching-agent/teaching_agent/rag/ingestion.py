@@ -20,9 +20,6 @@ async def ingest_document(
 ) -> str:
     """入库单个文档：切分 -> 向量化 -> 写入 -> 知识图谱分析。
 
-    session 由调用方传入（notebook 手动创建，FastAPI 用 Depends 注入），
-    commit 也由调用方控制。
-
     Args:
         session: 数据库会话
         filename: 文件名
