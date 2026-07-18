@@ -212,23 +212,21 @@ def make_quiz_tool(session_type: str, session_context: dict, session_id: str):
             except Exception as e:
                 return f"评判异常，请重新提交。错误: {e}"
 
-            # 保存答题记录（非幂等，只执行一次）
-            async with async_session_factory() as eval_session:
-                record = AnswerRecord(
-                    id=str(uuid.uuid4()),
-                    question_id=quiz_data.id,
-                    user_id="demo-student",
-                    session_id=session_id,
-                    user_answer=answer_text,
-                    verdict=eval_result.verdict,
-                    diagnosis=eval_result.diagnosis,
-                )
-                eval_session.add(record)
+            # 保存答题记录（非幂等，只执行一次）-- 用同一个 session
+            record = AnswerRecord(
+                id=str(uuid.uuid4()),
+                question_id=quiz_data.id,
+                user_id="demo-student",
+                session_id=session_id,
+                user_answer=answer_text,
+                verdict=eval_result.verdict,
+                diagnosis=eval_result.diagnosis,
+            )
+            session.add(record)
 
-                # 更新题目状态
-                quiz_data.status = "answered"
-                eval_session.add(quiz_data)
-                await eval_session.commit()
+            # 更新题目状态
+            quiz_data.status = "answered"
+            await session.commit()
 
             return (
                 f"判定: {eval_result.verdict}\n"
