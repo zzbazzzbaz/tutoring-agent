@@ -61,14 +61,19 @@ async def graphrag_search(
         WHERE target_id IN (SELECT kp_id FROM entry_kps)
     ),
     graph_chunks AS (
-        SELECT DISTINCT c.id, c.content, c.heading_path,
+        SELECT DISTINCT ON (c.id) c.id, c.content, c.heading_path,
                c.embedding <=> :vec AS dist, rk.relation_type AS edge_type
         FROM chunk c
         JOIN chunkknowledgepoint ck ON c.id = ck.chunk_id
         JOIN related_kps rk ON ck.kp_id = rk.kp_id
         WHERE c.id NOT IN (SELECT id FROM vector_results)
-        ORDER BY c.embedding <=> :vec
-        LIMIT :top_k
+        ORDER BY c.id,
+                 CASE rk.relation_type
+                     WHEN 'prerequisite' THEN 1
+                     WHEN 'contrast' THEN 2
+                     WHEN 'related' THEN 3
+                     WHEN 'part_of' THEN 4
+                 END
     )
     SELECT id, content, heading_path, dist, 'vector' AS source, NULL AS edge_type
     FROM vector_results

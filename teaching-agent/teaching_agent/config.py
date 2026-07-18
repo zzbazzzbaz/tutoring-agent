@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -21,7 +23,7 @@ class Settings(BaseSettings):
     TOP_K: int = 5
     RECURSION_LIMIT: int = 15
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": Path(__file__).resolve().parent.parent / ".env"}
 
 
 settings = Settings()

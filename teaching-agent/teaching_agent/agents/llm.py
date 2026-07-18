@@ -32,6 +32,7 @@ def get_embedder() -> OpenAIEmbeddings:
         api_key=settings.DASHSCOPE_API_KEY,
         base_url=settings.DASHSCOPE_BASE_URL,
         check_embedding_ctx_length=False,
+        chunk_size=10,  # DashScope 单次最多 10 条
     )
 
 
