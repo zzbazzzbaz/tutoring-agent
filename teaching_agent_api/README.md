@@ -19,20 +19,20 @@ teaching_agent_api/
 ├── .env.example            # template; copy to .env
 ├── .python-version
 └── src/teaching_agent_api/
-    ├── main.py             # FastAPI app + lifespan
-    ├── config.py           # pydantic-settings Settings
-    ├── deps.py             # FastAPI dependencies (get_db, get_user_id, ...)
-    ├── api/
-    │   └── health.py       # /health endpoint
-    ├── db/
-    │   ├── engine.py       # async engine, session factory, init_db
-    │   ├── models.py       # SQLModel tables: project, session, message, question
-    │   └── repos.py        # async repository functions
-    ├── lightrag/
-    │   └── client.py       # LightRAG HTTP client (stub in T1, full impl in T2)
-    ├── agent/              # agent factory (populated in T3)
-    └── schemas/           # Pydantic request/response models (populated later)
+    ├── main.py             # FastAPI app + lifespan 组装
+    ├── core/               # 共享内核：config / errors / database / deps / health
+    ├── db/                 # 唯一数据真相：models + repos（无业务规则）
+    ├── projects/           # 课程项目域：router + service + schemas
+    ├── chat/               # 会话域：router + sse + service + schemas
+    ├── knowledge/          # LightRAG 代理：client + router
+    ├── agent/              # AI 核心（零 FastAPI 依赖）：factory / runtime / tools / prompts / llm
+    └── auth/               # 预留：未来 JWT + role
 ```
+
+依赖方向单向（DAG）：`core ← 所有模块`；`db ← projects/chat/agent`；
+`knowledge ← agent`；`agent ← chat`。router/sse 只调 service；service 调
+repos / agent.runtime / knowledge.client。
+
 
 ## Setup
 
