@@ -45,18 +45,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await lightrag_client.start()
         logger.info("LightRAG client started: %s", settings.lightrag_base_url)
 
-        # 4. 注入工具依赖（LightRAGClient + DB session factory）
-        from teaching_agent_api.agent.tools import set_dependencies
-        set_dependencies(
+        # 4. 构建工具（闭包注入 LightRAGClient + DB session factory）
+        from teaching_agent_api.agent.tools import make_tools
+        tools = make_tools(
             lightrag_client=lightrag_client,
             db_session_factory=db_session_factory,
         )
 
-        # 5. 构建 agent 单例（工具依赖已就绪）
+        # 5. 构建 agent 单例
         app.state.agent = None
         try:
             from teaching_agent_api.agent.factory import build_agent
-            app.state.agent = build_agent(checkpointer)
+            app.state.agent = build_agent(checkpointer, tools)
             logger.info("Agent built")
         except Exception as e:
             logger.warning("Agent 构建失败: %s", e)
