@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate, Outlet, useParams } from 'react-ro
 import { Toaster } from 'sonner'
 import { useAuthStore } from '@/stores/auth'
 import LoginPage from '@/features/login/LoginPage'
+import StudentLayout from '@/features/student/StudentLayout'
 
 function RequireAuth() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
@@ -20,10 +21,6 @@ function RoleRoute({ role }: { role: 'student' | 'teacher' }) {
     )
   }
   return <Outlet />
-}
-
-function StudentPlaceholder() {
-  return <div className="p-8 text-xl">学生端（待实现）</div>
 }
 
 function TeacherPlaceholder() {
@@ -46,9 +43,14 @@ export default function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<RoleRoute role="student" />}>
-            <Route path="/student" element={<StudentPlaceholder />} />
-            <Route path="/student/sessions" element={<StudentPlaceholder />} />
-            <Route path="/student/sessions/:id" element={<SessionDetailPlaceholder />} />
+            <Route path="/student" element={<StudentLayout />}>
+              <Route index element={<Navigate to="/student/sessions" replace />} />
+              <Route
+                path="sessions"
+                element={<div className="p-8 text-muted-foreground">请从左侧选择一个会话</div>}
+              />
+              <Route path="sessions/:id" element={<SessionDetailPlaceholder />} />
+            </Route>
           </Route>
           <Route element={<RoleRoute role="teacher" />}>
             <Route path="/teacher" element={<Navigate to="/teacher/knowledge-base" replace />} />
