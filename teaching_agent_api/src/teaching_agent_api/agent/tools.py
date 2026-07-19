@@ -6,72 +6,25 @@ LangChain 1.x 模式：
 - interrupt() 来自 langgraph.types，实现 HITL 暂停
 - RunnableConfig 用于访问 thread_id（= session_id）
 - make_tools() 由 lifespan 调用，闭包捕获 LightRAGClient + db_session_factory
+
+结构化输出 schema（QuizOutput / EvaluationOutput）位于 agent.schemas。
 """
 import logging
 from contextlib import asynccontextmanager
-from typing import Literal
 from uuid import UUID
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
-from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from teaching_agent_api.agent.llm import get_llm
 from teaching_agent_api.agent.prompts import QUIZ_GENERATION_PROMPT, EVALUATION_PROMPT
+from teaching_agent_api.agent.schemas import EvaluationOutput, QuizOutput
 from teaching_agent_api.core.config import settings
 from teaching_agent_api.db import repos
 from teaching_agent_api.knowledge.client import LightRAGClient
 
 logger = logging.getLogger(__name__)
-
-
-# === 结构化输出 schema（Pydantic，非 SQLModel）===
-
-
-class QuizOutput(BaseModel):
-    """出题 LLM 的结构化输出 schema。"""
-
-    q_type: Literal["single", "multi", "short"] = Field(description="题型：单选/多选/简答")
-    stem: str = Field(description="题干")
-    options: list[str] | None = Field(None, description="选项列表，short 题为 null")
-    answer: str = Field(description="正确答案（single: 选项文本；multi: 'A,C,D'；short: 要点列表）")
-    analysis: str = Field(description="题目解析")
-
-    @field_validator("options", mode="before")
-    @classmethod
-    def _coerce_options(cls, v):
-        """容错处理 LLM 返回的 options 格式。
-
-        LLM 可能返回：
-        - list[str]：正常
-        - None：short 题无选项
-        - str：可能是 JSON 编码的列表 '["A","B","C"]' 或单个选项文本
-        - 其他：视为 None
-        """
-        if v is None:
-            return None
-        if isinstance(v, list):
-            return [str(item) for item in v]
-        if isinstance(v, str):
-            import json as _json
-            # 尝试解析 JSON 字符串（LLM 可能返回 '["A","B","C"]'）
-            try:
-                parsed = _json.loads(v)
-                if isinstance(parsed, list):
-                    return [str(item) for item in parsed]
-            except (ValueError, TypeError):
-                pass
-            return [v]
-        return None
-
-
-class EvaluationOutput(BaseModel):
-    """评估 LLM 的结构化输出 schema。"""
-
-    verdict: Literal["correct", "partial", "wrong"] = Field(description="判定结果")
-    diagnosis: str = Field(description="错因诊断（答对时为空字符串）")
-    analysis: str = Field(description="评分解析")
 
 
 def make_tools(
