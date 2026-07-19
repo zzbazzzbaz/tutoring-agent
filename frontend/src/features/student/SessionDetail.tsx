@@ -15,6 +15,7 @@ export default function SessionDetail() {
   const loadSession = useChatStore(s => s.loadSession)
   const streamStatus = useChatStore(s => s.streamStatus)
   const streamingAgentContent = useChatStore(s => s.streamingAgentContent)
+  const pendingQuiz = useChatStore(s => s.pendingQuiz)
 
   useEffect(() => {
     if (id) loadSession(id)
@@ -51,8 +52,11 @@ export default function SessionDetail() {
                 />
               )
             }
-            return <QuizCard key={`q-${idx}`} question={item.question} locked />
+            return <QuizCard key={`q-${idx}`} question={item.question} />
           })}
+          {pendingQuiz && streamStatus === 'quiz_interrupted' && (
+            <QuizCard pending={pendingQuiz} />
+          )}
           {streamStatus === 'streaming' && streamingAgentContent && (
             <MessageBubble
               role="agent"
