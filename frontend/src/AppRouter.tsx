@@ -4,6 +4,11 @@ import { useAuthStore } from '@/stores/auth'
 import LoginPage from '@/features/login/LoginPage'
 import StudentLayout from '@/features/student/StudentLayout'
 import SessionDetail from '@/features/student/SessionDetail'
+import TeacherLayout from '@/features/teacher/TeacherLayout'
+import KnowledgeBase from '@/features/teacher/KnowledgeBase'
+import KnowledgeGraph from '@/features/teacher/KnowledgeGraph'
+import ProjectList from '@/features/teacher/projects/ProjectList'
+import ProjectEditor from '@/features/teacher/projects/ProjectEditor'
 
 function RequireAuth() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
@@ -22,10 +27,6 @@ function RoleRoute({ role }: { role: 'student' | 'teacher' }) {
     )
   }
   return <Outlet />
-}
-
-function TeacherPlaceholder() {
-  return <div className="p-8 text-xl">教师端（待实现）</div>
 }
 
 function NotFound() {
@@ -49,12 +50,14 @@ export default function AppRouter() {
             </Route>
           </Route>
           <Route element={<RoleRoute role="teacher" />}>
-            <Route path="/teacher" element={<Navigate to="/teacher/knowledge-base" replace />} />
-            <Route path="/teacher/knowledge-base" element={<TeacherPlaceholder />} />
-            <Route path="/teacher/knowledge-graph" element={<TeacherPlaceholder />} />
-            <Route path="/teacher/projects" element={<TeacherPlaceholder />} />
-            <Route path="/teacher/projects/new" element={<TeacherPlaceholder />} />
-            <Route path="/teacher/projects/:id/edit" element={<TeacherPlaceholder />} />
+            <Route path="/teacher" element={<TeacherLayout />}>
+              <Route index element={<Navigate to="/teacher/knowledge-base" replace />} />
+              <Route path="knowledge-base" element={<KnowledgeBase />} />
+              <Route path="knowledge-graph" element={<KnowledgeGraph />} />
+              <Route path="projects" element={<ProjectList />} />
+              <Route path="projects/new" element={<ProjectEditor />} />
+              <Route path="projects/:id/edit" element={<ProjectEditor />} />
+            </Route>
           </Route>
         </Route>
         <Route path="/" element={<Navigate to="/login" replace />} />
