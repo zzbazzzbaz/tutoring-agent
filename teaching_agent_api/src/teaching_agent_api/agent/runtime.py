@@ -78,10 +78,14 @@ async def resume_quiz(
     action: str,
     answer: str | None,
     db_session: AsyncSession,
+    context: AgentContext,
 ) -> AsyncIterator[str]:
     """提交答题 -> SSE 流继续。
 
     Yields 同 stream_chat 的事件类型（resume 时不会有 quiz_interrupt）。
+
+    runtime context 不进 checkpoint，resume 时必须像 stream_chat 一样重新传入，
+    否则 main_agent_system_prompt 中间件读 context 会拿到 None。
     """
     config = {
         "configurable": {"thread_id": str(session_id)},
@@ -96,6 +100,7 @@ async def resume_quiz(
             Command(resume=resume_value),
             config=config,
             version="v3",
+            context=context,
         )
         async for message in stream.messages:
             async for token in message.text:

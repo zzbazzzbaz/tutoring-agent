@@ -146,10 +146,13 @@ async def resume_quiz_endpoint(
             },
         )
 
+    # runtime context 不进 checkpoint，resume 也需重建传入
+    ctx = await _build_agent_context(sess, db_session)
+
     async def raw_stream() -> AsyncIterator[bytes]:
         try:
             async for sse_frame in resume_quiz(
-                agent, session_id, body.action, body.answer, db_session
+                agent, session_id, body.action, body.answer, db_session, ctx
             ):
                 yield sse_frame.encode("utf-8")
         finally:
