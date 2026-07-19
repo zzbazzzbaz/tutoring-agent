@@ -1,16 +1,7 @@
-"""System prompt 模板 + AgentContext + @dynamic_prompt 中间件。
-
-LangChain 1.x 最佳实践：单个 agent 实例同时服务 free/project 两种模式，
-通过 @dynamic_prompt 中间件 + AgentContext 在 invoke 时注入模式信息，
-无需为不同模式构建不同 agent。
-"""
 from dataclasses import dataclass
 from typing import Literal
 
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
-
-from teaching_agent_api.config import settings
-
 
 # === Prompt 模板 ===
 
@@ -59,7 +50,6 @@ GUIDANCE_PROMPT_PROJECT = """你是一位苏格拉底式教学助手，课程是
 
 {available_tools}
 """
-
 
 # === 出题 / 评估 prompt（tools.py 的 helper 使用）===
 
@@ -111,38 +101,31 @@ EVALUATION_PROMPT = """你是一位阅卷专家。
 
 @dataclass
 class AgentContext:
-    """每次 invoke 时通过 context= 参数注入的上下文。
-
-    携带模式（free/project）和课程/项目元数据，使 @dynamic_prompt
-    中间件能在不重建 agent 的前提下选择正确的 prompt 模板。
-    """
-
     mode: Literal["free", "project"]
     course_name: str
     project_name: str = ""
     project_background_md: str = ""
 
+    def __post_init__(self) -> None:
+        if self.mode == "project" and not self.project_name:
+            raise ValueError("project 模式需要 project_name")
+        if self.mode == "free" and (self.project_name or self.project_background_md):
+            raise ValueError("free 模式不应携带 project 字段")
+
 
 @dynamic_prompt
-def teaching_prompt(request: ModelRequest) -> str:
-    """LangChain 1.x 中间件：根据 AgentContext.mode 选择 prompt 模板。"""
+def main_agent_system_prompt(request: ModelRequest) -> str:
     ctx = request.runtime.context
-    if not ctx:
-        return GUIDANCE_PROMPT_FREE.format(
-            course_name=settings.course_name,
-            core_principles=_CORE_PRINCIPLES,
-            available_tools=_AVAILABLE_TOOLS,
-        )
-    if ctx.mode == "project":
-        return GUIDANCE_PROMPT_PROJECT.format(
-            course_name=ctx.course_name or settings.course_name,
-            project_name=ctx.project_name,
-            project_background_md=ctx.project_background_md or "（无项目背景）",
-            core_principles=_CORE_PRINCIPLES,
-            available_tools=_AVAILABLE_TOOLS,
-        )
-    return GUIDANCE_PROMPT_FREE.format(
-        course_name=ctx.course_name or settings.course_name,
+    common = dict(
+        course_name=ctx.course_name,
         core_principles=_CORE_PRINCIPLES,
         available_tools=_AVAILABLE_TOOLS,
     )
+
+    if ctx.mode == "project":
+        return GUIDANCE_PROMPT_PROJECT.format(
+            **common,
+            project_name=ctx.project_name,
+            project_background_md=ctx.project_background_md,
+        )
+    return GUIDANCE_PROMPT_FREE.format(**common)

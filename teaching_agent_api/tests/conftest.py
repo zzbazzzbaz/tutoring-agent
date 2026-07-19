@@ -3,8 +3,7 @@
 不 mock 模型/LightRAG/DB，直接调真实 API。
 用 httpx.ASGITransport 绕过网络层，进程内调 FastAPI app。
 
-关键：每个测试重建 lifespan，但需重置 agent 单例（否则引用旧 checkpointer
-的已关闭连接）。
+每个测试重建 lifespan，build_agent 不再缓存单例，自然引用新 checkpointer。
 """
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
@@ -18,11 +17,7 @@ from teaching_agent_api.main import app
 
 @pytest_asyncio.fixture
 async def client():
-    """每个测试启动一次 lifespan。重置 agent 单例以引用新 checkpointer。"""
-    # 重置 agent 单例，避免引用上一个 lifespan 的已关闭 checkpointer
-    from teaching_agent_api.agent.factory import _reset_agent_singleton
-    _reset_agent_singleton()
-
+    """每个测试启动一次 lifespan，得到引用新 checkpointer 的 agent 实例。"""
     async with LifespanManager(app):
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test", timeout=120
