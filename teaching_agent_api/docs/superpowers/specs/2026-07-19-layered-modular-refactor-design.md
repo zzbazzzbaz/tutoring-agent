@@ -96,7 +96,8 @@ class AppError(Exception):
     def __init__(self, status: int, code: str, message: str): ...
 ```
 
-- `main.py` 注册一次：`AppError → {"error": {"code", "message"}}`；`LightRAGError → 502`；未捕获异常 `→ 500 + 日志`
+- `main.py` 注册一次：`AppError → {"detail": {"error": {"code", "message"}}}`；`LightRAGError → 502`；未捕获异常 `→ 500 + 日志`
+- **注意**：现有测试断言 `resp.json()["detail"]["error"]["code"]`（FastAPI 默认 HTTPException handler 的 `detail` 包裹层），因此自定义 handler 必须保留 `detail` 外层 —— 对外字节级格式不变
 - 路由/service 只写 `raise AppError(404, "SESSION_NOT_FOUND", ...)`
 - 删除所有手写 `HTTPException(detail={...})`，**对外错误格式保持不变**
 
