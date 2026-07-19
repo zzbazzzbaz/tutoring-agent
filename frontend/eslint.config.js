@@ -32,7 +32,8 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
       '@stylistic/indent': ['error', 2],
       '@stylistic/quotes': ['error', 'single'],
-      '@typescript-eslint/no-explicit-any': ['off']
+      '@typescript-eslint/no-explicit-any': ['off'],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
     }
   }
 )
