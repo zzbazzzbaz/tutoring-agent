@@ -17,8 +17,12 @@ from teaching_agent_api.main import app
 
 @pytest_asyncio.fixture
 async def client():
-    """每个测试启动一次 lifespan，得到引用新 checkpointer 的 agent 实例。"""
-    async with LifespanManager(app):
+    """每个测试启动一次 lifespan，得到引用新 checkpointer 的 agent 实例。
+
+    startup_timeout=60：远程 DB 的 init_db + checkpointer.setup 约 15s，
+    默认 5s 超时会导致 lifespan 启动失败。
+    """
+    async with LifespanManager(app, startup_timeout=60):
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test", timeout=120
         ) as c:
