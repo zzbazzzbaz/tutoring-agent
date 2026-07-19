@@ -2,6 +2,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from teaching_agent_api import db
@@ -13,12 +14,24 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.post("", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
 async def create_project(body: ProjectCreate, db_session: AsyncSession = Depends(get_db)) -> ProjectOut:
-    proj = await db.create_project(
-        db_session,
-        name=body.name,
-        background_md=body.background_md,
-        status=body.status,
-    )
+    try:
+        proj = await db.create_project(
+            db_session,
+            name=body.name,
+            background_md=body.background_md,
+            status=body.status,
+        )
+    except IntegrityError:
+        await db_session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": {
+                    "code": "PROJECT_NAME_CONFLICT",
+                    "message": f"Project name '{body.name}' already exists",
+                }
+            },
+        )
     return ProjectOut.model_validate(proj)
 
 

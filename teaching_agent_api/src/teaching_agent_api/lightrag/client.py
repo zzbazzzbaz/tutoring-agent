@@ -154,7 +154,10 @@ class LightRAGClient:
         return resp.json()
 
     async def search_labels(self, query: str) -> list[str]:
-        """GET /graph/label/search."""
-        resp = await self.client.get("/graph/label/search", params={"query": query})
+        """GET /graph/label/search。
+
+        注意：LightRAG API 使用 `q` 作为查询参数名，而非 `query`。
+        """
+        resp = await self.client.get("/graph/label/search", params={"q": query})
         resp.raise_for_status()
         return resp.json()
