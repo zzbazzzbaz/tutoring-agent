@@ -37,7 +37,7 @@ async def health(request: Request) -> dict:
         "status": "healthy" if all(v in ("ok", "ready") for v in components.values()) else "degraded",
         "components": components,
         "versions": {
-            "api": "0.1.0",
+            "api": "0.2.0",
             "langchain": langchain.__version__,
             "langgraph": pkg_version("langgraph"),
         },
