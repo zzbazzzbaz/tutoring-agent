@@ -1,11 +1,20 @@
+"""FastAPI 依赖注入。"""
+from dataclasses import dataclass
 from typing import AsyncIterator
 
-from fastapi import Request, Header, Depends
+from fastapi import Request, Header
 from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from teaching_agent_api.config import settings
 from teaching_agent_api.lightrag.client import LightRAGClient
+
+
+@dataclass(frozen=True)
+class CurrentUser:
+    """当前请求用户。未来由 auth/ 模块的 JWT 校验填充 role。"""
+
+    id: str
+    role: str = "student"
 
 
 async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
@@ -15,8 +24,13 @@ async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
+def get_current_user(x_user_id: str | None = Header(None, alias="X-User-Id")) -> CurrentUser:
+    """无 header 时默认为 demo-student。未来改为委托 auth/ 模块校验 JWT。"""
+    return CurrentUser(id=x_user_id or "demo-student")
+
+
 def get_user_id(x_user_id: str | None = Header(None, alias="X-User-Id")) -> str:
-    """无 header 时默认为 demo-student。"""
+    """兼容旧签名，Task 4 后删除。"""
     return x_user_id or "demo-student"
 
 

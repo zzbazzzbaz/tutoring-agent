@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from teaching_agent_api import db
 from teaching_agent_api.agent.prompts import AgentContext
 from teaching_agent_api.agent.runtime import resume_quiz, stream_chat
-from teaching_agent_api.config import settings
-from teaching_agent_api.deps import get_agent, get_db, get_user_id
+from teaching_agent_api.core.config import settings
+from teaching_agent_api.core.deps import get_agent, get_db, get_user_id
 from teaching_agent_api.schemas.chat import QuizResumeRequest, SendMessageRequest
 
 router = APIRouter(prefix="/chat", tags=["chat"])

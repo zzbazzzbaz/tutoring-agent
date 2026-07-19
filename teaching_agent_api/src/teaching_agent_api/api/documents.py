@@ -5,7 +5,7 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 
-from teaching_agent_api.deps import get_lightrag_client
+from teaching_agent_api.core.deps import get_lightrag_client
 from teaching_agent_api.lightrag.client import LightRAGClient
 
 router = APIRouter(prefix="/documents", tags=["documents"])

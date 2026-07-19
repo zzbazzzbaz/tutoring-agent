@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from teaching_agent_api import db
-from teaching_agent_api.deps import get_db
+from teaching_agent_api.core.deps import get_db
 from teaching_agent_api.schemas.project import ProjectCreate, ProjectUpdate, ProjectOut
 
 router = APIRouter(prefix="/projects", tags=["projects"])

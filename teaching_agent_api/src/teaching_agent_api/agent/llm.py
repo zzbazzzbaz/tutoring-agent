@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI
 
-from teaching_agent_api.config import settings
+from teaching_agent_api.core.config import settings
 
 
 def get_llm() -> ChatOpenAI:

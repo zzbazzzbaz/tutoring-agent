@@ -7,9 +7,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from teaching_agent_api.config import settings
-from teaching_agent_api.db.engine import create_engine, create_session_factory, init_db
-from teaching_agent_api.api import health as health_router
+from teaching_agent_api.core.config import settings
+from teaching_agent_api.core.database import create_engine, create_session_factory, init_db
+from teaching_agent_api.core.errors import register_exception_handlers
+from teaching_agent_api.core import health as health_router
 from teaching_agent_api.api import projects as projects_router
 from teaching_agent_api.api import sessions as sessions_router
 from teaching_agent_api.api import chat as chat_router
@@ -77,6 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Teaching Agent API", version="0.1.0", lifespan=lifespan)
+register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,

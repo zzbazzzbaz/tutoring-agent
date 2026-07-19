@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from teaching_agent_api import db
 from teaching_agent_api.db.models import Project, Session
-from teaching_agent_api.deps import get_db, get_user_id
+from teaching_agent_api.core.deps import get_db, get_user_id
 from teaching_agent_api.schemas.session import (
     SessionCreate,
     SessionOut,

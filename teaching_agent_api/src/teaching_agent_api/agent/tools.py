@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from teaching_agent_api.agent.llm import get_llm
 from teaching_agent_api.agent.prompts import QUIZ_GENERATION_PROMPT, EVALUATION_PROMPT
-from teaching_agent_api.config import settings
+from teaching_agent_api.core.config import settings
 from teaching_agent_api.db import repos as db
 from teaching_agent_api.lightrag.client import LightRAGClient
 

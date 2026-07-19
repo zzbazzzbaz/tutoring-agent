@@ -1,9 +1,9 @@
-"""Database layer: async engine, models, and repository functions.
+"""Database layer: models and repository functions.
 
 Re-export repository functions for ergonomic access via `from
 teaching_agent_api import db; await db.create_project(...)`.
+Engine/session factory 位于 core.database。
 """
-from teaching_agent_api.db.engine import create_engine, create_session_factory, init_db
 from teaching_agent_api.db.models import Project, Session, Message, Question
 from teaching_agent_api.db.repos import (
     # Session
@@ -29,10 +29,6 @@ from teaching_agent_api.db.repos import (
 )
 
 __all__ = [
-    # Engine
-    "create_engine",
-    "create_session_factory",
-    "init_db",
     # Models
     "Project",
     "Session",

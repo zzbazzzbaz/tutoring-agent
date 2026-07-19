@@ -10,8 +10,8 @@ from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
-from teaching_agent_api.config import settings
-from teaching_agent_api.db.engine import create_engine
+from teaching_agent_api.core.config import settings
+from teaching_agent_api.core.database import create_engine
 from teaching_agent_api.main import app
 
 
