@@ -6,7 +6,7 @@ from fastapi import Request, Header
 from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from teaching_agent_api.lightrag.client import LightRAGClient
+from teaching_agent_api.knowledge.client import LightRAGClient
 
 
 @dataclass(frozen=True)

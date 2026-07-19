@@ -14,8 +14,7 @@ from teaching_agent_api.core import health as health_router
 from teaching_agent_api.api import projects as projects_router
 from teaching_agent_api.api import sessions as sessions_router
 from teaching_agent_api.api import chat as chat_router
-from teaching_agent_api.api import documents as documents_router
-from teaching_agent_api.api import graph as graph_router
+from teaching_agent_api.knowledge import router as knowledge_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -38,7 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("LangGraph checkpointer ready")
 
         # 3. LightRAG 客户端
-        from teaching_agent_api.lightrag.client import LightRAGClient
+        from teaching_agent_api.knowledge.client import LightRAGClient
         lightrag_client = LightRAGClient(
             base_url=settings.lightrag_base_url,
             api_key=settings.lightrag_api_key,
@@ -92,5 +91,4 @@ app.include_router(health_router.router)
 app.include_router(projects_router.router)
 app.include_router(sessions_router.router)
 app.include_router(chat_router.router)
-app.include_router(documents_router.router)
-app.include_router(graph_router.router)
+app.include_router(knowledge_router.router)
