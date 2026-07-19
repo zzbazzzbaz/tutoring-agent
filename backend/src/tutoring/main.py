@@ -3,11 +3,14 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from tutoring.core.config import settings, setup_langsmith
+
+setup_langsmith()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from tutoring.core.config import settings
 from tutoring.core.database import create_engine, create_session_factory, init_db
 from tutoring.core.errors import register_exception_handlers
 from tutoring.core import health as health_router
