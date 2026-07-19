@@ -11,9 +11,9 @@ from teaching_agent_api.core.config import settings
 from teaching_agent_api.core.database import create_engine, create_session_factory, init_db
 from teaching_agent_api.core.errors import register_exception_handlers
 from teaching_agent_api.core import health as health_router
-from teaching_agent_api.api import projects as projects_router
-from teaching_agent_api.api import sessions as sessions_router
-from teaching_agent_api.api import chat as chat_router
+from teaching_agent_api.projects import router as projects_router
+from teaching_agent_api.chat import router as chat_rest_router
+from teaching_agent_api.chat import sse as chat_sse_router
 from teaching_agent_api.knowledge import router as knowledge_router
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,6 @@ app.add_middleware(
 
 app.include_router(health_router.router)
 app.include_router(projects_router.router)
-app.include_router(sessions_router.router)
-app.include_router(chat_router.router)
+app.include_router(chat_rest_router.router)
+app.include_router(chat_sse_router.router)
 app.include_router(knowledge_router.router)

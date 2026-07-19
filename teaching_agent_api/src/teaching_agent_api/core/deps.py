@@ -29,11 +29,6 @@ def get_current_user(x_user_id: str | None = Header(None, alias="X-User-Id")) ->
     return CurrentUser(id=x_user_id or "demo-student")
 
 
-def get_user_id(x_user_id: str | None = Header(None, alias="X-User-Id")) -> str:
-    """兼容旧签名，Task 4 后删除。"""
-    return x_user_id or "demo-student"
-
-
 def get_lightrag_client(request: Request) -> LightRAGClient:
     """从 app.state 获取 LightRAG 客户端单例。"""
     return request.app.state.lightrag_client
