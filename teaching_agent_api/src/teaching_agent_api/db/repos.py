@@ -1,6 +1,5 @@
 """异步 repository 函数。无类（YAGNI）。"""
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -14,7 +13,7 @@ from teaching_agent_api.db.models import Project, Session, Message, Question
 # === Session ===
 
 async def create_session(
-    db: AsyncSession, *, mode: str, user_id: str, project_id: Optional[UUID] = None,
+    db: AsyncSession, *, mode: str, user_id: str, project_id: UUID | None = None,
 ) -> Session:
     obj = Session(mode=mode, user_id=user_id, project_id=project_id)
     db.add(obj)
@@ -23,7 +22,7 @@ async def create_session(
     return obj
 
 
-async def get_session(db: AsyncSession, session_id: UUID) -> Optional[Session]:
+async def get_session(db: AsyncSession, session_id: UUID) -> Session | None:
     # selectinload(Session.project) 使路由可读取 `project_name`，
     # 而不触发 lazy load（在 async 下没有 greenlet 会失败）。
     stmt = (
@@ -36,8 +35,8 @@ async def get_session(db: AsyncSession, session_id: UUID) -> Optional[Session]:
 
 
 async def list_sessions(
-    db: AsyncSession, *, user_id: str, status: Optional[str] = None,
-    mode: Optional[str] = None, limit: int = 20, offset: int = 0,
+    db: AsyncSession, *, user_id: str, status: str | None = None,
+    mode: str | None = None, limit: int = 20, offset: int = 0,
 ) -> list[Session]:
     stmt = (
         select(Session)
@@ -93,7 +92,7 @@ async def list_messages(db: AsyncSession, session_id: UUID, *, limit: int = 100,
 
 async def upsert_pending_question(
     db: AsyncSession, *, session_id: UUID, topic: str, q_type: str,
-    stem: str, options: Optional[list], answer: str, analysis: Optional[str],
+    stem: str, options: list | None, answer: str, analysis: str | None,
 ) -> Question:
     """幂等：若 (session_id, topic) 已存在 pending 题目则返回，否则插入。"""
     stmt = (
@@ -115,7 +114,7 @@ async def upsert_pending_question(
     return obj
 
 
-async def get_pending_question(db: AsyncSession, session_id: UUID, topic: str) -> Optional[Question]:
+async def get_pending_question(db: AsyncSession, session_id: UUID, topic: str) -> Question | None:
     stmt = (
         select(Question)
         .where(Question.session_id == session_id, Question.topic == topic, Question.status == "pending")
@@ -131,7 +130,7 @@ async def update_question(db: AsyncSession, question_id: UUID, **fields) -> None
 
 
 async def list_questions(
-    db: AsyncSession, session_id: UUID, *, status: Optional[str] = None,
+    db: AsyncSession, session_id: UUID, *, status: str | None = None,
 ) -> list[Question]:
     stmt = select(Question).where(Question.session_id == session_id)
     if status:
@@ -151,11 +150,11 @@ async def create_project(db: AsyncSession, *, name: str, background_md: str, sta
     return obj
 
 
-async def get_project(db: AsyncSession, project_id: UUID) -> Optional[Project]:
+async def get_project(db: AsyncSession, project_id: UUID) -> Project | None:
     return await db.get(Project, project_id)
 
 
-async def list_projects(db: AsyncSession, *, status: Optional[str] = None) -> list[Project]:
+async def list_projects(db: AsyncSession, *, status: str | None = None) -> list[Project]:
     stmt = select(Project)
     if status:
         stmt = stmt.where(Project.status == status)
@@ -164,7 +163,7 @@ async def list_projects(db: AsyncSession, *, status: Optional[str] = None) -> li
     return list(result.scalars().all())
 
 
-async def update_project(db: AsyncSession, project_id: UUID, **fields) -> Optional[Project]:
+async def update_project(db: AsyncSession, project_id: UUID, **fields) -> Project | None:
     await db.execute(update(Project).where(Project.id == project_id).values(**fields))
     await db.commit()
     return await db.get(Project, project_id)

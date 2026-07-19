@@ -1,6 +1,6 @@
 """Session、Message、Question 资源的 Pydantic schema。"""
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -17,7 +17,7 @@ class SessionCreate(BaseModel):
     project_id: UUID | None = None
 
     @model_validator(mode="after")
-    def check_project_id(self):
+    def check_project_id(self) -> Self:
         if self.mode == "project" and not self.project_id:
             raise ValueError("project_id is required when mode='project'")
         return self

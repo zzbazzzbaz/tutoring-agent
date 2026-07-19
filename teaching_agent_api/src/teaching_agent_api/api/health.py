@@ -1,12 +1,10 @@
-"""健康检查端点。"""
 from fastapi import APIRouter, Request
 
 router = APIRouter()
 
 
 @router.get("/health")
-async def health(request: Request):
-    """返回所有组件状态。"""
+async def health(request: Request) -> dict:
     components = {"database": "ok", "lightrag": "unknown", "agent": "unknown"}
 
     # DB 检查

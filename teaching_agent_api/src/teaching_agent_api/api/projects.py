@@ -12,7 +12,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.post("", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
-async def create_project(body: ProjectCreate, db_session: AsyncSession = Depends(get_db)):
+async def create_project(body: ProjectCreate, db_session: AsyncSession = Depends(get_db)) -> ProjectOut:
     proj = await db.create_project(
         db_session,
         name=body.name,
@@ -26,13 +26,13 @@ async def create_project(body: ProjectCreate, db_session: AsyncSession = Depends
 async def list_projects(
     status_filter: str | None = None,
     db_session: AsyncSession = Depends(get_db),
-):
+) -> list[ProjectOut]:
     projects = await db.list_projects(db_session, status=status_filter)
     return [ProjectOut.model_validate(p) for p in projects]
 
 
 @router.get("/{project_id}", response_model=ProjectOut)
-async def get_project(project_id: UUID, db_session: AsyncSession = Depends(get_db)):
+async def get_project(project_id: UUID, db_session: AsyncSession = Depends(get_db)) -> ProjectOut:
     proj = await db.get_project(db_session, project_id)
     if not proj:
         raise HTTPException(
@@ -52,7 +52,7 @@ async def update_project(
     project_id: UUID,
     body: ProjectUpdate,
     db_session: AsyncSession = Depends(get_db),
-):
+) -> ProjectOut:
     fields = body.model_dump(exclude_unset=True)
     if not fields:
         raise HTTPException(
@@ -79,7 +79,7 @@ async def update_project(
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project(project_id: UUID, db_session: AsyncSession = Depends(get_db)):
+async def delete_project(project_id: UUID, db_session: AsyncSession = Depends(get_db)) -> None:
     proj = await db.get_project(db_session, project_id)
     if not proj:
         raise HTTPException(

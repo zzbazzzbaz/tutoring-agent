@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from teaching_agent_api import db
+from teaching_agent_api.db.models import Project, Session
 from teaching_agent_api.deps import get_db, get_user_id
 from teaching_agent_api.schemas.session import (
     SessionCreate,
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 async def _validate_session_ownership(
     db_session: AsyncSession, session_id: UUID, user_id: str
-):
+) -> Session:
     """若 session 存在且属于该用户则返回，否则抛出。"""
     sess = await db.get_session(db_session, session_id)
     if not sess:
@@ -44,7 +45,7 @@ async def _validate_session_ownership(
     return sess
 
 
-async def _validate_project(db_session: AsyncSession, project_id: UUID):
+async def _validate_project(db_session: AsyncSession, project_id: UUID) -> Project:
     """确保引用的 project 存在且已发布。返回该 project，以便调用方
     无需额外的 lazy-load round-trip 即可填充 `project_name`。"""
     proj = await db.get_project(db_session, project_id)
@@ -113,7 +114,7 @@ async def create_session(
     body: SessionCreate,
     user_id: str = Depends(get_user_id),
     db_session: AsyncSession = Depends(get_db),
-):
+) -> SessionOut:
     project_obj = None
     if body.mode == "project":
         # _validate_project 返回（已 fetch 的）Project；将其传给
@@ -133,7 +134,7 @@ async def list_sessions(
     offset: int = Query(0, ge=0),
     user_id: str = Depends(get_user_id),
     db_session: AsyncSession = Depends(get_db),
-):
+) -> list[SessionOut]:
     sessions = await db.list_sessions(
         db_session,
         user_id=user_id,
@@ -150,7 +151,7 @@ async def get_session(
     session_id: UUID,
     user_id: str = Depends(get_user_id),
     db_session: AsyncSession = Depends(get_db),
-):
+) -> SessionOut:
     sess = await _validate_session_ownership(db_session, session_id, user_id)
     return SessionOut.model_validate(_enrich_session(sess))
 
@@ -160,7 +161,7 @@ async def end_session(
     session_id: UUID,
     user_id: str = Depends(get_user_id),
     db_session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await _validate_session_ownership(db_session, session_id, user_id)
     await db.end_session(db_session, session_id)
 
@@ -172,7 +173,7 @@ async def list_messages(
     offset: int = Query(0, ge=0),
     user_id: str = Depends(get_user_id),
     db_session: AsyncSession = Depends(get_db),
-):
+) -> list[MessageOut]:
     await _validate_session_ownership(db_session, session_id, user_id)
     msgs = await db.list_messages(db_session, session_id, limit=limit, offset=offset)
     return [MessageOut.model_validate(m) for m in msgs]
@@ -184,7 +185,7 @@ async def list_questions(
     status_filter: str | None = Query(None, alias="status"),
     user_id: str = Depends(get_user_id),
     db_session: AsyncSession = Depends(get_db),
-):
+) -> list[QuestionOut]:
     await _validate_session_ownership(db_session, session_id, user_id)
     qs = await db.list_questions(db_session, session_id, status=status_filter)
     return [QuestionOut.model_validate(q) for q in qs]

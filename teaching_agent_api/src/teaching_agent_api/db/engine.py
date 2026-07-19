@@ -1,4 +1,3 @@
-"""异步 DB 引擎 + session 工厂 + 幂等的 schema 初始化。"""
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 

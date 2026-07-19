@@ -1,6 +1,7 @@
 """FastAPI 应用入口。"""
 import logging
 from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # 1. DB 引擎 + 业务表
     engine = create_engine(settings.database_url)
     await init_db(engine)

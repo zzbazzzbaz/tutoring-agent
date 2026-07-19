@@ -1,8 +1,5 @@
-"""SQLModel ORM 模型。4 张业务表；LangGraph checkpoint 表由
-AsyncPostgresSaver.setup() 单独创建。"""
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import JSON, Text, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, TIMESTAMP
@@ -36,7 +33,7 @@ class Session(SQLModel, table=True):
     )
     user_id: str = Field(default="demo-student", max_length=100, index=True)
     mode: str = Field(max_length=20)  # free/project
-    project_id: Optional[uuid.UUID] = Field(
+    project_id: uuid.UUID | None = Field(
         default=None,
         sa_column=Column(
             PG_UUID(as_uuid=True),
@@ -44,13 +41,13 @@ class Session(SQLModel, table=True):
             index=True,
         ),
     )
-    title: Optional[str] = Field(default=None, max_length=200)
+    title: str | None = Field(default=None, max_length=200)
     status: str = Field(default="active", max_length=20, index=True)  # active/ended
     last_active_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
 
-    project: Optional["Project"] = Relationship(back_populates="sessions")
+    project: Project | None = Relationship(back_populates="sessions")
     messages: list["Message"] = Relationship(back_populates="session", cascade_delete=True)
     questions: list["Question"] = Relationship(back_populates="session", cascade_delete=True)
 
@@ -97,20 +94,20 @@ class Question(SQLModel, table=True):
     topic: str = Field(max_length=200, index=True)
     q_type: str = Field(max_length=20)  # single/multi/short
     stem: str = Field(sa_column=Column(Text))
-    options: Optional[list] = Field(default=None, sa_column=Column(JSON))  # short 类型时为 null
+    options: list | None = Field(default=None, sa_column=Column(JSON))  # short 类型时为 null
     answer: str = Field(sa_column=Column(Text))  # 正确答案
-    analysis: Optional[str] = Field(default=None, sa_column=Column(Text))  # 题目解析
+    analysis: str | None = Field(default=None, sa_column=Column(Text))  # 题目解析
 
     # === 状态 ===
     status: str = Field(default="pending", max_length=20, index=True)  # pending/answered/skipped
 
     # === 答题字段（在 resume 时设置；nullable）===
-    user_answer: Optional[str] = Field(default=None, sa_column=Column(Text))
-    verdict: Optional[str] = Field(default=None, max_length=20)  # correct/partial/wrong
-    diagnosis: Optional[str] = Field(default=None, sa_column=Column(Text))
+    user_answer: str | None = Field(default=None, sa_column=Column(Text))
+    verdict: str | None = Field(default=None, max_length=20)  # correct/partial/wrong
+    diagnosis: str | None = Field(default=None, sa_column=Column(Text))
 
     # === 时间戳 ===
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
-    answered_at: Optional[datetime] = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
+    answered_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
 
     session: "Session" = Relationship(back_populates="questions")
