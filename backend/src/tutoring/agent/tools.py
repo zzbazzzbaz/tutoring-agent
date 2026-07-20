@@ -38,7 +38,16 @@ def make_tools(
         try:
             result = await rag.aquery(
                 query,
-                param=QueryParam(mode="mix", only_need_context=True),
+                param=QueryParam(
+                    mode="mix",
+                    only_need_context=True,
+                    top_k=15,
+                    chunk_top_k=10,
+                    max_entity_tokens=3000,
+                    max_relation_tokens=3000,
+                    max_total_tokens=8000,
+                    enable_rerank=False,
+                ),
             )
         except Exception as e:
             logger.exception("search_knowledge 失败")
