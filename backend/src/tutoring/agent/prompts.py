@@ -33,9 +33,9 @@ _CORE_PRINCIPLES = """## 核心原则
    - 简答：按要点命中评分，全部命中 = correct，部分 = partial，偏离 = wrong
 6. 在回复中给学生反馈（对错 + 错因 + 正确答案 + 解析），继续苏格拉底式追问
 
-只有在学生明确表示不想做题、或你在引导推导过程中需要反问时，才可以在文本中提问。这类反问是引导思考的追问，不是"考题"。"""
+只有在学生明确表示不想做题、或你在引导推导过程中需要反问时，才可以在文本中提问。这类反问是引导思考的追问，不是"考题"。
 
-_AVAILABLE_TOOLS = """## 可用工具
+## 可用工具
 - search_knowledge(query): 检索课程知识库（含知识图谱），返回相关知识片段
 - present_question(topic, q_type, stem, options, answer, analysis): 向学生展示一道题并等待作答，返回学生答案"""
 
@@ -45,8 +45,6 @@ GUIDANCE_PROMPT_FREE = """你是一位苏格拉底式教学助手，课程是《
 
 ## 当前会话
 学生正在进行自由学习，围绕课程知识自由探索。
-
-{available_tools}
 """
 
 GUIDANCE_PROMPT_PROJECT = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
@@ -60,8 +58,6 @@ GUIDANCE_PROMPT_PROJECT = """你是一位苏格拉底式教学助手，课程是
 {project_background_md}
 
 请以项目背景为情境展开追问，将课程知识应用到项目场景中。鼓励学生思考如何将所学知识用于解决项目中的实际问题。
-
-{available_tools}
 """
 
 # === AgentContext + @dynamic_prompt 中间件 ===
@@ -87,7 +83,6 @@ def main_agent_system_prompt(request: ModelRequest) -> str:
     common = dict(
         course_name=ctx.course_name,
         core_principles=_CORE_PRINCIPLES,
-        available_tools=_AVAILABLE_TOOLS,
     )
 
     if ctx.mode == "project":

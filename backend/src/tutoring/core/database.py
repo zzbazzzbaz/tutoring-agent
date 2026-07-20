@@ -5,7 +5,14 @@ from tutoring.db import models  # noqa: F401 - 在 SQLModel.metadata 上注册�
 
 
 def create_engine(database_url: str, *, pool_size: int = 10, max_overflow: int = 20) -> AsyncEngine:
-    return create_async_engine(database_url, pool_size=pool_size, max_overflow=max_overflow, echo=False)
+    return create_async_engine(
+        database_url,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+        echo=False,
+    )
 
 
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
