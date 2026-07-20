@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import AppRouter from './AppRouter'
 import './index.css'
+import './i18n'
 import 'katex/dist/katex.min.css'
 
 createRoot(document.getElementById('root')!).render(
