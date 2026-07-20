@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     dashscope_api_key: str
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3.6-flash"
+    embedding_model: str = "text-embedding-v4"
+    embedding_dim: int = 1024
 
     # 课程
     course_name: str = "计算机网络"
