@@ -26,13 +26,12 @@ async def create_session(
 ) -> SessionOut:
     project_obj = None
     if body.mode == "project":
-        # get_published_project 返回（已 fetch 的）Project；将其传给
-        # session_to_out_dict 以避免第二次 lazy-load round-trip。
         project_obj = await project_service.get_published_project(db_session, body.project_id)
     sess = await repos.create_session(
         db_session, mode=body.mode, user_id=user.id, project_id=body.project_id
     )
-    return SessionOut.model_validate(chat_service.session_to_out_dict(sess, project=project_obj))
+    sess.project = project_obj
+    return SessionOut.model_validate(chat_service.session_to_out_dict(sess))
 
 
 @router.get("", response_model=list[SessionOut])

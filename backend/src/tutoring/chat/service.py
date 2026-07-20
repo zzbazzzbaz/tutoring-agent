@@ -1,8 +1,3 @@
-"""会话领域服务：404/403/409 校验 + 流式编排（协议无关）。
-
-流式编排输出事件 dict（{"event": ..., "data": ...}），不耦合 SSE/WS 格式。
-HTTP/SSE 适配由 chat/sse.py 负责。
-"""
 import logging
 import uuid
 from typing import AsyncIterator
@@ -59,17 +54,12 @@ async def is_interrupted(agent: CompiledStateGraph, session_id: uuid.UUID) -> bo
     return bool(state.next)
 
 
-def session_to_out_dict(sess: Session, project: Project | None = None) -> dict:
+def session_to_out_dict(sess: Session) -> dict:
     """从 Session ORM 实例构建 SessionOut dict，在可用时添加 `project_name`。
 
-    有两条路径会填充 `project_name`：
-      1. 显式传入 `project` 参数（由 create_session 使用，因为它刚刚
-         为校验而 fetch 了 project）。
-      2. 通过 eager loading（selectinload）在 get_session / list_sessions
-         中访问 `sess.project`。
-
-    此处避免 `sess.model_dump()`，因为它会递归遍历 `project.sessions`
-    及其它关系属性，开销较大且可能让调用方意外。手动字段选择显式且安全。
+    调用方须保证 sess.project 可读（async 下未加载会 greenlet 错误，应 fail fast）：
+    - get_session / list_sessions：repos 已 selectinload
+    - create_session：路由手动挂载 sess.project = project_obj
     """
     data = {
         "id": sess.id,
@@ -81,17 +71,8 @@ def session_to_out_dict(sess: Session, project: Project | None = None) -> dict:
         "last_active_at": sess.last_active_at,
         "created_at": sess.created_at,
     }
-    proj = project
-    if proj is None:
-        # `sess.project` 仅在查询使用 selectinload 时才加载；
-        # 在未 eager loading 的情况下访问会触发 greenlet 错误
-        # （在 async 上下文中），此处防御性吞掉。
-        try:
-            proj = sess.project
-        except Exception:
-            proj = None
-    if proj is not None:
-        data["project_name"] = proj.name
+    if sess.project is not None:
+        data["project_name"] = sess.project.name
     return data
 
 
