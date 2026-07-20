@@ -235,3 +235,4 @@ const useChatStore = create<ChatState>((set, get) => ({
 }))
 
 export const useChat = createSelectors(useChatStore)
+export { useChatStore }

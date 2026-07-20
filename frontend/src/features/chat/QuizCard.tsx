@@ -1,0 +1,146 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { CheckCircle2, XCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
+import type { QuestionOut, QuizInterruptData } from '@/types/question'
+
+interface QuizCardProps {
+  quiz: QuizInterruptData | QuestionOut
+  status: 'pending' | 'answered' | 'skipped'
+  userAnswer?: string | null
+  correctAnswer?: string
+  analysis?: string | null
+  onSubmit: (answer: string) => void
+  onSkip: () => void
+}
+
+export default function QuizCard({ quiz, status, userAnswer, correctAnswer, analysis, onSubmit, onSkip }: QuizCardProps) {
+  const { t } = useTranslation()
+  const qType = quiz.q_type
+  const options = quiz.options ?? []
+  const [selected, setSelected] = useState<string[]>([])
+  const [shortAnswer, setShortAnswer] = useState('')
+  const locked = status !== 'pending'
+
+  const handleSubmit = () => {
+    if (qType === 'single') {
+      if (selected.length === 1) onSubmit(selected[0])
+    } else if (qType === 'multi') {
+      if (selected.length > 0) onSubmit(selected.join(','))
+    } else {
+      if (shortAnswer.trim()) onSubmit(shortAnswer.trim())
+    }
+  }
+
+  const toggleOption = (idx: string) => {
+    setSelected(prev =>
+      prev.includes(idx)
+        ? prev.filter(i => i !== idx)
+        : qType === 'single'
+          ? [idx]
+          : [...prev, idx]
+    )
+  }
+
+  const isCorrect = status === 'answered' && userAnswer === correctAnswer
+  const questionId = 'question_id' in quiz ? quiz.question_id : (quiz as QuestionOut).id
+  const optionIdx = (i: number) => String.fromCharCode(65 + i)
+
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Badge variant="secondary">
+          {qType === 'single' ? t('chat.quiz.single') : qType === 'multi' ? t('chat.quiz.multi') : t('chat.quiz.short')}
+        </Badge>
+        <span className="text-xs text-muted-foreground">{t('chat.quiz.topic')}: {quiz.topic}</span>
+        {locked && (
+          <Badge variant={isCorrect ? 'default' : 'destructive'} className="ml-auto">
+            {isCorrect ? <CheckCircle2 className="mr-1 size-3" /> : <XCircle className="mr-1 size-3" />}
+            {isCorrect ? t('chat.quiz.correct') : t('chat.quiz.wrong')}
+          </Badge>
+        )}
+      </div>
+
+      <div className="mb-4 text-sm">
+        <MarkdownRenderer content={quiz.stem} />
+      </div>
+
+      {qType === 'single' && (
+        <RadioGroup
+          value={selected[0] ?? ''}
+          onValueChange={v => setSelected([v])}
+          disabled={locked}
+        >
+          {options.map((opt, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <RadioGroupItem value={optionIdx(i)} id={`q-${questionId}-${i}`} />
+              <Label htmlFor={`q-${questionId}-${i}`}>{opt}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      )}
+
+      {qType === 'multi' && (
+        <div className="space-y-2">
+          {options.map((opt, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Checkbox
+                checked={selected.includes(optionIdx(i))}
+                onCheckedChange={() => toggleOption(optionIdx(i))}
+                disabled={locked}
+              />
+              <Label>{opt}</Label>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {qType === 'short' && (
+        <Input
+          value={shortAnswer}
+          onChange={e => setShortAnswer(e.target.value)}
+          disabled={locked}
+          placeholder={t('chat.quiz.short')}
+        />
+      )}
+
+      {locked && (
+        <div className="mt-4 space-y-2 border-t pt-3">
+          {userAnswer && (
+            <div className="text-sm">
+              <span className="font-medium">{t('chat.quiz.yourAnswer')}:</span> {userAnswer}
+            </div>
+          )}
+          {correctAnswer && (
+            <div className="text-sm">
+              <span className="font-medium">{t('chat.quiz.correctAnswer')}:</span> {correctAnswer}
+            </div>
+          )}
+          {analysis && (
+            <div className="text-sm">
+              <div className="font-medium">{t('chat.quiz.analysis')}:</div>
+              <MarkdownRenderer content={analysis} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {!locked && (
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={onSkip}>
+            {t('chat.quiz.skip')}
+          </Button>
+          <Button onClick={handleSubmit}>
+            {t('chat.quiz.submit')}
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
