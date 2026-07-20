@@ -1,5 +1,3 @@
-import AppRouter from './AppRouter'
-
 export default function App() {
-  return <AppRouter />
+  return <div>Teaching Agent</div>
 }
