@@ -18,9 +18,8 @@ async def health(request: Request) -> dict:
 
     # LightRAG 检查
     try:
-        lightrag = request.app.state.lightrag_client
-        await lightrag.health()
-        components["lightrag"] = "ok"
+        rag = request.app.state.rag
+        components["lightrag"] = "ready" if rag is not None else "not_initialized"
     except Exception:
         components["lightrag"] = "fail"
 
@@ -40,5 +39,6 @@ async def health(request: Request) -> dict:
             "api": "0.2.0",
             "langchain": langchain.__version__,
             "langgraph": pkg_version("langgraph"),
+            "lightrag": pkg_version("lightrag-hku"),
         },
     }

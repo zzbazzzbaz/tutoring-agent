@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs):
-    """DashScope（OpenAI 兼容）LLM 调用。"""
     return await openai_complete_if_cache(
         settings.llm_model,
         prompt,
@@ -30,7 +29,6 @@ async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwar
     model_name=settings.embedding_model,
 )
 async def embedding_func(texts: list[str]) -> np.ndarray:
-    """DashScope（OpenAI 兼容）Embedding 调用。"""
     return await openai_embed.func(
         texts,
         model=settings.embedding_model,
@@ -40,11 +38,7 @@ async def embedding_func(texts: list[str]) -> np.ndarray:
 
 
 def create_rag() -> LightRAG:
-    """创建 LightRAG SDK 实例（未初始化存储）。
 
-    调用方需 `await rag.initialize_storages()` 后使用，
-    `await rag.finalize_storages()` 清理。
-    """
     rag = LightRAG(
         workspace="default",
         llm_model_func=llm_model_func,

@@ -16,9 +16,6 @@ def build_agent(
 ) -> CompiledStateGraph:
     """构建 agent。每次调用都新建实例。
 
-    生产环境由 FastAPI lifespan 调用一次，进程内天然单例；
-    测试环境每个 lifespan 重建后调用得到新实例，无需手动重置。
-
     Args:
         checkpointer: 已 .setup() 的 BaseCheckpointSaver 实例
             （如 AsyncPostgresSaver）
