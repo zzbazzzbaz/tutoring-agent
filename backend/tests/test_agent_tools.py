@@ -12,5 +12,5 @@ async def test_make_tools_returns_expected_tools():
         lightrag_client=lightrag,
         db_session_factory=create_session_factory(engine),
     )
-    assert [t.name for t in tools] == ["search_knowledge", "quiz_flow"]
+    assert [t.name for t in tools] == ["search_knowledge", "present_question"]
     await engine.dispose()

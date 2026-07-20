@@ -1,6 +1,6 @@
 """Agent 结构化输出 schema（Pydantic，非 SQLModel）。
 
-LLM with_structured_output() 使用的类型化响应 schema。从 tools.py 抽出，
+present_question 工具的 args schema。从 tools.py 抽出，
 使数据契约可独立 import/单测，不拖入 LightRAGClient 等工具依赖。
 """
 from typing import Literal
@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class QuizOutput(BaseModel):
-    """出题 LLM 的结构化输出 schema。"""
+    """出题 LLM 的结构化输出 schema（present_question 工具 args）。"""
 
     q_type: Literal["single", "multi", "short"] = Field(description="题型：单选/多选/简答")
     stem: str = Field(description="题干")
@@ -34,7 +34,6 @@ class QuizOutput(BaseModel):
             return [str(item) for item in v]
         if isinstance(v, str):
             import json as _json
-            # 尝试解析 JSON 字符串（LLM 可能返回 '["A","B","C"]'）
             try:
                 parsed = _json.loads(v)
                 if isinstance(parsed, list):
@@ -43,11 +42,3 @@ class QuizOutput(BaseModel):
                 pass
             return [v]
         return None
-
-
-class EvaluationOutput(BaseModel):
-    """评估 LLM 的结构化输出 schema。"""
-
-    verdict: Literal["correct", "partial", "wrong"] = Field(description="判定结果")
-    diagnosis: str = Field(description="错因诊断（答对时为空字符串）")
-    analysis: str = Field(description="评分解析")
