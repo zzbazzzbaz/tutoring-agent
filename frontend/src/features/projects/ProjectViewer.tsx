@@ -4,7 +4,6 @@ import { ArrowLeft } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import { Button } from '@/components/ui/button'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ProjectOut } from '@/types/project'
 
 interface ProjectViewerProps {
@@ -32,9 +31,9 @@ export default function ProjectViewer({ projectId, onBack }: ProjectViewerProps)
         </Button>
         <h2 className="text-lg font-bold">{project.name}</h2>
       </div>
-      <ScrollArea className="flex-1 rounded-md border p-6">
+      <div className="flex-1 overflow-y-auto rounded-md border p-6">
         <MarkdownRenderer content={project.background_md} />
-      </ScrollArea>
+      </div>
     </div>
   )
 }
