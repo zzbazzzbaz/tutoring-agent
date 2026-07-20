@@ -32,17 +32,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { formatDateTime } from '@/lib/formatDate'
 import { toast } from 'sonner'
 import type { ProjectOut } from '@/types/project'
-import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
 import ProjectEditor from './ProjectEditor'
+import ProjectViewer from './ProjectViewer'
 
 export default function ProjectsTab() {
   const { t } = useTranslation()
@@ -52,7 +46,7 @@ export default function ProjectsTab() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [viewingProject, setViewingProject] = useState<ProjectOut | null>(null)
+  const [viewingId, setViewingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -78,6 +72,10 @@ export default function ProjectsTab() {
 
   if (editingId) {
     return <ProjectEditor projectId={editingId} onBack={() => { setEditingId(null); load() }} />
+  }
+
+  if (viewingId) {
+    return <ProjectViewer projectId={viewingId} onBack={() => setViewingId(null)} />
   }
 
   return (
@@ -134,7 +132,7 @@ export default function ProjectsTab() {
                   <TableCell className="text-muted-foreground">{formatDateTime(p.updated_at)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="size-8" onClick={() => setViewingProject(p)}>
+                      <Button variant="ghost" size="icon" className="size-8" onClick={() => setViewingId(p.id)}>
                         <Eye className="size-3.5" />
                       </Button>
                       {isTeacher && (
@@ -171,17 +169,6 @@ export default function ProjectsTab() {
           </Table>
         )}
       </ScrollArea>
-
-      <Dialog open={!!viewingProject} onOpenChange={() => setViewingProject(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{viewingProject?.name}</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="flex-1 pr-4">
-            <MarkdownRenderer content={viewingProject?.background_md || ''} />
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
