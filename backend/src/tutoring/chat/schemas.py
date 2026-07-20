@@ -27,7 +27,6 @@ class SessionOut(BaseModel):
     project_id: UUID | None = None
     project_name: str | None = None
     title: str | None
-    status: str
     last_active_at: datetime
     created_at: datetime
 

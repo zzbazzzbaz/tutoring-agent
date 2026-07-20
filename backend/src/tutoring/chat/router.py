@@ -36,7 +36,6 @@ async def create_session(
 
 @router.get("", response_model=list[SessionOut])
 async def list_sessions(
-    status_filter: str | None = Query(None, alias="status"),
     mode: str | None = None,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -46,7 +45,6 @@ async def list_sessions(
     sessions = await repos.list_sessions(
         db_session,
         user_id=user.id,
-        status=status_filter,
         mode=mode,
         limit=limit,
         offset=offset,

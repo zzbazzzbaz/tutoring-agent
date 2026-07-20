@@ -64,7 +64,6 @@ async def reset_password(
 @router.get("/{user_id}/sessions", response_model=list[SessionOut])
 async def list_user_sessions(
     user_id: UUID,
-    status_filter: str | None = Query(None, alias="status"),
     mode: str | None = None,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -75,7 +74,6 @@ async def list_user_sessions(
     sessions = await repos.list_sessions(
         db_session,
         user_id=user_id,
-        status=status_filter,
         mode=mode,
         limit=limit,
         offset=offset,

@@ -37,14 +37,6 @@ async def get_writable_session(db: AsyncSession, session_id: uuid.UUID, user: Cu
     return sess
 
 
-async def get_writable_active_session(db: AsyncSession, session_id: uuid.UUID, user: CurrentUser) -> Session:
-    """get_writable_session + 状态 active（chat 流式端点用）。"""
-    sess = await get_writable_session(db, session_id, user)
-    if sess.status != "active":
-        raise AppError(409, "SESSION_ENDED", "Session is ended")
-    return sess
-
-
 async def build_agent_context(db: AsyncSession, sess: Session) -> AgentContext:
     """根据 session 模式构建 AgentContext；project 模式查项目信息。"""
     if sess.mode == "project" and sess.project_id:
@@ -72,7 +64,6 @@ def session_to_out_dict(sess: Session) -> dict:
         "mode": sess.mode,
         "project_id": sess.project_id,
         "title": sess.title,
-        "status": sess.status,
         "last_active_at": sess.last_active_at,
         "created_at": sess.created_at,
     }

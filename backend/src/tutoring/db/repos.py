@@ -110,17 +110,16 @@ async def get_session(session: AsyncSession, session_id: UUID) -> Session | None
 
 
 async def list_sessions(
-    session: AsyncSession, *, user_id: UUID | None = None, status: str | None = None,
+    session: AsyncSession, *, user_id: UUID | None = None,
     mode: str | None = None, limit: int = 20, offset: int = 0,
 ) -> list[Session]:
     stmt = (
         select(Session)
         .options(selectinload(Session.project))
+        .where(Session.deleted_at.is_(None))
     )
     if user_id is not None:
         stmt = stmt.where(Session.user_id == user_id)
-    if status:
-        stmt = stmt.where(Session.status == status)
     if mode:
         stmt = stmt.where(Session.mode == mode)
     stmt = stmt.order_by(Session.last_active_at.desc()).limit(limit).offset(offset)
@@ -136,8 +135,9 @@ async def touch_session(session: AsyncSession, session_id: UUID) -> None:
 
 
 async def delete_session(session: AsyncSession, session_id: UUID) -> None:
-    from sqlalchemy import delete as sql_delete
-    await session.execute(sql_delete(Session).where(Session.id == session_id))
+    await session.execute(
+        update(Session).where(Session.id == session_id).values(deleted_at=datetime.now(timezone.utc))
+    )
     await session.commit()
 
 
@@ -230,7 +230,7 @@ async def get_project(session: AsyncSession, project_id: UUID) -> Project | None
 
 
 async def list_projects(session: AsyncSession, *, status: str | None = None) -> list[Project]:
-    stmt = select(Project)
+    stmt = select(Project).where(Project.deleted_at.is_(None))
     if status:
         stmt = stmt.where(Project.status == status)
     stmt = stmt.order_by(Project.created_at.desc())
@@ -245,7 +245,7 @@ async def update_project(session: AsyncSession, project_id: UUID, **fields) -> P
 
 
 async def delete_project(session: AsyncSession, project_id: UUID) -> None:
-    proj = await session.get(Project, project_id)
-    if proj:
-        await session.delete(proj)
-        await session.commit()
+    await session.execute(
+        update(Project).where(Project.id == project_id).values(deleted_at=datetime.now(timezone.utc))
+    )
+    await session.commit()

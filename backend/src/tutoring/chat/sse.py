@@ -35,7 +35,7 @@ async def send_message(
     agent: CompiledStateGraph = Depends(get_agent),
 ):
     """发送消息，SSE 流式返回 agent 回复（event: text|quiz_interrupt|done|error）。"""
-    sess = await chat_service.get_writable_active_session(db_session, session_id, user)
+    sess = await chat_service.get_writable_session(db_session, session_id, user)
 
     if await chat_service.is_interrupted(agent, session_id):
         raise AppError(
@@ -75,7 +75,7 @@ async def resume_quiz_endpoint(
     agent: CompiledStateGraph = Depends(get_agent),
 ):
     """提交答题（answer/skip），SSE 流式返回 agent 续接回复。"""
-    sess = await chat_service.get_writable_active_session(db_session, session_id, user)
+    sess = await chat_service.get_writable_session(db_session, session_id, user)
 
     if not await chat_service.is_interrupted(agent, session_id):
         raise AppError(

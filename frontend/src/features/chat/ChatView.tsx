@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/stores/chat'
 import MessageBubble from './MessageBubble'
 import ChatInput from './ChatInput'
@@ -7,8 +6,6 @@ import QuizCard from './QuizCard'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
 
 export default function ChatView() {
-  const { t } = useTranslation()
-  const currentSession = useChatStore(s => s.currentSession)
   const items = useChatStore(s => s.items)
   const streamStatus = useChatStore(s => s.streamStatus)
   const streamingContent = useChatStore(s => s.streamingContent)
@@ -24,7 +21,6 @@ export default function ChatView() {
   }, [items, streamingContent])
 
   const inputDisabled = streamStatus === 'streaming' || streamStatus === 'quiz_interrupted'
-  const sessionEnded = currentSession?.status === 'ended'
 
   return (
     <div className="flex h-full flex-col">
@@ -70,8 +66,7 @@ export default function ChatView() {
       </div>
       <ChatInput
         onSend={sendMessage}
-        disabled={inputDisabled || sessionEnded}
-        placeholder={sessionEnded ? t('chat.sessionEnded') : undefined}
+        disabled={inputDisabled}
       />
     </div>
   )

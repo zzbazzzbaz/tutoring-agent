@@ -52,6 +52,7 @@ class Project(SQLModel, table=True):
     name: str = Field(max_length=200, unique=True, index=True)
     background_md: str = Field(sa_column=Column(Text))
     status: str = Field(default="draft", max_length=20, index=True)  # draft/published
+    deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
 
@@ -83,7 +84,7 @@ class Session(SQLModel, table=True):
         ),
     )
     title: str | None = Field(default=None, max_length=200)
-    status: str = Field(default="active", max_length=20, index=True)  # active/ended
+    deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
     last_active_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
