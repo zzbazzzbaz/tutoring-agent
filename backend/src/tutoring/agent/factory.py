@@ -6,12 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from tutoring.agent.llm import get_llm
 from tutoring.agent.prompts import AgentContext, main_agent_system_prompt
 from tutoring.agent.tools import make_tools
-from tutoring.knowledge.client import LightRAGClient
 
 
 def build_agent(
     checkpointer: BaseCheckpointSaver,
-    lightrag_client: LightRAGClient,
     db_session_factory: async_sessionmaker[AsyncSession],
 ) -> CompiledStateGraph:
     """构建 agent。每次调用都新建实例。
@@ -22,16 +20,12 @@ def build_agent(
     Args:
         checkpointer: 已 .setup() 的 BaseCheckpointSaver 实例
             （如 AsyncPostgresSaver）
-        lightrag_client: LightRAG 客户端单例
         db_session_factory: SQLAlchemy 异步 session factory
 
     Returns:
         CompiledStateGraph: 可用于 astream_events / aget_state 等
     """
-    tools = make_tools(
-        lightrag_client=lightrag_client,
-        db_session_factory=db_session_factory,
-    )
+    tools = make_tools(db_session_factory=db_session_factory)
     return create_agent(
         model=get_llm(),
         tools=tools,

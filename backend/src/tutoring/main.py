@@ -16,7 +16,6 @@ from tutoring.core import health as health_router
 from tutoring.projects import router as projects_router
 from tutoring.chat import router as chat_rest_router
 from tutoring.chat import sse as chat_sse_router
-from tutoring.knowledge import router as knowledge_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -36,22 +35,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await checkpointer.setup()  # 幂等
         logger.info("LangGraph checkpointer ready")
 
-        # 3. LightRAG 客户端
-        from tutoring.knowledge.client import LightRAGClient
-        lightrag_client = LightRAGClient(
-            base_url=settings.lightrag_base_url,
-            api_key=settings.lightrag_api_key,
-        )
-        await lightrag_client.start()
-        logger.info("LightRAG client started: %s", settings.lightrag_base_url)
-
-        # 4. 构建 agent 单例（内部封装工具构造）
+        # 3. 构建 agent 单例（内部封装工具构造）
         app.state.agent = None
         try:
             from tutoring.agent.factory import build_agent
             app.state.agent = build_agent(
                 checkpointer=checkpointer,
-                lightrag_client=lightrag_client,
                 db_session_factory=db_session_factory,
             )
             logger.info("Agent built")
@@ -63,12 +52,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.engine = engine
         app.state.db_session_factory = db_session_factory
         app.state.checkpointer = checkpointer
-        app.state.lightrag_client = lightrag_client
 
         yield
 
     # 清理
-    await lightrag_client.close()
     await engine.dispose()
     logger.info("Cleanup complete")
 
@@ -88,4 +75,3 @@ app.include_router(health_router.router)
 app.include_router(projects_router.router)
 app.include_router(chat_rest_router.router)
 app.include_router(chat_sse_router.router)
-app.include_router(knowledge_router.router)

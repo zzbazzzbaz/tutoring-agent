@@ -10,10 +10,6 @@ class Settings(BaseSettings):
     # 数据库
     database_url: str
 
-    # LightRAG
-    lightrag_base_url: str
-    lightrag_api_key: str
-
     # LLM（DashScope，OpenAI 兼容）
     dashscope_api_key: str
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
