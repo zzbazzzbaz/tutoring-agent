@@ -22,16 +22,13 @@ export default function App() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen flex-col">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-screen flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2">
           <div className="flex items-center gap-2">
             <GraduationCap className="size-6" />
             <span className="font-bold">{t('common.appName')}</span>
           </div>
-          <SettingsMenu />
-        </header>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden">
-          <TabsList className="mx-4 mt-2">
+          <TabsList>
             <TabsTrigger value="chat" className="gap-1">
               <MessageSquare className="size-4" />
               {t('chat.title')}
@@ -47,19 +44,22 @@ export default function App() {
               {t('projects.title')}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="chat" className="mt-0 h-[calc(100vh-7rem)]" style={{ display: activeTab !== 'chat' ? 'none' : undefined }}>
+          <SettingsMenu />
+        </header>
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="chat" className="mt-0 h-full" style={{ display: activeTab !== 'chat' ? 'none' : undefined }}>
             <ChatTab />
           </TabsContent>
           {isTeacher && (
-            <TabsContent value="students" className="mt-0 h-[calc(100vh-7rem)]" style={{ display: activeTab !== 'students' ? 'none' : undefined }}>
+            <TabsContent value="students" className="mt-0 h-full" style={{ display: activeTab !== 'students' ? 'none' : undefined }}>
               <StudentsTab />
             </TabsContent>
           )}
-          <TabsContent value="projects" className="mt-0 h-[calc(100vh-7rem)]" style={{ display: activeTab !== 'projects' ? 'none' : undefined }}>
+          <TabsContent value="projects" className="mt-0 h-full" style={{ display: activeTab !== 'projects' ? 'none' : undefined }}>
             <ProjectsTab />
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
       <Toaster richColors position="top-right" />
     </TooltipProvider>
   )
