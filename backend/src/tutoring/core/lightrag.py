@@ -39,7 +39,7 @@ async def embedding_func(texts: list[str]) -> np.ndarray:
 def create_rag() -> LightRAG:
 
     rag = LightRAG(
-        workspace="default",
+        workspace="",
         llm_model_func=llm_model_func,
         embedding_func=embedding_func,
         kv_storage="PGKVStorage",
