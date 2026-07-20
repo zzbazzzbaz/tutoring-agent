@@ -47,5 +47,5 @@ def create_rag() -> LightRAG:
         graph_storage="Neo4JStorage",
         doc_status_storage="PGDocStatusStorage",
     )
-    logger.info("LightRAG instance created (workspace=default)")
+    logger.info("LightRAG instance created (workspace='')")
     return rag
