@@ -126,13 +126,7 @@ async def resume_quiz(
 async def _save_final_agent_message(
     agent: CompiledStateGraph, config: dict, db_session: AsyncSession, session_id: uuid.UUID
 ) -> None:
-    """从 LangGraph state 取最终 AIMessage，持久化到 Message 表。
-
-    LangChain 1.x 的 AIMessage.content 可能是：
-    - str：纯文本
-    - list[dict]：结构化内容块 [{"type":"text","text":"..."}, ...]
-    需统一提取为纯文本字符串。
-    """
+    """从 LangGraph state 取最终 AIMessage，持久化到 Message 表。"""
     state = await agent.aget_state(config)
     messages = state.values.get("messages") or []
     if not messages:

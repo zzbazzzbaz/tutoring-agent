@@ -8,6 +8,7 @@ LangChain 1.x 模式：
 
 工具内部零 LLM 调用--出题和评估全部由主智能体在推理中完成。
 """
+import json
 import logging
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -15,12 +16,42 @@ from uuid import UUID
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tutoring.db import repos
 from tutoring.knowledge.client import LightRAGClient
 
 logger = logging.getLogger(__name__)
+
+
+class PresentQuestionArgs(BaseModel):
+    topic: str = Field(description="知识点名称，如 TCP三次握手")
+    q_type: Literal["single", "multi", "short"] = Field(description="题型：single=单选 multi=多选 short=简答")
+    stem: str = Field(description="题干文本")
+    options: list[str] | None = Field(
+        None,
+        description='选项列表数组，如 ["选项A","选项B","选项C","选项D"]。简答题传 null。必须传 JSON 数组，不要传字符串'
+    )
+    answer: str = Field(description="正确答案（single: 选项完整文本；multi: A,C,D；short: 要点）")
+    analysis: str = Field(description="题目解析，说明考点和答案依据")
+
+    @field_validator("options", mode="before")
+    @classmethod
+    def _coerce_options(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return [str(item) for item in v]
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return [str(item) for item in parsed]
+            except (ValueError, TypeError):
+                pass
+            return [v]
+        return None
 
 
 def make_tools(
@@ -65,7 +96,10 @@ def make_tools(
             return "未检索到相关内容，该问题可能超出当前课程知识库范围"
         return context
 
-    @tool
+    @tool(
+        description="向学生展示一道题目并等待作答。调用后会暂停等待学生答题，学生提交后返回其答案。拿到答案后请自行评估对错并在回复中给学生反馈。",
+        args_schema=PresentQuestionArgs,
+    )
     async def present_question(
         topic: str,
         q_type: Literal["single", "multi", "short"],
@@ -75,24 +109,6 @@ def make_tools(
         analysis: str,
         config: RunnableConfig,
     ) -> dict:
-        """向学生展示一道题目并等待作答。
-
-        在你推理生成题目内容后调用此工具。工具会：
-        1. 将题目存入数据库
-        2. 暂停等待学生答题（interrupt）
-        3. 学生提交后返回其答案
-
-        拿到学生答案后，请对比你传入的正确答案自行评估，
-        在回复中给学生反馈（对错 + 错因 + 正确答案 + 解析）。
-
-        Args:
-            topic: 知识点名称，用于幂等去重和答题记录查询
-            q_type: 题型（single/multi/short）
-            stem: 题干文本
-            options: 选项列表，简答题传 None
-            answer: 正确答案（single: 选项文本；multi: "A,C,D"；short: 要点）
-            analysis: 题目解析（考点 + 答案依据）
-        """
         from langgraph.types import interrupt
 
         session_id = UUID(config["configurable"]["thread_id"])
