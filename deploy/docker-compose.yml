@@ -44,6 +44,7 @@ services:
     container_name: teaching-lightrag
     restart: unless-stopped
     environment:
+      WORKSPACE: ""
       LIGHTRAG_KV_STORAGE: PGKVStorage
       LIGHTRAG_VECTOR_STORAGE: PGVectorStorage
       LIGHTRAG_GRAPH_STORAGE: Neo4JStorage
