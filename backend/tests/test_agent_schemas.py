@@ -4,7 +4,7 @@
 """
 import pytest
 
-from tutoring.agent.schemas import QuizOutput, EvaluationOutput
+from tutoring.agent.schemas import QuizOutput
 
 
 def _make(**options_override) -> QuizOutput:
@@ -34,7 +34,6 @@ def test_options_bare_string_wrapped():
 
 
 def test_options_invalid_json_string_wrapped():
-    # 非 JSON 的裸字符串 '[A,B' 应被当作单个选项
     assert _make(options="[A,B").options == ["[A,B"]
 
 
@@ -44,15 +43,6 @@ def test_options_invalid_type_becomes_none():
 
 def test_options_default_none_when_omitted():
     assert _make().options is None
-
-
-def test_evaluation_output_fields():
-    e = EvaluationOutput.model_validate(
-        {"verdict": "correct", "diagnosis": "", "analysis": "ok"}
-    )
-    assert e.verdict == "correct"
-    assert e.diagnosis == ""
-    assert e.analysis == "ok"
 
 
 def test_quiz_output_rejects_invalid_q_type():

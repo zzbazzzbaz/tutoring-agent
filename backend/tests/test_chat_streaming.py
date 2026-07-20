@@ -82,7 +82,7 @@ async def test_quiz_hitl_full_flow(client, cleanup_db):
     # 触发 quiz
     resp = await client.post(
         f"/chat/sessions/{sid}/messages",
-        json={"content": "请使用 quiz_flow 工具考考我关于 HTTP 协议的知识"},
+        json={"content": "请使用 present_question 工具考考我关于 HTTP 协议的知识"},
     )
     events = parse_sse_stream(resp.content)
     quiz_events = [e for e in events if e["event"] == "quiz_interrupt"]
@@ -90,7 +90,7 @@ async def test_quiz_hitl_full_flow(client, cleanup_db):
     if not quiz_events:
         import pytest
 
-        pytest.skip("Agent 未触发 quiz_flow（LLM 输出不确定）")
+        pytest.skip("Agent 未触发 present_question（LLM 输出不确定）")
 
     quiz_payload = quiz_events[0]["data"]
     assert "question_id" in quiz_payload
@@ -127,7 +127,7 @@ async def test_quiz_hitl_answer_flow(client, cleanup_db):
 
     resp = await client.post(
         f"/chat/sessions/{sid}/messages",
-        json={"content": "请使用 quiz_flow 工具考考我关于网络分层模型的知识"},
+        json={"content": "请使用 present_question 工具考考我关于网络分层模型的知识"},
     )
     events = parse_sse_stream(resp.content)
     quiz_events = [e for e in events if e["event"] == "quiz_interrupt"]
@@ -135,7 +135,7 @@ async def test_quiz_hitl_answer_flow(client, cleanup_db):
     if not quiz_events:
         import pytest
 
-        pytest.skip("Agent 未触发 quiz_flow（LLM 输出不确定）")
+        pytest.skip("Agent 未触发 present_question（LLM 输出不确定）")
 
     # 提交答案
     resp = await client.post(
@@ -152,5 +152,4 @@ async def test_quiz_hitl_answer_flow(client, cleanup_db):
     assert len(qs) == 1
     q = qs[0]
     assert q["user_answer"] == "这是我的测试答案"
-    assert q["verdict"] in ("correct", "partial", "wrong")
     assert q["answered_at"] is not None
