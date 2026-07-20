@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { formatDateTime } from '@/lib/formatDate'
-import { Upload, FileText, Scan, RefreshCw, Trash2 } from 'lucide-react'
+import { Upload, FileText, RefreshCw, Trash2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,6 @@ export default function KnowledgeBase() {
     stopPolling,
     uploadFile,
     insertText,
-    scan,
     deleteDoc,
   } = useDocumentsStore()
   const [insertOpen, setInsertOpen] = useState(false)
@@ -71,15 +70,6 @@ export default function KnowledgeBase() {
       toast.success('已插入文本')
       setInsertOpen(false)
       setInsertTextValue('')
-    } catch {
-      // 拦截器已 toast
-    }
-  }
-
-  const handleScan = async () => {
-    try {
-      await scan()
-      toast.success('扫描已触发')
     } catch {
       // 拦截器已 toast
     }
@@ -125,10 +115,6 @@ export default function KnowledgeBase() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" size="sm" onClick={handleScan}>
-            <Scan className="mr-1 h-4 w-4" />
-            扫描
-          </Button>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {pipelineStatus?.busy ? (
