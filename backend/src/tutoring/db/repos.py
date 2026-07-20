@@ -32,6 +32,28 @@ async def create_user(
     return obj
 
 
+async def list_users_by_role(session: AsyncSession, role: str) -> list[User]:
+    stmt = select(User).where(User.role == role).order_by(User.created_at.desc())
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def delete_user(session: AsyncSession, user_id: UUID) -> bool:
+    obj = await session.get(User, user_id)
+    if obj:
+        await session.delete(obj)
+        await session.commit()
+        return True
+    return False
+
+
+async def update_password(session: AsyncSession, user_id: UUID, password_hash: str) -> None:
+    await session.execute(
+        update(User).where(User.id == user_id).values(password_hash=password_hash)
+    )
+    await session.commit()
+
+
 # === AuthToken ===
 
 async def create_token(session: AsyncSession, user_id: UUID) -> AuthToken:

@@ -25,3 +25,8 @@ class LoginResponse(BaseModel):
 
 class MeResponse(UserPublic):
     pass
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str

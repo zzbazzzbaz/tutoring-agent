@@ -18,6 +18,7 @@ from tutoring.core import health as health_router
 from tutoring.projects import router as projects_router
 from tutoring.chat import router as chat_rest_router
 from tutoring.chat import sse as chat_sse_router
+from tutoring.users import router as users_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -83,6 +84,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
+app.include_router(users_router.router)
 app.include_router(health_router.router)
 app.include_router(projects_router.router)
 app.include_router(chat_rest_router.router)

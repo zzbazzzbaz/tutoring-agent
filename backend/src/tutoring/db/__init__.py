@@ -10,6 +10,9 @@ from tutoring.db.repos import (
     get_user_by_username,
     get_user_by_id,
     create_user,
+    list_users_by_role,
+    delete_user,
+    update_password,
     # AuthToken
     create_token,
     get_token_with_user,
@@ -48,6 +51,9 @@ __all__ = [
     "get_user_by_username",
     "get_user_by_id",
     "create_user",
+    "list_users_by_role",
+    "delete_user",
+    "update_password",
     # AuthToken repos
     "create_token",
     "get_token_with_user",
