@@ -1,21 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { useDocumentsStore } from '@/stores/documents'
 import { useDropzone } from 'react-dropzone'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { formatDateTime } from '@/lib/formatDate'
-import { Upload, FileText, RefreshCw, Trash2 } from 'lucide-react'
+import { Upload, RefreshCw, Trash2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,11 +30,8 @@ export default function KnowledgeBase() {
     startPolling,
     stopPolling,
     uploadFile,
-    insertText,
     deleteDoc,
   } = useDocumentsStore()
-  const [insertOpen, setInsertOpen] = useState(false)
-  const [insertTextValue, setInsertTextValue] = useState('')
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: async files => {
@@ -63,18 +51,6 @@ export default function KnowledgeBase() {
     return () => stopPolling()
   }, [fetchPage, startPolling, stopPolling])
 
-  const handleInsert = async () => {
-    if (!insertTextValue.trim()) return
-    try {
-      await insertText(insertTextValue)
-      toast.success('已插入文本')
-      setInsertOpen(false)
-      setInsertTextValue('')
-    } catch {
-      // 拦截器已 toast
-    }
-  }
-
   const totalPages = Math.ceil(total / 20)
 
   return (
@@ -88,33 +64,6 @@ export default function KnowledgeBase() {
               {isDragActive ? '释放上传' : '上传文件'}
             </Button>
           </div>
-          <Dialog open={insertOpen} onOpenChange={setInsertOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <FileText className="mr-1 h-4 w-4" />
-                插入文本
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>插入文本</DialogTitle>
-              </DialogHeader>
-              <Textarea
-                value={insertTextValue}
-                onChange={e => setInsertTextValue(e.target.value)}
-                placeholder="粘贴要插入知识库的文本..."
-                className="min-h-40"
-              />
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setInsertOpen(false)}>
-                  取消
-                </Button>
-                <Button onClick={handleInsert} disabled={!insertTextValue.trim()}>
-                  插入
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {pipelineStatus?.busy ? (
