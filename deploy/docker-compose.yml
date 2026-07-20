@@ -39,6 +39,42 @@ services:
       retries: 10
       start_period: 30s
 
+  lightrag:
+    image: ghcr.io/hkuds/lightrag:latest
+    container_name: teaching-lightrag
+    restart: unless-stopped
+    environment:
+      LIGHTRAG_KV_STORAGE: PGKVStorage
+      LIGHTRAG_VECTOR_STORAGE: PGVectorStorage
+      LIGHTRAG_GRAPH_STORAGE: Neo4JStorage
+      LIGHTRAG_DOC_STATUS_STORAGE: PGDocStatusStorage
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: tutoring
+      POSTGRES_PASSWORD: tutoring123456
+      POSTGRES_DATABASE: tutoring_db
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: tutoring123456
+      NEO4J_DATABASE: neo4j
+      LLM_BINDING: openai
+      LLM_MODEL: qwen3.6-flash
+      LLM_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
+      LLM_BINDING_API_KEY: sk-cad2e2400e384fc7aa08846770dac9e1
+      EMBEDDING_BINDING: openai
+      EMBEDDING_MODEL: text-embedding-v4
+      EMBEDDING_DIM: 1024
+      EMBEDDING_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
+      EMBEDDING_BINDING_API_KEY: sk-cad2e2400e384fc7aa08846770dac9e1
+      SUMMARY_LANGUAGE: Chinese
+    ports:
+      - "19621:9621"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+
 volumes:
   pgdata:
   neo4jdata:
