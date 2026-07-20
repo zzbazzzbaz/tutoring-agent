@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, MessageSquare } from 'lucide-react'
+import { ArrowLeft, MessageSquare, MessagesSquare, MessageSquarePlus } from 'lucide-react'
 import { usersApi } from '@/api/users'
 import { formatRelativeTime } from '@/lib/formatDate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import EmptyState from '@/features/shared/EmptyState'
 import MessageBubble from '@/features/chat/MessageBubble'
 import QuizCard from '@/features/chat/QuizCard'
 import type { SessionOut } from '@/types/session'
@@ -72,7 +73,11 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
           <ScrollArea className="h-full">
             {loadingSessions && <div className="p-3 text-sm text-muted-foreground">{t('common.loading')}</div>}
             {!loadingSessions && sessions.length === 0 && (
-              <div className="p-3 text-sm text-muted-foreground">{t('common.empty')}</div>
+              <EmptyState
+                icon={MessagesSquare}
+                title={t('chat.noSessions')}
+                className="py-8"
+              />
             )}
             <div className="space-y-1 p-2">
               {sessions.map(s => (
@@ -102,9 +107,10 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           {!selectedSession && (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              {t('chat.noSession')}
-            </div>
+            <EmptyState
+              icon={MessageSquarePlus}
+              title={t('chat.welcomeTitle')}
+            />
           )}
           {selectedSession && loadingItems && (
             <div className="text-sm text-muted-foreground">{t('common.loading')}</div>
