@@ -57,7 +57,8 @@
     "name": "Name",
     "createdAt": "Created",
     "actions": "Actions",
-    "importResult": "Import complete: {{total}} total, {{created}} created, {{skipped}} skipped"
+    "importResult": "Import complete: {{total}} total, {{created}} created, {{skipped}} skipped",
+    "viewChat": "View Chat"
   },
   "projects": {
     "title": "Projects",

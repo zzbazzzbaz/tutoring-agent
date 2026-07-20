@@ -57,7 +57,8 @@
     "name": "姓名",
     "createdAt": "创建时间",
     "actions": "操作",
-    "importResult": "导入完成：共 {{total}} 行，新增 {{created}}，跳过 {{skipped}}"
+    "importResult": "导入完成：共 {{total}} 行，新增 {{created}}，跳过 {{skipped}}",
+    "viewChat": "查看聊天"
   },
   "projects": {
     "title": "项目",

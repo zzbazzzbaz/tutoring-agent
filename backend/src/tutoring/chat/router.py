@@ -45,7 +45,7 @@ async def list_sessions(
 ) -> list[SessionOut]:
     sessions = await repos.list_sessions(
         db_session,
-        user_id=user.id if user.role == "student" else None,
+        user_id=user.id,
         status=status_filter,
         mode=mode,
         limit=limit,

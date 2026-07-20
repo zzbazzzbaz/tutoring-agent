@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload, RotateCcw, Trash2 } from 'lucide-react'
+import { Upload, RotateCcw, Trash2, MessageSquare } from 'lucide-react'
 import { usersApi, type ImportResult } from '@/api/users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +34,7 @@ import {
 import { toast } from 'sonner'
 import { formatDateTime } from '@/lib/formatDate'
 import type { UserOut } from '@/types/user'
+import StudentChatViewer from './StudentChatViewer'
 
 export default function StudentsTab() {
   const { t } = useTranslation()
@@ -41,6 +42,7 @@ export default function StudentsTab() {
   const [loading, setLoading] = useState(true)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [search, setSearch] = useState('')
+  const [viewingStudent, setViewingStudent] = useState<UserOut | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -83,6 +85,16 @@ export default function StudentsTab() {
   const filtered = students.filter(
     s => s.username.includes(search) || s.name.includes(search)
   )
+
+  if (viewingStudent) {
+    return (
+      <StudentChatViewer
+        userId={viewingStudent.id}
+        userName={viewingStudent.name}
+        onBack={() => setViewingStudent(null)}
+      />
+    )
+  }
 
   return (
     <div className="flex h-full flex-col p-4">
@@ -131,6 +143,14 @@ export default function StudentsTab() {
                   <TableCell className="text-muted-foreground">{formatDateTime(s.created_at)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={() => setViewingStudent(s)}
+                      >
+                        <MessageSquare className="size-3.5" />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8">

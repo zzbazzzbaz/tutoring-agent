@@ -1,9 +1,11 @@
-"""用户管理路由：列表/删除/重置密码/Excel 导入。全部限教师。"""
+"""用户管理路由：列表/删除/重置密码/Excel 导入/查看学生会话。全部限教师。"""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from tutoring.chat import service as chat_service
+from tutoring.chat.schemas import SessionOut
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.db import repos
@@ -57,6 +59,28 @@ async def reset_password(
     _require_teacher(user)
     await user_service.reset_password(db_session, user_id)
     return {"message": "密码已重置为 123456"}
+
+
+@router.get("/{user_id}/sessions", response_model=list[SessionOut])
+async def list_user_sessions(
+    user_id: UUID,
+    status_filter: str | None = Query(None, alias="status"),
+    mode: str | None = None,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> list[SessionOut]:
+    _require_teacher(user)
+    sessions = await repos.list_sessions(
+        db_session,
+        user_id=user_id,
+        status=status_filter,
+        mode=mode,
+        limit=limit,
+        offset=offset,
+    )
+    return [SessionOut.model_validate(chat_service.session_to_out_dict(s)) for s in sessions]
 
 
 @router.post("/students/import", response_model=ImportResult)
