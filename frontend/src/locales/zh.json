@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "教学 Agent",
+    "loading": "加载中...",
+    "empty": "暂无数据",
+    "delete": "删除",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "back": "返回",
+    "search": "搜索",
+    "all": "全部"
+  },
+  "login": {
+    "title": "教学 Agent 登录",
+    "username": "用户名",
+    "password": "密码",
+    "submit": "登录",
+    "loading": "登录中..."
+  },
+  "chat": {
+    "title": "聊天",
+    "newSession": "新建会话",
+    "freeMode": "自由学习",
+    "projectMode": "项目学习",
+    "selectProject": "选择项目",
+    "noSession": "请选择或创建一个会话",
+    "inputPlaceholder": "输入消息...",
+    "send": "发送",
+    "sessionEnded": "会话已结束",
+    "connectionLost": "连接中断",
+    "retry": "重试",
+    "quiz": {
+      "topic": "知识点",
+      "single": "单选题",
+      "multi": "多选题",
+      "short": "简答题",
+      "submit": "提交答案",
+      "skip": "跳过",
+      "correct": "回答正确",
+      "wrong": "回答错误",
+      "yourAnswer": "你的答案",
+      "correctAnswer": "正确答案",
+      "analysis": "解析",
+      "answered": "已作答",
+      "skipped": "已跳过",
+      "pending": "待作答"
+    }
+  },
+  "students": {
+    "title": "学生管理",
+    "import": "导入 Excel",
+    "resetPassword": "重置密码",
+    "resetConfirm": "确定将密码重置为 123456？",
+    "deleteConfirm": "确定删除该学生账号？",
+    "username": "学号",
+    "name": "姓名",
+    "createdAt": "创建时间",
+    "actions": "操作",
+    "importResult": "导入完成：共 {{total}} 行，新增 {{created}}，跳过 {{skipped}}"
+  },
+  "projects": {
+    "title": "项目",
+    "new": "新建项目",
+    "name": "项目名称",
+    "status": "状态",
+    "draft": "草稿",
+    "published": "已发布",
+    "updatedAt": "更新时间",
+    "actions": "操作",
+    "edit": "编辑",
+    "background": "项目背景",
+    "preview": "预览",
+    "publish": "发布",
+    "unpublish": "取消发布"
+  },
+  "settings": {
+    "title": "设置",
+    "theme": "主题",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统",
+    "language": "语言",
+    "changePassword": "修改密码",
+    "oldPassword": "旧密码",
+    "newPassword": "新密码",
+    "logout": "退出登录"
+  }
+}
