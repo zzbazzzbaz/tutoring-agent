@@ -1,4 +1,3 @@
-"""LightRAG SDK 工厂：LLM/Embedding 函数 + create_rag()。"""
 import logging
 
 import numpy as np
