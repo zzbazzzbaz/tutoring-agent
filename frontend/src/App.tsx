@@ -46,16 +46,16 @@ export default function App() {
           </TabsList>
           <SettingsMenu />
         </header>
-        <div className="flex-1 overflow-hidden">
-          <TabsContent value="chat" className="mt-0 h-full" style={{ display: activeTab !== 'chat' ? 'none' : undefined }}>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TabsContent value="chat" className="mt-0 flex-1 min-h-0" style={{ display: activeTab !== 'chat' ? 'none' : undefined }}>
             <ChatTab />
           </TabsContent>
           {isTeacher && (
-            <TabsContent value="students" className="mt-0 h-full" style={{ display: activeTab !== 'students' ? 'none' : undefined }}>
+            <TabsContent value="students" className="mt-0 flex-1 min-h-0" style={{ display: activeTab !== 'students' ? 'none' : undefined }}>
               <StudentsTab />
             </TabsContent>
           )}
-          <TabsContent value="projects" className="mt-0 h-full" style={{ display: activeTab !== 'projects' ? 'none' : undefined }}>
+          <TabsContent value="projects" className="mt-0 flex-1 min-h-0" style={{ display: activeTab !== 'projects' ? 'none' : undefined }}>
             <ProjectsTab />
           </TabsContent>
         </div>
