@@ -1,6 +1,6 @@
 """异步 repository 函数。无类（YAGNI）。"""
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -130,7 +130,7 @@ async def list_sessions(
 
 async def touch_session(session: AsyncSession, session_id: UUID) -> None:
     await session.execute(
-        update(Session).where(Session.id == session_id).values(last_active_at=datetime.utcnow())
+        update(Session).where(Session.id == session_id).values(last_active_at=datetime.now(timezone.utc))
     )
     await session.commit()
 
@@ -199,7 +199,7 @@ async def get_pending_question(session: AsyncSession, session_id: UUID, topic: s
 
 
 async def update_question(session: AsyncSession, question_id: UUID, **fields) -> None:
-    fields["answered_at"] = fields.get("answered_at", datetime.utcnow())
+    fields["answered_at"] = fields.get("answered_at", datetime.now(timezone.utc))
     await session.execute(update(Question).where(Question.id == question_id).values(**fields))
     await session.commit()
 
