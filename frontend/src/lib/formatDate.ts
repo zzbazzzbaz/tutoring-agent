@@ -1,13 +1,6 @@
-function parseISO(iso: string): Date {
-  if (iso && !iso.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(iso)) {
-    return new Date(iso + 'Z')
-  }
-  return new Date(iso)
-}
-
 export function formatRelativeTime(iso: string): string {
   const now = Date.now()
-  const then = parseISO(iso).getTime()
+  const then = new Date(iso).getTime()
   const diff = now - then
   const seconds = Math.floor(diff / 1000)
   const minutes = Math.floor(seconds / 60)
@@ -22,7 +15,7 @@ export function formatRelativeTime(iso: string): string {
 }
 
 export function formatDateTime(iso: string): string {
-  const d = parseISO(iso)
+  const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
