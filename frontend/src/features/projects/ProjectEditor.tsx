@@ -5,8 +5,6 @@ import { projectsApi } from '@/api/projects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
 import { toast } from 'sonner'
 import type { ProjectOut } from '@/types/project'
@@ -77,7 +75,7 @@ export default function ProjectEditor({ projectId, onBack }: ProjectEditorProps)
           </Button>
         </div>
       </div>
-      <div className="mb-4">
+      <div className="mb-3">
         <Label htmlFor="project-name">{t('projects.name')}</Label>
         <Input
           id="project-name"
@@ -87,20 +85,20 @@ export default function ProjectEditor({ projectId, onBack }: ProjectEditorProps)
         />
       </div>
       <div className="grid flex-1 grid-cols-2 gap-4 overflow-hidden">
-        <div className="flex flex-col">
-          <Label>{t('projects.background')}</Label>
-          <Textarea
+        <div className="flex flex-col overflow-hidden">
+          <Label className="mb-1">{t('projects.background')}</Label>
+          <textarea
             value={backgroundMd}
             onChange={e => setBackgroundMd(e.target.value)}
-            className="mt-1 flex-1 resize-none font-mono text-sm"
+            className="flex-1 resize-none overflow-y-auto rounded-md border border-input bg-background p-3 font-mono text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
             placeholder="Markdown..."
           />
         </div>
-        <div className="flex flex-col">
-          <Label>{t('projects.preview')}</Label>
-          <ScrollArea className="mt-1 flex-1 rounded-md border p-3">
+        <div className="flex flex-col overflow-hidden">
+          <Label className="mb-1">{t('projects.preview')}</Label>
+          <div className="flex-1 overflow-y-auto rounded-md border p-3">
             <MarkdownRenderer content={backgroundMd || '*预览为空*'} />
-          </ScrollArea>
+          </div>
         </div>
       </div>
     </div>
