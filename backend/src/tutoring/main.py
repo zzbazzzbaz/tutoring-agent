@@ -1,4 +1,3 @@
-"""FastAPI 应用入口。"""
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -32,8 +31,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("DB initialized: %s", settings.database_url)
 
     # 2. LangGraph AsyncPostgresSaver
-    # psycopg（内部使用）不接受 SQLAlchemy 的 "+asyncpg" 驱动后缀，
-    # 因此需剥除为纯 postgres URL。
     pg_conn_str = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
     async with AsyncPostgresSaver.from_conn_string(pg_conn_str) as checkpointer:
         await checkpointer.setup()  # 幂等

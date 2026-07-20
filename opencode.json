@@ -6,6 +6,16 @@
   "instructions": [
     "AGENTS.md"
   ],
+  "mcp": {
+    "langsmith": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://api.smith.langchain.com/mcp",
+      "headers": {
+        "X-Api-Key": "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"
+      }
+    }
+  },
   "permission": {
     "skill": {
       "*": "allow",
