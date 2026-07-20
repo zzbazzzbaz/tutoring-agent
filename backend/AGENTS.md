@@ -18,7 +18,6 @@ router/sse 只调 service；service 调 repos / agent.runtime / knowledge.client
 
 - 运行：`uv run uvicorn tutoring.main:app --reload --host 0.0.0.0 --port 8000`
 - 测试：`uv run pytest`（集成测试，需真实 DB + LightRAG + DashScope，见 .env）
-- 无 lint 工具（项目已移除 ruff）
 
 ## 约定
 

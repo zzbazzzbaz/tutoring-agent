@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import func
 
 from tutoring.db.models import Project, Session, Message, Question
 
