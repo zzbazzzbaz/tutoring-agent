@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Trash2 } from 'lucide-react'
+import { Trash2, MessagesSquare } from 'lucide-react'
 import { useChatStore } from '@/stores/chat'
 import { sessionsApi } from '@/api/sessions'
 import { formatRelativeTime } from '@/lib/formatDate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import EmptyState from '@/features/shared/EmptyState'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +49,12 @@ export default function SessionList() {
       <ScrollArea className="flex-1">
         {loadingSessions && <div className="p-3 text-sm text-muted-foreground">{t('common.loading')}</div>}
         {!loadingSessions && sessions.length === 0 && (
-          <div className="p-3 text-sm text-muted-foreground">{t('common.empty')}</div>
+          <EmptyState
+            icon={MessagesSquare}
+            title={t('chat.noSessions')}
+            description={t('chat.noSessionsDesc')}
+            className="py-8"
+          />
         )}
         <div className="space-y-1 p-2">
           {sessions.map(s => (

@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import { MessageSquarePlus } from 'lucide-react'
 import { useChatStore } from '@/stores/chat'
+import EmptyState from '@/features/shared/EmptyState'
 import SessionList from './SessionList'
 import ChatView from './ChatView'
 
@@ -16,9 +18,11 @@ export default function ChatTab() {
         {currentSession ? (
           <ChatView />
         ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            {t('chat.noSession')}
-          </div>
+          <EmptyState
+            icon={MessageSquarePlus}
+            title={t('chat.welcomeTitle')}
+            description={t('chat.welcomeDesc')}
+          />
         )}
       </div>
     </div>
