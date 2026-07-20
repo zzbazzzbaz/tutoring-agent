@@ -9,8 +9,6 @@ export interface QuestionOut {
   analysis: string | null
   status: 'pending' | 'answered' | 'skipped'
   user_answer: string | null
-  verdict: 'correct' | 'partial' | 'wrong' | null
-  diagnosis: string | null
   created_at: string
   answered_at: string | null
 }

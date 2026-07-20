@@ -49,24 +49,6 @@ export default function QuizCard({ question, pending }: Props) {
     await submitQuiz('skip')
   }
 
-  const verdict = question?.verdict
-  const verdictVariant =
-    verdict === 'correct'
-      ? 'default'
-      : verdict === 'partial'
-        ? 'secondary'
-        : 'destructive'
-  const verdictText =
-    verdict === 'correct'
-      ? '✅ 答对'
-      : verdict === 'partial'
-        ? '🟡 部分对'
-        : verdict === 'wrong'
-          ? '❌ 答错'
-          : question?.status === 'skipped'
-            ? '⏭️ 已跳过'
-            : ''
-
   return (
     <div className="rounded-lg border p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -80,7 +62,6 @@ export default function QuizCard({ question, pending }: Props) {
             </Badge>
           )}
         </div>
-        {verdictText && <Badge variant={verdictVariant}>{verdictText}</Badge>}
         {isPending && <Badge variant="outline">作答中</Badge>}
       </div>
 
@@ -169,12 +150,6 @@ export default function QuizCard({ question, pending }: Props) {
             <span className="text-muted-foreground">正确答案：</span>
             {question.answer}
           </div>
-          {question.diagnosis && (
-            <div>
-              <span className="text-muted-foreground">错因诊断：</span>
-              {question.diagnosis}
-            </div>
-          )}
           {question.analysis && (
             <div>
               <span className="text-muted-foreground">解析：</span>

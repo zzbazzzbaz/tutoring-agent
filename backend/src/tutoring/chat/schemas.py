@@ -71,8 +71,6 @@ class QuestionOut(BaseModel):
     analysis: str | None = None
     status: str
     user_answer: str | None = None
-    verdict: str | None = None
-    diagnosis: str | None = None
     created_at: datetime
     answered_at: datetime | None = None
 

@@ -30,35 +30,14 @@ async def insert_text(
     return await lightrag.insert_text(await request.json())
 
 
-@router.post("/documents/texts")
-async def insert_texts(
-    request: Request,
-    lightrag: LightRAGClient = Depends(get_lightrag_client),
-) -> dict:
-    return await lightrag.insert_texts(await request.json())
-
-
 @router.post("/documents/scan")
 async def scan(lightrag: LightRAGClient = Depends(get_lightrag_client)) -> dict:
     return await lightrag.scan()
 
 
-@router.get("/documents/track_status/{track_id}")
-async def track_status(
-    track_id: str,
-    lightrag: LightRAGClient = Depends(get_lightrag_client),
-) -> dict:
-    return await lightrag.track_status(track_id)
-
-
 @router.get("/documents/pipeline_status")
 async def pipeline_status(lightrag: LightRAGClient = Depends(get_lightrag_client)) -> dict:
     return await lightrag.pipeline_status()
-
-
-@router.get("/documents/status_counts")
-async def status_counts(lightrag: LightRAGClient = Depends(get_lightrag_client)) -> dict:
-    return await lightrag.status_counts()
 
 
 @router.post("/documents/paginated")

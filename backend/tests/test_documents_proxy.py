@@ -8,12 +8,6 @@ async def test_pipeline_status(client):
     assert "busy" in data
 
 
-async def test_status_counts(client):
-    resp = await client.get("/documents/status_counts")
-    assert resp.status_code == 200
-    assert "status_counts" in resp.json()
-
-
 async def test_list_documents(client):
     resp = await client.post("/documents/paginated", json={"page": 1, "page_size": 10})
     assert resp.status_code == 200

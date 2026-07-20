@@ -170,8 +170,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 analysis: null,
                 status: action === 'skip' ? 'skipped' : 'answered',
                 user_answer: action === 'skip' ? null : (answer ?? null),
-                verdict: null,
-                diagnosis: null,
                 created_at: new Date().toISOString(),
                 answered_at: new Date().toISOString(),
               }

@@ -74,29 +74,14 @@ class LightRAGClient:
         resp = await self._request("POST", "/documents/text", json=body)
         return resp.json()
 
-    async def insert_texts(self, body: dict) -> dict:
-        """POST /documents/texts（批量）。"""
-        resp = await self._request("POST", "/documents/texts", json=body)
-        return resp.json()
-
     async def scan(self) -> dict:
         """POST /documents/scan（触发增量扫描）。"""
         resp = await self._request("POST", "/documents/scan")
         return resp.json()
 
-    async def track_status(self, track_id: str) -> dict:
-        """GET /documents/track_status/{track_id}。"""
-        resp = await self._request("GET", f"/documents/track_status/{track_id}")
-        return resp.json()
-
     async def pipeline_status(self) -> dict:
         """GET /documents/pipeline_status。"""
         resp = await self._request("GET", "/documents/pipeline_status")
-        return resp.json()
-
-    async def status_counts(self) -> dict:
-        """GET /documents/status_counts。"""
-        resp = await self._request("GET", "/documents/status_counts")
         return resp.json()
 
     async def list_documents(self, body: dict) -> dict:
