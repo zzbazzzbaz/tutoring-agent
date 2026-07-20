@@ -1,8 +1,3 @@
-"""Agent 工具 args schema（Pydantic）。
-
-@tool(args_schema=...) 使用的类型化参数 schema。独立于 tools.py，
-使数据契约可独立 import/单测，不拖入 LightRAGClient 等工具依赖。
-"""
 import json
 from typing import Literal
 

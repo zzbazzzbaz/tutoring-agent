@@ -1,13 +1,3 @@
-"""Agent 工具工厂：make_tools() 闭包注入依赖。
-
-LangChain 1.x 模式：
-- @tool(description=..., args_schema=...) 统一风格
-- interrupt() 来自 langgraph.types，实现 HITL 暂停
-- RunnableConfig 用于访问 thread_id（= session_id）
-- make_tools() 由 build_agent() 调用，闭包捕获 LightRAGClient + db_session_factory
-
-工具内部零 LLM 调用--出题和评估全部由主智能体在推理中完成。
-"""
 import logging
 from contextlib import asynccontextmanager
 from typing import Literal
