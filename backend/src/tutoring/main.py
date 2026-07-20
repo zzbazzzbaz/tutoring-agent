@@ -2,11 +2,6 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-import numpy as np
-from lightrag import LightRAG
-from lightrag.llm.openai import openai_complete_if_cache, openai_embed
-from lightrag.utils import wrap_embedding_func_with_attrs
-
 from tutoring.core.config import settings, setup_langsmith
 
 setup_langsmith()
@@ -17,6 +12,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from tutoring.core.database import create_engine, create_session_factory, init_db
 from tutoring.core.errors import register_exception_handlers
+from tutoring.core.lightrag import create_rag
 from tutoring.core import health as health_router
 from tutoring.projects import router as projects_router
 from tutoring.chat import router as chat_rest_router
@@ -24,34 +20,6 @@ from tutoring.chat import sse as chat_sse_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-
-
-# --- LightRAG LLM / Embedding 函数（DashScope OpenAI 兼容） ---
-
-async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs):
-    return await openai_complete_if_cache(
-        settings.llm_model,
-        prompt,
-        system_prompt=system_prompt,
-        history_messages=history_messages,
-        api_key=settings.dashscope_api_key,
-        base_url=settings.dashscope_base_url,
-        **kwargs,
-    )
-
-
-@wrap_embedding_func_with_attrs(
-    embedding_dim=settings.embedding_dim,
-    max_token_size=8192,
-    model_name=settings.embedding_model,
-)
-async def embedding_func(texts: list[str]) -> np.ndarray:
-    return await openai_embed.func(
-        texts,
-        model=settings.embedding_model,
-        api_key=settings.dashscope_api_key,
-        base_url=settings.dashscope_base_url,
-    )
 
 
 @asynccontextmanager
@@ -69,15 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("LangGraph checkpointer ready")
 
         # 3. LightRAG SDK 实例（连同一个 PG + Neo4j）
-        rag = LightRAG(
-            workspace="default",
-            llm_model_func=llm_model_func,
-            embedding_func=embedding_func,
-            kv_storage="PGKVStorage",
-            vector_storage="PGVectorStorage",
-            graph_storage="Neo4JStorage",
-            doc_status_storage="PGDocStatusStorage",
-        )
+        rag = create_rag()
         await rag.initialize_storages()
         logger.info("LightRAG SDK initialized")
 
