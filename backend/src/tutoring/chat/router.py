@@ -71,7 +71,7 @@ async def end_session(
     db_session: AsyncSession = Depends(get_db),
 ) -> None:
     await chat_service.get_writable_session(db_session, session_id, user)
-    await repos.end_session(db_session, session_id)
+    await repos.delete_session(db_session, session_id)
 
 
 @router.get("/{session_id}/messages", response_model=list[MessageOut])

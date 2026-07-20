@@ -22,7 +22,7 @@ from tutoring.db.repos import (
     get_session,
     list_sessions,
     touch_session,
-    end_session,
+    delete_session,
     # Message
     save_message,
     list_messages,

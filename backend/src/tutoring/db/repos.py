@@ -135,10 +135,9 @@ async def touch_session(session: AsyncSession, session_id: UUID) -> None:
     await session.commit()
 
 
-async def end_session(session: AsyncSession, session_id: UUID) -> None:
-    await session.execute(
-        update(Session).where(Session.id == session_id).values(status="ended")
-    )
+async def delete_session(session: AsyncSession, session_id: UUID) -> None:
+    from sqlalchemy import delete as sql_delete
+    await session.execute(sql_delete(Session).where(Session.id == session_id))
     await session.commit()
 
 
