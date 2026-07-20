@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.agent.prompts import AgentContext
 from tutoring.core.config import settings
+from tutoring.core.deps import CurrentUser
 from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.db.models import Project, Session
@@ -16,19 +17,29 @@ from tutoring.db.models import Project, Session
 logger = logging.getLogger(__name__)
 
 
-async def get_owned_session(db: AsyncSession, session_id: uuid.UUID, user_id: str) -> Session:
-    """存在且归属该用户，否则抛 404/403。"""
+async def get_readable_session(db: AsyncSession, session_id: uuid.UUID, user: CurrentUser) -> Session:
+    """读权限：学生检查归属，教师跳过。"""
     sess = await repos.get_session(db, session_id)
     if not sess:
         raise AppError(404, "SESSION_NOT_FOUND", f"Session {session_id} not found")
-    if sess.user_id != user_id:
+    if user.role == "student" and sess.user_id != user.id:
         raise AppError(403, "FORBIDDEN", "Session does not belong to user")
     return sess
 
 
-async def get_active_session(db: AsyncSession, session_id: uuid.UUID, user_id: str) -> Session:
-    """get_owned_session + 状态 active（chat 流式端点用）。"""
-    sess = await get_owned_session(db, session_id, user_id)
+async def get_writable_session(db: AsyncSession, session_id: uuid.UUID, user: CurrentUser) -> Session:
+    """写权限：不分角色，强制归属检查。"""
+    sess = await repos.get_session(db, session_id)
+    if not sess:
+        raise AppError(404, "SESSION_NOT_FOUND", f"Session {session_id} not found")
+    if sess.user_id != user.id:
+        raise AppError(403, "FORBIDDEN", "Session does not belong to user")
+    return sess
+
+
+async def get_writable_active_session(db: AsyncSession, session_id: uuid.UUID, user: CurrentUser) -> Session:
+    """get_writable_session + 状态 active（chat 流式端点用）。"""
+    sess = await get_writable_session(db, session_id, user)
     if sess.status != "active":
         raise AppError(409, "SESSION_ENDED", "Session is ended")
     return sess

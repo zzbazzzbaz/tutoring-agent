@@ -1,6 +1,6 @@
-"""认证授权模块（预留）。
+"""认证授权模块：token 表 + bcrypt 密码 + 角色（teacher/student）。
 
-当前认证由 core.deps.get_current_user 以 X-User-Id 请求头实现。
-未来在此落地：JWT 校验器、User 模型、role（teacher/student）判定；
-core.deps.get_current_user 将改为委托本模块，路由签名不变。
+router: POST /auth/login, POST /auth/logout, GET /auth/me
+service: login / logout / verify_token / hash_password / verify_password
+core.deps.get_current_user 委托 auth.service.verify_token 校验 Bearer token。
 """

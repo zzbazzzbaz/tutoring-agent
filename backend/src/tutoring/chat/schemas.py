@@ -22,7 +22,7 @@ class SessionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    user_id: str
+    user_id: UUID
     mode: str
     project_id: UUID | None = None
     project_name: str | None = None

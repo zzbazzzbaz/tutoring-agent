@@ -13,6 +13,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from tutoring.core.database import create_engine, create_session_factory, init_db
 from tutoring.core.errors import register_exception_handlers
 from tutoring.core.lightrag import create_rag
+from tutoring.auth import router as auth_router
 from tutoring.core import health as health_router
 from tutoring.projects import router as projects_router
 from tutoring.chat import router as chat_rest_router
@@ -81,6 +82,7 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+app.include_router(auth_router.router)
 app.include_router(health_router.router)
 app.include_router(projects_router.router)
 app.include_router(chat_rest_router.router)

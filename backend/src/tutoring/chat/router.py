@@ -45,7 +45,7 @@ async def list_sessions(
 ) -> list[SessionOut]:
     sessions = await repos.list_sessions(
         db_session,
-        user_id=user.id,
+        user_id=user.id if user.role == "student" else None,
         status=status_filter,
         mode=mode,
         limit=limit,
@@ -60,7 +60,7 @@ async def get_session(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> SessionOut:
-    sess = await chat_service.get_owned_session(db_session, session_id, user.id)
+    sess = await chat_service.get_readable_session(db_session, session_id, user)
     return SessionOut.model_validate(chat_service.session_to_out_dict(sess))
 
 
@@ -70,7 +70,7 @@ async def end_session(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> None:
-    await chat_service.get_owned_session(db_session, session_id, user.id)
+    await chat_service.get_writable_session(db_session, session_id, user)
     await repos.end_session(db_session, session_id)
 
 
@@ -82,7 +82,7 @@ async def list_messages(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> list[MessageOut]:
-    await chat_service.get_owned_session(db_session, session_id, user.id)
+    await chat_service.get_readable_session(db_session, session_id, user)
     msgs = await repos.list_messages(db_session, session_id, limit=limit, offset=offset)
     return [MessageOut.model_validate(m) for m in msgs]
 
@@ -94,6 +94,6 @@ async def list_questions(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> list[QuestionOut]:
-    await chat_service.get_owned_session(db_session, session_id, user.id)
+    await chat_service.get_readable_session(db_session, session_id, user)
     qs = await repos.list_questions(db_session, session_id, status=status_filter)
     return [QuestionOut.model_validate(q) for q in qs]
