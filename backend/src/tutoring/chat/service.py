@@ -55,12 +55,6 @@ async def is_interrupted(agent: CompiledStateGraph, session_id: uuid.UUID) -> bo
 
 
 def session_to_out_dict(sess: Session) -> dict:
-    """从 Session ORM 实例构建 SessionOut dict，在可用时添加 `project_name`。
-
-    调用方须保证 sess.project 可读（async 下未加载会 greenlet 错误，应 fail fast）：
-    - get_session / list_sessions：repos 已 selectinload
-    - create_session：路由手动挂载 sess.project = project_obj
-    """
     data = {
         "id": sess.id,
         "user_id": sess.user_id,
@@ -186,32 +180,8 @@ async def save_final_agent_message(
     messages = state.values.get("messages") or []
     if not messages:
         return
-    final_msg = messages[-1]
-    content = getattr(final_msg, "content", None)
-    text = extract_text(content)
+    text = messages[-1].text
     if text:
         await repos.save_message(
             db_session, session_id=session_id, role="agent", content=text
         )
-
-
-def extract_text(content) -> str:
-    """从 AIMessage.content 提取纯文本。
-
-    处理两种格式：
-    - str：直接返回
-    - list[dict]：拼接所有 {"type":"text","text":"..."} 块
-    """
-    if content is None:
-        return ""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                parts.append(block.get("text", ""))
-            elif isinstance(block, str):
-                parts.append(block)
-        return "".join(parts)
-    return str(content)
