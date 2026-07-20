@@ -1,7 +1,15 @@
-"""会话领域服务：404/403/409 校验全项目唯一一份。"""
-import uuid
+"""会话领域服务：404/403/409 校验 + 流式编排（协议无关）。
 
+流式编排输出事件 dict（{"event": ..., "data": ...}），不耦合 SSE/WS 格式。
+HTTP/SSE 适配由 chat/sse.py 负责。
+"""
+import logging
+import uuid
+from typing import AsyncIterator
+
+from langchain_core.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.agent.prompts import AgentContext
@@ -9,6 +17,8 @@ from tutoring.core.config import settings
 from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.db.models import Project, Session
+
+logger = logging.getLogger(__name__)
 
 
 async def get_owned_session(db: AsyncSession, session_id: uuid.UUID, user_id: str) -> Session:
@@ -83,3 +93,144 @@ def session_to_out_dict(sess: Session, project: Project | None = None) -> dict:
     if proj is not None:
         data["project_name"] = proj.name
     return data
+
+
+# ---------------------------------------------------------------------------
+# 流式编排（协议无关）：输出事件 dict，由 sse.py 格式化为 SSE 帧
+# ---------------------------------------------------------------------------
+
+# 事件 schema：
+#   {"event": "text",           "data": {"content": "<token>"}}
+#   {"event": "quiz_interrupt", "data": {<interrupt.value>}}
+#   {"event": "done",           "data": {}}
+#   {"event": "error",          "data": {"message": "...", "code": "..."}}
+
+
+def _stream_config(session_id: uuid.UUID) -> dict:
+    """LangGraph stream 配置：thread_id 绑定 session，递归限 15。"""
+    return {
+        "configurable": {"thread_id": str(session_id)},
+        "recursion_limit": 15,
+    }
+
+
+async def stream_chat_events(
+    agent: CompiledStateGraph,
+    session_id: uuid.UUID,
+    user_msg: str,
+    context: AgentContext,
+    db_session: AsyncSession,
+) -> AsyncIterator[dict]:
+    """首次发送消息 -> 流式事件（协议无关）。
+
+    runtime context 不进 checkpoint，每次调用必须显式传入，
+    否则 main_agent_system_prompt 中间件读 context 会拿到 None。
+    """
+    config = _stream_config(session_id)
+    try:
+        stream = await agent.astream_events(
+            {"messages": [HumanMessage(content=user_msg)]},
+            config=config,
+            version="v3",
+            context=context,
+        )
+        async for message in stream.messages:
+            async for token in message.text:
+                yield {"event": "text", "data": {"content": token}}
+
+        if await stream.interrupted():
+            interrupts = await stream.interrupts()
+            for it in interrupts:
+                yield {"event": "quiz_interrupt", "data": it.value}
+            yield {"event": "done", "data": {}}
+            return
+
+        await save_final_agent_message(agent, config, db_session, session_id)
+        yield {"event": "done", "data": {}}
+    except Exception as e:
+        logger.exception("stream_chat_events 失败")
+        yield {"event": "error", "data": {"message": str(e), "code": "AGENT_ERROR"}}
+
+
+async def resume_quiz_events(
+    agent: CompiledStateGraph,
+    session_id: uuid.UUID,
+    action: str,
+    answer: str | None,
+    db_session: AsyncSession,
+    context: AgentContext,
+) -> AsyncIterator[dict]:
+    """提交答题 -> 流式事件（协议无关）。
+
+    resume 时不会有 quiz_interrupt（除非连续出题）；其余事件类型同 stream_chat_events。
+    """
+    config = _stream_config(session_id)
+    resume_value: dict = {"action": action}
+    if action == "answer":
+        resume_value["answer"] = answer or ""
+
+    try:
+        stream = await agent.astream_events(
+            Command(resume=resume_value),
+            config=config,
+            version="v3",
+            context=context,
+        )
+        async for message in stream.messages:
+            async for token in message.text:
+                yield {"event": "text", "data": {"content": token}}
+
+        if await stream.interrupted():
+            interrupts = await stream.interrupts()
+            for it in interrupts:
+                yield {"event": "quiz_interrupt", "data": it.value}
+            yield {"event": "done", "data": {}}
+            return
+
+        await save_final_agent_message(agent, config, db_session, session_id)
+        yield {"event": "done", "data": {}}
+    except Exception as e:
+        logger.exception("resume_quiz_events 失败")
+        yield {"event": "error", "data": {"message": str(e), "code": "AGENT_ERROR"}}
+
+
+async def save_final_agent_message(
+    agent: CompiledStateGraph,
+    config: dict,
+    db_session: AsyncSession,
+    session_id: uuid.UUID,
+) -> None:
+    """从 LangGraph state 取最终 AIMessage，持久化到 Message 表。"""
+    state = await agent.aget_state(config)
+    messages = state.values.get("messages") or []
+    if not messages:
+        return
+    final_msg = messages[-1]
+    content = getattr(final_msg, "content", None)
+    text = extract_text(content)
+    if text:
+        await repos.save_message(
+            db_session, session_id=session_id, role="agent", content=text
+        )
+
+
+def extract_text(content) -> str:
+    """从 AIMessage.content 提取纯文本。
+
+    处理两种格式：
+    - str：直接返回
+    - list[dict]：拼接所有 {"type":"text","text":"..."} 块
+    """
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+            elif isinstance(block, str):
+                parts.append(block)
+        return "".join(parts)
+    return str(content)
