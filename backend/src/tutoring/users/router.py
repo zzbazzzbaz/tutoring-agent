@@ -1,7 +1,8 @@
-"""用户管理路由：列表/删除/重置密码/Excel 导入/查看学生会话。全部限教师。"""
+"""用户管理路由：列表/删除/重置密码/Excel 导入/查看学生会话/模板下载。全部限教师。"""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.chat import service as chat_service
@@ -92,3 +93,25 @@ async def import_students(
         raise AppError(422, "INVALID_FILE", "请上传 .xlsx 或 .xls 文件")
     content = await file.read()
     return await user_service.import_students(db_session, content)
+
+
+@router.get("/students/template")
+async def download_template(
+    user: CurrentUser = Depends(get_current_user),
+) -> StreamingResponse:
+    _require_teacher(user)
+    import io
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["学号", "姓名", "密码"])
+    ws.append(["2023001", "张三", "zs123"])
+    ws.append(["2023002", "李四", "ls123"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=students_template.xlsx"},
+    )

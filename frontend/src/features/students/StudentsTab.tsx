@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload, RotateCcw, Trash2, MessageSquare } from 'lucide-react'
+import { Upload, RotateCcw, Trash2, MessageSquare, Download } from 'lucide-react'
 import { usersApi, type ImportResult } from '@/api/users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -110,6 +110,10 @@ export default function StudentsTab() {
           <Button variant="outline" onClick={() => document.getElementById('import-file')?.click()}>
             <Upload className="mr-2 size-4" />
             {t('students.import')}
+          </Button>
+          <Button variant="outline" onClick={() => usersApi.downloadTemplate()}>
+            <Download className="mr-2 size-4" />
+            {t('students.downloadTemplate')}
           </Button>
           <input
             id="import-file"

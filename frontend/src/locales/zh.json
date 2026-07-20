@@ -50,6 +50,7 @@
   "students": {
     "title": "学生管理",
     "import": "导入 Excel",
+    "downloadTemplate": "下载模板",
     "resetPassword": "重置密码",
     "resetConfirm": "确定将密码重置为 123456？",
     "deleteConfirm": "确定删除该学生账号？",

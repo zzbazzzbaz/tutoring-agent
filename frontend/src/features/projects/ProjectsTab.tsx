@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -32,9 +32,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { formatDateTime } from '@/lib/formatDate'
 import { toast } from 'sonner'
 import type { ProjectOut } from '@/types/project'
+import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
 import ProjectEditor from './ProjectEditor'
 
 export default function ProjectsTab() {
@@ -45,16 +52,19 @@ export default function ProjectsTab() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewingProject, setViewingProject] = useState<ProjectOut | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await projectsApi.list(statusFilter === 'all' ? undefined : statusFilter)
+      const data = await projectsApi.list(
+        isTeacher && statusFilter !== 'all' ? statusFilter : undefined
+      )
       setProjects(data)
     } finally {
       setLoading(false)
     }
-  }, [statusFilter])
+  }, [statusFilter, isTeacher])
 
   useEffect(() => {
     load()
@@ -74,24 +84,26 @@ export default function ProjectsTab() {
     <div className="flex h-full flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold">{t('projects.title')}</h2>
-        {isTeacher && (
-          <Button onClick={() => setEditingId('new')}>
-            <Plus className="mr-2 size-4" />
-            {t('projects.new')}
-          </Button>
-        )}
-      </div>
-      <div className="mb-4">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('common.all')}</SelectItem>
-            <SelectItem value="draft">{t('projects.draft')}</SelectItem>
-            <SelectItem value="published">{t('projects.published')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {isTeacher && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all')}</SelectItem>
+                <SelectItem value="draft">{t('projects.draft')}</SelectItem>
+                <SelectItem value="published">{t('projects.published')}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {isTeacher && (
+            <Button onClick={() => setEditingId('new')}>
+              <Plus className="mr-2 size-4" />
+              {t('projects.new')}
+            </Button>
+          )}
+        </div>
       </div>
       <ScrollArea className="flex-1">
         {loading ? (
@@ -103,55 +115,73 @@ export default function ProjectsTab() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('projects.name')}</TableHead>
-                <TableHead>{t('projects.status')}</TableHead>
+                {isTeacher && <TableHead>{t('projects.status')}</TableHead>}
                 <TableHead>{t('projects.updatedAt')}</TableHead>
-                {isTeacher && <TableHead className="text-right">{t('projects.actions')}</TableHead>}
+                <TableHead className="text-right">{t('projects.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projects.map(p => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell>
-                    <Badge variant={p.status === 'published' ? 'default' : 'secondary'}>
-                      {p.status === 'published' ? t('projects.published') : t('projects.draft')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{formatDateTime(p.updated_at)}</TableCell>
                   {isTeacher && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="size-8" onClick={() => setEditingId(p.id)}>
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8 text-destructive">
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
-                              <AlertDialogDescription>{t('common.confirm')}?</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(p.id)}>
-                                {t('common.delete')}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                    <TableCell>
+                      <Badge variant={p.status === 'published' ? 'default' : 'secondary'}>
+                        {p.status === 'published' ? t('projects.published') : t('projects.draft')}
+                      </Badge>
                     </TableCell>
                   )}
+                  <TableCell className="text-muted-foreground">{formatDateTime(p.updated_at)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="size-8" onClick={() => setViewingProject(p)}>
+                        <Eye className="size-3.5" />
+                      </Button>
+                      {isTeacher && (
+                        <>
+                          <Button variant="ghost" size="icon" className="size-8" onClick={() => setEditingId(p.id)}>
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8 text-destructive">
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                                <AlertDialogDescription>{t('common.confirm')}?</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(p.id)}>
+                                  {t('common.delete')}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
       </ScrollArea>
+
+      <Dialog open={!!viewingProject} onOpenChange={() => setViewingProject(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{viewingProject?.name}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-4">
+            <MarkdownRenderer content={viewingProject?.background_md || ''} />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

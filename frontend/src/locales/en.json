@@ -50,6 +50,7 @@
   "students": {
     "title": "Student Management",
     "import": "Import Excel",
+    "downloadTemplate": "Download Template",
     "resetPassword": "Reset Password",
     "resetConfirm": "Reset password to 123456?",
     "deleteConfirm": "Delete this student account?",

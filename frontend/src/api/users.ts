@@ -35,6 +35,15 @@ export const usersApi = {
     })
     return data
   },
+  downloadTemplate: async () => {
+    const response = await apiClient.get('/users/students/template', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(response.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'students_template.xlsx'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  },
   listUserSessions: async (userId: string) => {
     const { data } = await apiClient.get<SessionOut[]>(`/users/${userId}/sessions`, {
       params: { limit: 50 },
