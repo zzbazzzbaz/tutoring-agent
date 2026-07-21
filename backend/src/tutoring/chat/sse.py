@@ -1,7 +1,7 @@
-"""Chat SSE 端点：send_message + quiz resume。
+"""Chat SSE: send_message + quiz resume.
 
-Agent 在后台 asyncio.Task 中执行，SSE 只消费 asyncio.Queue。
-客户端断开不影响 agent 继续运行。
+Agent runs in background asyncio.Task, SSE consumes from asyncio.Queue.
+Client disconnect doesn't cancel the agent.
 """
 import asyncio
 import json
@@ -56,32 +56,21 @@ async def send_message(
     agent: CompiledStateGraph = Depends(get_agent),
     db_session_factory: async_sessionmaker[AsyncSession] = Depends(get_db_session_factory),
 ):
-    """发送消息，SSE 流式返回 agent 回复。Agent 在后台运行，SSE 断开不影响。"""
     sess = await chat_service.get_writable_session(db_session, session_id, user)
 
     if chat_service.get_running_task(session_id):
-        raise AppError(
-            409, "SESSION_PROCESSING",
-            "Agent is already running for this session",
-        )
+        raise AppError(409, "SESSION_PROCESSING", "Agent is already running for this session")
 
-    if await chat_service.is_interrupted(agent, session_id):
-        raise AppError(
-            409, "SESSION_INTERRUPTED",
-            "Session is paused at a quiz; call /quiz/resume first",
-        )
+    if await chat_service.is_interrupted(db_session, session_id):
+        raise AppError(409, "SESSION_INTERRUPTED", "Session is paused at a quiz; call /quiz/resume first")
 
     if body.retry:
-        existing = await repos.list_messages(db_session, session_id)
-        already_saved = any(m.role == "user" and m.content == body.content for m in existing)
+        existing = await repos.list_events(db_session, session_id)
+        already_saved = any(e.type == "user" and e.content == body.content for e in existing)
         if not already_saved:
-            await repos.save_message(
-                db_session, session_id=session_id, role="user", content=body.content
-            )
+            await repos.save_event(db_session, session_id=session_id, type="user", content=body.content)
     else:
-        await repos.save_message(
-            db_session, session_id=session_id, role="user", content=body.content
-        )
+        await repos.save_event(db_session, session_id=session_id, type="user", content=body.content)
     await repos.touch_session(db_session, session_id)
 
     ctx = await chat_service.build_agent_context(db_session, sess)
@@ -110,20 +99,13 @@ async def resume_quiz_endpoint(
     agent: CompiledStateGraph = Depends(get_agent),
     db_session_factory: async_sessionmaker[AsyncSession] = Depends(get_db_session_factory),
 ):
-    """提交答题（answer/skip），SSE 流式返回 agent 续接回复。"""
     sess = await chat_service.get_writable_session(db_session, session_id, user)
 
     if chat_service.get_running_task(session_id):
-        raise AppError(
-            409, "SESSION_PROCESSING",
-            "Agent is already running for this session",
-        )
+        raise AppError(409, "SESSION_PROCESSING", "Agent is already running for this session")
 
-    if not await chat_service.is_interrupted(agent, session_id):
-        raise AppError(
-            409, "SESSION_NOT_INTERRUPTED",
-            "Session is not paused; no quiz to resume",
-        )
+    if not await chat_service.is_interrupted(db_session, session_id):
+        raise AppError(409, "SESSION_NOT_INTERRUPTED", "Session is not paused; no quiz to resume")
 
     ctx = await chat_service.build_agent_context(db_session, sess)
 

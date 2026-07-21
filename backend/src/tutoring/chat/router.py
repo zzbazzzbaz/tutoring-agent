@@ -1,17 +1,12 @@
-"""Session CRUD + History 端点。"""
+"""Session CRUD + History endpoint."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.chat import service as chat_service
-from tutoring.chat.schemas import (
-    HistoryOut,
-    SessionCreate,
-    SessionOut,
-)
-from tutoring.core.deps import CurrentUser, get_agent, get_current_user, get_db
+from tutoring.chat.schemas import HistoryOut, SessionCreate, SessionOut
+from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.db import repos
 from tutoring.projects import service as project_service
 
@@ -43,11 +38,7 @@ async def list_sessions(
     db_session: AsyncSession = Depends(get_db),
 ) -> list[SessionOut]:
     sessions = await repos.list_sessions(
-        db_session,
-        user_id=user.id,
-        mode=mode,
-        limit=limit,
-        offset=offset,
+        db_session, user_id=user.id, mode=mode, limit=limit, offset=offset,
     )
     return [SessionOut.model_validate(chat_service.session_to_out_dict(s)) for s in sessions]
 
@@ -77,8 +68,7 @@ async def get_history(
     session_id: UUID,
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
-    agent: CompiledStateGraph = Depends(get_agent),
 ) -> HistoryOut:
     await chat_service.get_readable_session(db_session, session_id, user)
-    result = await chat_service.build_history(agent, db_session, session_id)
+    result = await chat_service.build_history(db_session, session_id)
     return HistoryOut(**result)

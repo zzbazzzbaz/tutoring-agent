@@ -74,21 +74,20 @@ def make_tools(
 
         session_id = UUID(config["configurable"]["thread_id"])
 
+        quiz_data = repos.QuizEventData(
+            topic=topic, q_type=q_type, stem=stem,
+            options=options, answer=answer, analysis=analysis,
+        ).model_dump()
+
         async with _db_session() as db_session:
-            quiz = await repos.upsert_pending_question(
-                db_session,
-                session_id=session_id,
-                topic=topic,
-                q_type=q_type,
-                stem=stem,
-                options=options,
-                answer=answer,
-                analysis=analysis,
+            quiz_event = await repos.save_event(
+                db_session, session_id=session_id,
+                type="quiz", data=quiz_data, status="pending",
             )
 
         student_answer = interrupt(
             {
-                "question_id": str(quiz.id),
+                "question_id": str(quiz_event.id),
                 "topic": topic,
                 "q_type": q_type,
                 "stem": stem,
@@ -98,18 +97,18 @@ def make_tools(
 
         if student_answer.get("action") == "skip":
             async with _db_session() as db_session:
-                await repos.update_question(db_session, quiz.id, status="skipped")
-            return {"question_id": str(quiz.id), "action": "skipped"}
+                await repos.update_quiz_status(
+                    db_session, quiz_event.id, status="skipped",
+                )
+            return {"question_id": str(quiz_event.id), "action": "skipped"}
 
         user_answer = student_answer.get("answer", "")
         async with _db_session() as db_session:
-            await repos.update_question(
-                db_session,
-                quiz.id,
-                status="answered",
-                user_answer=user_answer,
+            await repos.update_quiz_status(
+                db_session, quiz_event.id,
+                status="answered", user_answer=user_answer,
             )
 
-        return {"question_id": str(quiz.id), "student_answer": user_answer}
+        return {"question_id": str(quiz_event.id), "student_answer": user_answer}
 
     return [search_knowledge, present_question]
