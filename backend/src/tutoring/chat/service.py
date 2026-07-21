@@ -216,20 +216,101 @@ async def save_tool_messages(
 ) -> None:
     state = await agent.aget_state(config)
     messages = state.values.get("messages") or []
-    existing = await repos.list_messages(db_session, session_id)
-    existing_tool_ids = {m.tool_name for m in existing if m.role == "tool"}
 
-    for msg in messages:
+    import inspect
+    tool_input_map: dict[int, tuple[str, dict | None]] = {}
+    for idx, msg in enumerate(messages):
+        tc = getattr(msg, "tool_calls", None)
+        if tc is None or inspect.isawaitable(tc):
+            continue
+        try:
+            for call in tc:
+                name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
+                args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
+                if name and name != "present_question":
+                    tool_input_map[idx] = (name, args)
+        except TypeError:
+            pass
+
+    existing = await repos.list_messages(db_session, session_id)
+    existing_tool_count = sum(1 for m in existing if m.role == "tool")
+
+    checkpoint_tools: list[tuple[str, dict | None, str]] = []
+    for idx, msg in enumerate(messages):
         if isinstance(msg, ToolMessage):
-            tc_id = msg.tool_call_id or msg.name or ""
-            if tc_id not in existing_tool_ids:
-                await repos.save_tool_message(
-                    db_session, session_id=session_id,
-                    tool_name=msg.name or "unknown",
-                    tool_input=None,
-                    tool_output=msg.text,
-                )
-                existing_tool_ids.add(tc_id)
+            name, args = tool_input_map.get(idx - 1, (msg.name or "unknown", None))
+            if name == "present_question":
+                continue
+            checkpoint_tools.append((name, args, msg.text or ""))
+
+    for i in range(existing_tool_count, len(checkpoint_tools)):
+        name, args, output = checkpoint_tools[i]
+        await repos.save_tool_message(
+            db_session, session_id=session_id,
+            tool_name=name, tool_input=args, tool_output=output,
+        )
+
+
+async def sync_tool_messages(
+    agent: CompiledStateGraph,
+    db_session: AsyncSession,
+    session_id: uuid.UUID,
+) -> None:
+    """Rebuild tool messages from checkpoint. Deletes old tool messages and recreates with correct tool_input."""
+    from sqlalchemy import delete as sql_delete
+    from tutoring.db.models import Message as MsgModel
+
+    config = _stream_config(session_id)
+    state = await agent.aget_state(config)
+    messages = state.values.get("messages") or []
+
+    import inspect
+    tool_calls_by_idx: dict[int, tuple[str, dict | None]] = {}
+    for idx, msg in enumerate(messages):
+        tc = getattr(msg, "tool_calls", None)
+        if tc is None or inspect.isawaitable(tc):
+            continue
+        try:
+            for call in tc:
+                name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
+                args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
+                if name and name != "present_question":
+                    tool_calls_by_idx[idx] = (name, args)
+        except TypeError:
+            pass
+
+    checkpoint_tools: list[tuple[str, dict | None, str]] = []
+    for idx, msg in enumerate(messages):
+        if isinstance(msg, ToolMessage):
+            name, args = tool_calls_by_idx.get(idx - 1, (msg.name or "unknown", None))
+            if name == "present_question":
+                continue
+            checkpoint_tools.append((name, args, msg.text or ""))
+
+    existing = await repos.list_messages(db_session, session_id)
+    existing_tool_count = sum(1 for m in existing if m.role == "tool")
+
+    if existing_tool_count == len(checkpoint_tools):
+        needs_fix = any(
+            m.tool_input is None and m.role == "tool"
+            for m in existing
+        )
+        if not needs_fix:
+            return
+
+    await db_session.execute(
+        sql_delete(MsgModel).where(
+            MsgModel.session_id == session_id,
+            MsgModel.role == "tool",
+        )
+    )
+    await db_session.commit()
+
+    for name, args, output in checkpoint_tools:
+        await repos.save_tool_message(
+            db_session, session_id=session_id,
+            tool_name=name, tool_input=args, tool_output=output,
+        )
 
 
 async def sync_checkpoint_to_db(
@@ -237,21 +318,32 @@ async def sync_checkpoint_to_db(
     db_session: AsyncSession,
     session_id: uuid.UUID,
 ) -> None:
+    from collections import Counter
+
     config = _stream_config(session_id)
     state = await agent.aget_state(config)
     messages = state.values.get("messages") or []
     db_msgs = await repos.list_messages(db_session, session_id)
-    db_contents = {m.content for m in db_msgs if m.role in ("user", "agent")}
 
-    for msg in messages:
-        text = msg.text or ""
-        if text and text not in db_contents:
-            if isinstance(msg, AIMessage):
-                await repos.save_message(db_session, session_id=session_id, role="agent", content=text)
-                db_contents.add(text)
-            elif isinstance(msg, HumanMessage):
-                await repos.save_message(db_session, session_id=session_id, role="user", content=text)
-                db_contents.add(text)
+    db_agent_texts = [m.content for m in db_msgs if m.role == "agent"]
+    db_user_texts = [m.content for m in db_msgs if m.role == "user"]
+    db_agent_counts = Counter(db_agent_texts)
+    db_user_counts = Counter(db_user_texts)
+
+    ckpt_agent_texts = [msg.text for msg in messages if isinstance(msg, AIMessage) and msg.text]
+    ckpt_user_texts = [msg.text for msg in messages if isinstance(msg, HumanMessage) and msg.text]
+    ckpt_agent_counts = Counter(ckpt_agent_texts)
+    ckpt_user_counts = Counter(ckpt_user_texts)
+
+    for text in ckpt_agent_texts:
+        if db_agent_counts[text] < ckpt_agent_counts[text]:
+            await repos.save_message(db_session, session_id=session_id, role="agent", content=text)
+            db_agent_counts[text] += 1
+
+    for text in ckpt_user_texts:
+        if db_user_counts[text] < ckpt_user_counts[text]:
+            await repos.save_message(db_session, session_id=session_id, role="user", content=text)
+            db_user_counts[text] += 1
 
 
 async def build_history(
@@ -260,6 +352,7 @@ async def build_history(
     session_id: uuid.UUID,
 ) -> dict:
     await sync_checkpoint_to_db(agent, db_session, session_id)
+    await sync_tool_messages(agent, db_session, session_id)
 
     messages = await repos.list_messages(db_session, session_id)
     questions = await repos.list_questions(db_session, session_id)
