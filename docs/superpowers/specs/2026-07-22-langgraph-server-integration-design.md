@@ -182,7 +182,7 @@ async def get_graph(runtime: ServerRuntime[AgentContext]):
 **`pyproject.toml`**
 - 运行时依赖新增：`langgraph-sdk`（`agent/server_runtime.py` 的 `ServerRuntime` 用，随 `tutoring` 包装进 Server）。
 - dev 依赖新增：`langgraph-cli[inmem]`（`langgraph dev`）。
-- 运行时依赖新增：`httpx`（网关透传用；原仅测试依赖，需提升为运行时）。
+- 运行时依赖新增：`langgraph-sdk`（`agent/server_runtime.py` 的 `ServerRuntime` 用）。`httpx` 已是运行时依赖，网关透传直接复用。
 - 前端新增依赖：`@langchain/langgraph-sdk`。
 
 **`core/config.py`**
