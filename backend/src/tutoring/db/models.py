@@ -110,8 +110,11 @@ class Message(SQLModel, table=True):
             index=True,
         ),
     )
-    role: str = Field(max_length=20)  # user/agent
+    role: str = Field(max_length=20)  # user/agent/tool
     content: str = Field(sa_column=Column(Text))
+    tool_name: str | None = Field(default=None, max_length=100)
+    tool_input: dict | None = Field(default=None, sa_column=Column(JSON))
+    tool_output: str | None = Field(default=None, sa_column=Column(Text))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
 
     session: "Session" = Relationship(back_populates="messages")
