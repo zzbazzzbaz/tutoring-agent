@@ -137,15 +137,11 @@ async def _stream_response(
         session_id: UUID,
         run_entry: StreamingEntry,
 ) -> StreamingResponse:
-    """共享流程：建上下文 -> 建 queue -> 起后台流式任务 -> 返回 SSE 响应。
-
-    run_entry 已用 functools.partial 绑定了具体流式函数及其前缀参数，
-    这里只补上 (ctx, queue) 两个尾参即可 create_task。
-    """
-    ctx = await chat_sessions.build_agent_context(db_session, sess)
+    agent_context = await chat_sessions.build_agent_context(db_session, sess)
     queue: asyncio.Queue = asyncio.Queue()
-    chat_tasks.register(
-        session_id, asyncio.create_task(run_entry(ctx, queue))
+    chat_tasks.register(  # 注册任务 # todo 存在多进程下并发安全问题
+        session_id=session_id,
+        task=asyncio.create_task(run_entry(agent_context, queue)) # run_entry() 创建协程;asyncio.create_task() 执行协程
     )
     return StreamingResponse(
         _raw_stream(queue),
@@ -186,12 +182,12 @@ async def resume_quiz_endpoint(
         db_session: AsyncSession = Depends(get_db),
         agent: CompiledStateGraph = Depends(get_agent),
 ) -> StreamingResponse:
-    """恢复一个被 quiz 中断的会话（提交答案或跳过）并流式回传。"""
+    """恢复一个被 quiz interrupt 中断的会话"""
     sess = await chat_sessions.get_writable_session(db_session, session_id, user)
 
-    if chat_tasks.get(session_id):
+    if chat_tasks.get(session_id):  # 并发互斥，确保没有agent在跑这个任务
         raise AppError(409, "SESSION_PROCESSING", "Agent is already running for this session")
-    if not await chat_streaming.is_interrupted(agent, session_id):
+    if not await chat_streaming.is_interrupted(agent, session_id):  # 确保是interrupt状态
         raise AppError(409, "SESSION_NOT_INTERRUPTED", "Session is not paused; no quiz to resume")
 
     return await _stream_response(
