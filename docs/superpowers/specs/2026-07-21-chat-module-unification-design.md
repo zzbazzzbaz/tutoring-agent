@@ -298,6 +298,144 @@ event: tool_start     {"tool_name": "search_knowledge", "tool_input": {"query": 
 - Agent 在 `asyncio.create_task` 中执行，SSE tails 输出
 - 断线后 agent 继续跑，前端轮询 history 获取结果
 
+#### 架构
+
+当前 P0/P1 中，agent 执行与 SSE 连接绑定：SSE 断开 -> agent 被 cancel。P2 将 agent 执行移到独立 `asyncio.Task`，SSE 只是消费方。
+
+```
+POST /messages
+  ├─ save user message
+  ├─ create asyncio.Task: run_agent(session_id, content)  <- 后台执行
+  │    ├─ agent.astream_events()
+  │    ├─ 逐事件写入 asyncio.Queue
+  │    └─ 完成后 save_final_agent_message + save_tool_messages
+  └─ SSE stream: consume from Queue  <- 断了无所谓，task 继续
+
+GET /history
+  ├─ 检查 task registry: session_id 是否有运行中的 task
+  ├─ 如果有 -> 返回 processing: true
+  └─ 如果无 -> 正常返回 history
+```
+
+#### Task Registry
+
+```python
+_running_tasks: dict[UUID, asyncio.Task] = {}
+
+def get_running_task(session_id: UUID) -> asyncio.Task | None:
+    task = _running_tasks.get(session_id)
+    if task and not task.done():
+        return task
+    _running_tasks.pop(session_id, None)
+    return None
+```
+
+- 同一 session 不允许并发 agent 任务。`POST /messages` 检查 registry，有运行中的 task 则返回 409 `SESSION_PROCESSING`。
+- Agent 完成后从 registry 移除。
+- 内存级，进程内有效。重启后丢失（checkpoint 恢复兜底）。
+
+#### 后台执行函数
+
+```python
+async def run_agent_background(
+    session_id, user_msg, context, queue, db_session_factory, agent,
+):
+    """在后台运行 agent，事件写入 queue。不依赖 SSE 连接。"""
+    config = _stream_config(session_id)
+    try:
+        stream = await agent.astream_events(
+            {"messages": [HumanMessage(content=user_msg)]},
+            config=config, version="v3", context=context,
+        )
+        async for message in stream.messages:
+            if hasattr(message, "tool_calls") and message.tool_calls:
+                for tc in message.tool_calls:
+                    if tc["name"] != "present_question":
+                        await queue.put({"event": "tool_start", "data": {
+                            "tool_name": tc["name"], "tool_input": tc["args"],
+                        }})
+            async for token in message.text:
+                await queue.put({"event": "text", "data": {"content": token}})
+
+        if await stream.interrupted():
+            await save_final_agent_message(agent, config, db_session, session_id)
+            interrupts = await stream.interrupts()
+            for it in interrupts:
+                await queue.put({"event": "quiz_interrupt", "data": it.value})
+        else:
+            await save_final_agent_message(agent, config, db_session, session_id)
+            await save_tool_messages(agent, config, db_session, session_id)
+
+        await queue.put({"event": "done", "data": {}})
+    except Exception as e:
+        logger.exception("run_agent_background failed")
+        await queue.put({"event": "error", "data": {"message": str(e), "code": "AGENT_ERROR"}})
+    finally:
+        _running_tasks.pop(session_id, None)
+```
+
+#### SSE 消费方
+
+```python
+async def raw_stream(queue: asyncio.Queue):
+    try:
+        while True:
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=15.0)
+            except asyncio.TimeoutError:
+                yield b": heartbeat\n\n"
+                continue
+            if event["event"] == "done":
+                yield _sse(event["event"], event["data"]).encode()
+                break
+            yield _sse(event["event"], event["data"]).encode()
+    finally:
+        pass  # SSE 断开，但后台 task 继续
+```
+
+#### History API 增加 processing 状态
+
+```python
+async def get_history(session_id, agent, db):
+    task = get_running_task(session_id)
+    processing = bool(task and not task.done())
+    # 仍然从 checkpoint 同步 + 返回 items + pending_quiz
+    ...
+    return {"items": items, "pending_quiz": pending_quiz, "processing": processing}
+```
+
+#### 前端轮询
+
+```typescript
+async function recoverFromHistory(sessionId: string) {
+  const { items, pending_quiz, processing } = await sessionsApi.getHistory(sessionId)
+  if (pending_quiz) {
+    set({ items, pendingQuiz: pending_quiz, streamStatus: 'quiz_interrupted' })
+  } else if (processing) {
+    set({ items, streamStatus: 'streaming' })
+    setTimeout(() => recoverFromHistory(sessionId), 3000)
+  } else {
+    const lastAgentMsg = [...items].reverse().find(i => i.type === 'message' && i.data.role === 'agent')
+    if (lastAgentMsg) {
+      set({ items, streamStatus: 'idle' })
+    } else {
+      set({ items, streamStatus: 'error', lastError: { message: 'retry', code: 'RETRYABLE' } })
+    }
+  }
+}
+```
+
+#### 实现清单
+
+- [ ] 后端 `chat/service.py`：`run_agent_background` 函数
+- [ ] 后端 `chat/service.py`：task registry（`_running_tasks` dict + `get_running_task`）
+- [ ] 后端 `chat/sse.py`：`send_message` 改为创建后台 task + SSE 消费 queue
+- [ ] 后端 `chat/sse.py`：`raw_stream` 从 queue 消费 + 心跳
+- [ ] 后端 `chat/service.py`：`build_history` 增加 `processing` 字段
+- [ ] 后端 `chat/sse.py`：`resume_quiz` 同样改为后台 task 模式
+- [ ] 前端 `stores/chat.ts`：`recoverFromHistory` 支持 `processing` 轮询
+- [ ] 前端 `types/session.ts`：`HistoryResponse` 增加 `processing: boolean`
+
 ---
 
 ## Testing
