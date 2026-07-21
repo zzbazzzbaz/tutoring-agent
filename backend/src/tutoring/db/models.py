@@ -91,29 +91,3 @@ class Session(SQLModel, table=True):
 
     project: Project | None = Relationship(back_populates="sessions")
     user: User | None = Relationship(back_populates="sessions")
-    events: list["ChatEvent"] = Relationship(back_populates="session", cascade_delete=True)
-
-
-class ChatEvent(SQLModel, table=True):
-    """统一聊天事件表。type 区分 user/agent/tool/quiz。"""
-    __tablename__ = "chat_event"
-
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
-        sa_column=Column(PG_UUID(as_uuid=True), primary_key=True),
-    )
-    session_id: uuid.UUID = Field(
-        sa_column=Column(
-            PG_UUID(as_uuid=True),
-            ForeignKey("session.id", ondelete="CASCADE"),
-            index=True,
-        ),
-    )
-    type: str = Field(max_length=20)  # user/agent/tool/quiz
-    created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
-    content: str | None = Field(default=None, sa_column=Column(Text))
-    data: dict | None = Field(default=None, sa_column=Column(JSON))
-    status: str | None = Field(default=None, max_length=20)  # quiz: pending/answered/skipped
-    answered_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
-
-    session: "Session" = Relationship(back_populates="events")

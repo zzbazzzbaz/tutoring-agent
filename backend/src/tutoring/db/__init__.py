@@ -1,13 +1,6 @@
-"""Database layer: models and repository functions.
-
-Re-export repository functions for ergonomic access via `from
-tutoring import db; await db.create_project(...)`.
-Engine/session factory located at core.database.
-"""
-from tutoring.db.models import AuthToken, Project, Session, ChatEvent, User
+"""Database layer: models and repository functions."""
+from tutoring.db.models import AuthToken, Project, Session, User
 from tutoring.db.repos import (
-    ToolEventData,
-    QuizEventData,
     # User
     get_user_by_username,
     get_user_by_id,
@@ -25,12 +18,6 @@ from tutoring.db.repos import (
     list_sessions,
     touch_session,
     delete_session,
-    # ChatEvent
-    save_event,
-    list_events,
-    update_quiz_status,
-    has_pending_quiz,
-    get_last_user_event,
     # Project
     create_project,
     get_project,
@@ -43,10 +30,7 @@ __all__ = [
     "AuthToken",
     "Project",
     "Session",
-    "ChatEvent",
     "User",
-    "ToolEventData",
-    "QuizEventData",
     "get_user_by_username",
     "get_user_by_id",
     "create_user",
@@ -61,11 +45,6 @@ __all__ = [
     "list_sessions",
     "touch_session",
     "delete_session",
-    "save_event",
-    "list_events",
-    "update_quiz_status",
-    "has_pending_quiz",
-    "get_last_user_event",
     "create_project",
     "get_project",
     "list_projects",

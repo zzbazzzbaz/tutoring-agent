@@ -1,33 +1,13 @@
 """Async repository functions. No class (YAGNI)."""
 import uuid
 from datetime import datetime, timezone
-from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
-from sqlalchemy import select, update, exists as sa_exists
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from tutoring.db.models import AuthToken, Project, Session, ChatEvent, User
-
-
-# === Pydantic data models for chat_event.data ===
-
-class ToolEventData(BaseModel):
-    tool_name: str
-    tool_input: dict | None = None
-    tool_output: str | None = None
-
-
-class QuizEventData(BaseModel):
-    topic: str
-    q_type: Literal["single", "multi", "short"]
-    stem: str
-    options: list[str] | None = None
-    answer: str
-    analysis: str | None = None
-    user_answer: str | None = None
+from tutoring.db.models import AuthToken, Project, Session, User
 
 
 # === User ===
@@ -157,70 +137,6 @@ async def delete_session(session: AsyncSession, session_id: UUID) -> None:
         update(Session).where(Session.id == session_id).values(deleted_at=datetime.now(timezone.utc))
     )
     await session.commit()
-
-
-# === ChatEvent ===
-
-async def save_event(
-    session: AsyncSession, *, session_id: UUID, type: str,
-    content: str | None = None, data: dict | None = None,
-    status: str | None = None,
-) -> ChatEvent:
-    obj = ChatEvent(
-        session_id=session_id, type=type, content=content,
-        data=data, status=status,
-    )
-    session.add(obj)
-    await session.commit()
-    await session.refresh(obj)
-    return obj
-
-
-async def list_events(session: AsyncSession, session_id: UUID) -> list[ChatEvent]:
-    stmt = (
-        select(ChatEvent)
-        .where(ChatEvent.session_id == session_id)
-        .order_by(ChatEvent.created_at.asc())
-    )
-    result = await session.execute(stmt)
-    return list(result.scalars().all())
-
-
-async def update_quiz_status(
-    session: AsyncSession, event_id: UUID, *,
-    status: str, user_answer: str | None = None,
-) -> None:
-    existing = await session.get(ChatEvent, event_id)
-    if existing:
-        if existing.data:
-            existing.data["user_answer"] = user_answer
-        existing.status = status
-        existing.answered_at = datetime.now(timezone.utc)
-        await session.commit()
-
-
-async def has_pending_quiz(session: AsyncSession, session_id: UUID) -> bool:
-    stmt = (
-        select(sa_exists(ChatEvent))
-        .where(
-            ChatEvent.session_id == session_id,
-            ChatEvent.type == "quiz",
-            ChatEvent.status == "pending",
-        )
-    )
-    result = await session.execute(stmt)
-    return result.scalar()
-
-
-async def get_last_user_event(session: AsyncSession, session_id: UUID) -> ChatEvent | None:
-    stmt = (
-        select(ChatEvent)
-        .where(ChatEvent.session_id == session_id, ChatEvent.type == "user")
-        .order_by(ChatEvent.created_at.desc())
-        .limit(1)
-    )
-    result = await session.execute(stmt)
-    return result.scalars().first()
 
 
 # === Project ===
