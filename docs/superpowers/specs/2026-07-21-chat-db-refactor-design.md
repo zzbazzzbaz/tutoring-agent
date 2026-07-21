@@ -38,23 +38,67 @@ class ChatEvent(SQLModel, table=True):
     # user/agent 消息
     content: str | None  # 文本内容; tool/quiz 时为 null
 
-    # 类型特定数据（JSONB）
-    data: dict | None    # tool: {tool_name, tool_input, tool_output}
-                         # quiz: {topic, q_type, stem, options, answer, analysis, user_answer}
+    # 类型特定数据（JSONB，代码层用 Pydantic 严格定义）
+    data: dict | None
 
     # quiz 状态流转
     status: str | None   # quiz: pending/answered/skipped; 其他: null
     answered_at: datetime | None  # quiz 专用
 ```
 
+#### Pydantic 数据模型（代码层类型安全）
+
+```python
+from typing import Literal
+from pydantic import BaseModel
+
+
+class ToolEventData(BaseModel):
+    """type='tool' 时的 data 字段。"""
+    tool_name: str
+    tool_input: dict | None = None       # {"query": "网络安全隔离 DMZ"}
+    tool_output: str | None = None       # 检索结果文本
+
+
+class QuizEventData(BaseModel):
+    """type='quiz' 时的 data 字段。"""
+    topic: str
+    q_type: Literal["single", "multi", "short"]
+    stem: str
+    options: list[str] | None = None
+    answer: str
+    analysis: str | None = None
+    user_answer: str | None = None       # 答题后填入
+```
+
+`user`/`agent` 类型 `data` 为 null，不需要 Pydantic 模型。
+
+#### 序列化/反序列化
+
+```python
+def encode_event_data(event_type: str, data: BaseModel | None) -> dict | None:
+    if data is None:
+        return None
+    return data.model_dump()
+
+def decode_event_data(event_type: str, data: dict | None) -> ToolEventData | QuizEventData | None:
+    if data is None:
+        return None
+    if event_type == "tool":
+        return ToolEventData.model_validate(data)
+    if event_type == "quiz":
+        return QuizEventData.model_validate(data)
+    return None
+```
+
 各类型存储内容：
 
-| type | content | data | status |
-|------|---------|------|--------|
-| user | "你好" | null | null |
-| agent | "你好！..." | null | null |
-| tool | null | `{"tool_name":"search_knowledge","tool_input":{"query":"..."},"tool_output":"..."}` | null |
-| quiz | null | `{"topic":"...","q_type":"multi","stem":"...","options":[...],"answer":"A,B,C","analysis":"...","user_answer":"A,B"}` | pending -> answered/skipped |
+| type | content | data (JSONB) | Pydantic 模型 | status |
+|------|---------|------|------|--------|
+| user | "你好" | null | - | null |
+| agent | "你好！..." | null | - | null |
+| tool | null | `{"tool_name":"search_knowledge","tool_input":{"query":"..."},"tool_output":"..."}` | `ToolEventData` | null |
+| quiz | null | `{"topic":"...","q_type":"multi","stem":"...","options":[...],"answer":"A,B,C","analysis":"...","user_answer":"A,B"}` | `QuizEventData` | pending -> answered/skipped |
 
 #### 删除的表
 
@@ -174,24 +218,32 @@ event: error          {"message": "...", "code": "..."}
 #### Types
 
 ```typescript
+// 严格定义的 data 字段（与后端 Pydantic 模型一一对应）
+
+interface ToolEventData {
+  tool_name: string
+  tool_input: Record<string, unknown> | null
+  tool_output: string | null
+}
+
+interface QuizEventData {
+  topic: string
+  q_type: 'single' | 'multi' | 'short'
+  stem: string
+  options: string[] | null
+  answer: string
+  analysis: string | null
+  user_answer: string | null
+}
+
+// 统一事件类型
 interface ChatEvent {
   id: string
   session_id: string
   type: 'user' | 'agent' | 'tool' | 'quiz'
   created_at: string
   content: string | null
-  data: {
-    tool_name?: string
-    tool_input?: Record<string, unknown>
-    tool_output?: string
-    topic?: string
-    q_type?: 'single' | 'multi' | 'short'
-    stem?: string
-    options?: string[] | null
-    answer?: string
-    analysis?: string
-    user_answer?: string | null
-  } | null
+  data: ToolEventData | QuizEventData | null  // 根据 type 决定具体类型
   status: 'pending' | 'answered' | 'skipped' | null
   answered_at: string | null
 }
