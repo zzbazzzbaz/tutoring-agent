@@ -1,10 +1,11 @@
 import asyncio
 import inspect
+import json
 import logging
 import uuid
 from typing import AsyncIterator
 
-from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -59,8 +60,17 @@ async def build_agent_context(db: AsyncSession, sess: Session) -> AgentContext:
     return AgentContext(mode="free", course_name=settings.course_name)
 
 
-async def is_interrupted(db: AsyncSession, session_id: uuid.UUID) -> bool:
-    return await repos.has_pending_quiz(db, session_id)
+def _stream_config(session_id: uuid.UUID) -> dict:
+    return {
+        "configurable": {"thread_id": str(session_id)},
+        "recursion_limit": 15,
+    }
+
+
+async def is_interrupted(agent: CompiledStateGraph, session_id: uuid.UUID) -> bool:
+    config = _stream_config(session_id)
+    state = await agent.aget_state(config)
+    return bool(state.next)
 
 
 def session_to_out_dict(sess: Session) -> dict:
@@ -78,41 +88,85 @@ def session_to_out_dict(sess: Session) -> dict:
     return data
 
 
-def _stream_config(session_id: uuid.UUID) -> dict:
-    return {
-        "configurable": {"thread_id": str(session_id)},
-        "recursion_limit": 15,
-    }
+def _extract_items(messages: list) -> list[dict]:
+    items: list[dict] = []
+    pending_quiz_indices: list[int] = []
 
+    for msg in messages:
+        if isinstance(msg, HumanMessage):
+            if msg.text:
+                items.append({"type": "user", "content": msg.text})
 
-def _event_to_dict(e) -> dict:
-    data = e.data
-    if e.type == "quiz" and data:
-        data = {k: v for k, v in data.items() if k not in ("answer", "analysis")}
-    return {
-        "id": str(e.id),
-        "session_id": str(e.session_id),
-        "type": e.type,
-        "created_at": e.created_at.isoformat() if e.created_at else None,
-        "content": e.content,
-        "data": data,
-        "status": e.status,
-        "answered_at": e.answered_at.isoformat() if e.answered_at else None,
-    }
+        elif isinstance(msg, AIMessage):
+            tc = getattr(msg, "tool_calls", None)
+            if tc and not inspect.isawaitable(tc):
+                try:
+                    for call in tc:
+                        name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
+                        args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
+                        if name == "present_question":
+                            items.append({
+                                "type": "quiz",
+                                "quiz_id": "",
+                                "topic": args.get("topic", ""),
+                                "q_type": args.get("q_type", ""),
+                                "stem": args.get("stem", ""),
+                                "options": args.get("options"),
+                                "status": "pending",
+                                "user_answer": None,
+                            })
+                            pending_quiz_indices.append(len(items) - 1)
+                        elif name:
+                            items.append({
+                                "type": "tool_call",
+                                "tool_name": name,
+                                "tool_input": args,
+                            })
+                except TypeError:
+                    pass
+
+            if msg.text:
+                items.append({"type": "agent", "content": msg.text})
+
+        elif isinstance(msg, ToolMessage):
+            content_str = msg.text or ""
+            try:
+                result = json.loads(content_str)
+            except (json.JSONDecodeError, TypeError):
+                result = {}
+
+            if pending_quiz_indices:
+                idx = pending_quiz_indices.pop(0)
+                if isinstance(result, dict):
+                    if result.get("action") == "skipped":
+                        items[idx]["status"] = "skipped"
+                    elif "student_answer" in result:
+                        items[idx]["status"] = "answered"
+                        items[idx]["user_answer"] = result["student_answer"]
+                    items[idx]["quiz_id"] = result.get("question_id", "")
+
+    return items
 
 
 async def build_history(
-    db_session: AsyncSession,
+    agent: CompiledStateGraph,
     session_id: uuid.UUID,
 ) -> dict:
-    events = await repos.list_events(db_session, session_id)
-    items = [_event_to_dict(e) for e in events]
+    config = _stream_config(session_id)
+    state = await agent.aget_state(config)
+    messages = state.values.get("messages") or []
+    items = _extract_items(messages)
 
     pending_quiz = None
-    for e in events:
-        if e.type == "quiz" and e.status == "pending":
-            pending_quiz = _event_to_dict(e)
-            break
+    if state.next:
+        for task in state.tasks:
+            if hasattr(task, "interrupts") and task.interrupts:
+                for intr in task.interrupts:
+                    if hasattr(intr, "value"):
+                        pending_quiz = intr.value
+                        break
+            if pending_quiz:
+                break
 
     task = get_running_task(session_id)
     processing = bool(task and not task.done())
@@ -120,55 +174,21 @@ async def build_history(
     return {"items": items, "pending_quiz": pending_quiz, "processing": processing}
 
 
-async def _process_stream(stream, queue: asyncio.Queue) -> tuple[str, list[tuple[str, dict | None, str]]]:
-    """Accumulate text + tool calls from stream. Returns (full_text, completed_tools)."""
-    full_text = ""
-    pending_tools: list[tuple[str, dict | None]] = []
-    completed_tools: list[tuple[str, dict | None, str]] = []
-
-    async for message in stream.messages:
-        if isinstance(message, ToolMessage):
-            if pending_tools:
-                name, args = pending_tools.pop(0)
-                completed_tools.append((name, args, message.text or ""))
-            continue
-
-        tc = getattr(message, "tool_calls", None)
-        if tc and not inspect.isawaitable(tc):
-            try:
-                for call in tc:
-                    name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
-                    args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
-                    if name and name != "present_question":
-                        await queue.put({"event": "tool_start", "data": {
-                            "tool_name": name, "tool_input": args,
-                        }})
-                        pending_tools.append((name, args))
-            except TypeError:
-                pass
-
-        async for token in message.text:
-            full_text += token
-            await queue.put({"event": "text", "data": {"content": token}})
-
-    return full_text, completed_tools
-
-
-async def _save_results(
-    db_session_factory, session_id, full_text, completed_tools,
-) -> None:
-    async with db_session_factory() as db_session:
-        if full_text:
-            await repos.save_event(
-                db_session, session_id=session_id, type="agent", content=full_text,
-            )
-        for name, args, output in completed_tools:
-            data = repos.ToolEventData(
-                tool_name=name, tool_input=args, tool_output=output,
-            ).model_dump()
-            await repos.save_event(
-                db_session, session_id=session_id, type="tool", data=data,
-            )
+def _yield_tool_starts(message) -> list[dict]:
+    events = []
+    tc = getattr(message, "tool_calls", None)
+    if tc and not inspect.isawaitable(tc):
+        try:
+            for call in tc:
+                name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
+                args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
+                if name and name != "present_question":
+                    events.append({"event": "tool_start", "data": {
+                        "tool_name": name, "tool_input": args,
+                    }})
+        except TypeError:
+            pass
+    return events
 
 
 async def run_agent_background(
@@ -177,7 +197,7 @@ async def run_agent_background(
     user_msg: str,
     context: AgentContext,
     queue: asyncio.Queue,
-    db_session_factory: async_sessionmaker[AsyncSession],
+    db_session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> None:
     config = _stream_config(session_id)
     try:
@@ -185,14 +205,17 @@ async def run_agent_background(
             {"messages": [HumanMessage(content=user_msg)]},
             config=config, version="v3", context=context,
         )
-        full_text, completed_tools = await _process_stream(stream, queue)
+        async for message in stream.messages:
+            for ev in _yield_tool_starts(message):
+                await queue.put(ev)
+            async for token in message.text:
+                await queue.put({"event": "text", "data": {"content": token}})
 
         if await stream.interrupted():
             interrupts = await stream.interrupts()
             for it in interrupts:
                 await queue.put({"event": "quiz_interrupt", "data": it.value})
 
-        await _save_results(db_session_factory, session_id, full_text, completed_tools)
         await queue.put({"event": "done", "data": {}})
     except Exception as e:
         logger.exception("run_agent_background failed")
@@ -208,7 +231,7 @@ async def run_resume_background(
     answer: str | None,
     context: AgentContext,
     queue: asyncio.Queue,
-    db_session_factory: async_sessionmaker[AsyncSession],
+    db_session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> None:
     config = _stream_config(session_id)
     resume_value: dict = {"action": action}
@@ -219,14 +242,17 @@ async def run_resume_background(
             Command(resume=resume_value),
             config=config, version="v3", context=context,
         )
-        full_text, completed_tools = await _process_stream(stream, queue)
+        async for message in stream.messages:
+            for ev in _yield_tool_starts(message):
+                await queue.put(ev)
+            async for token in message.text:
+                await queue.put({"event": "text", "data": {"content": token}})
 
         if await stream.interrupted():
             interrupts = await stream.interrupts()
             for it in interrupts:
                 await queue.put({"event": "quiz_interrupt", "data": it.value})
 
-        await _save_results(db_session_factory, session_id, full_text, completed_tools)
         await queue.put({"event": "done", "data": {}})
     except Exception as e:
         logger.exception("run_resume_background failed")

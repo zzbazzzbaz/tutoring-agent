@@ -31,23 +31,23 @@ class SessionOut(BaseModel):
     created_at: datetime
 
 
-class ChatEventOut(BaseModel):
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    session_id: UUID
+class HistoryItemOut(BaseModel):
     type: str
-    created_at: datetime
     content: str | None = None
-    data: dict | None = None
+    tool_name: str | None = None
+    tool_input: dict | None = None
+    quiz_id: str | None = None
+    topic: str | None = None
+    q_type: str | None = None
+    stem: str | None = None
+    options: list[str] | None = None
     status: str | None = None
-    answered_at: datetime | None = None
+    user_answer: str | None = None
 
 
 class HistoryOut(BaseModel):
-    items: list[ChatEventOut]
-    pending_quiz: ChatEventOut | None = None
+    items: list[HistoryItemOut]
+    pending_quiz: dict | None = None
     processing: bool = False
 
 
