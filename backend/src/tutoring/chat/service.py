@@ -105,13 +105,19 @@ def _extract_items(messages: list) -> list[dict]:
                         name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
                         args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
                         if name == "present_question":
+                            raw_options = args.get("options")
+                            if isinstance(raw_options, str):
+                                try:
+                                    raw_options = json.loads(raw_options)
+                                except (json.JSONDecodeError, TypeError):
+                                    raw_options = [raw_options]
                             items.append({
                                 "type": "quiz",
                                 "quiz_id": "",
                                 "topic": args.get("topic", ""),
                                 "q_type": args.get("q_type", ""),
                                 "stem": args.get("stem", ""),
-                                "options": args.get("options"),
+                                "options": raw_options,
                                 "status": "pending",
                                 "user_answer": None,
                             })
