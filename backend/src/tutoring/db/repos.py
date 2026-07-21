@@ -1,12 +1,33 @@
+"""Async repository functions. No class (YAGNI)."""
 import uuid
 from datetime import datetime, timezone
+from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import select, update
+from pydantic import BaseModel
+from sqlalchemy import select, update, exists as sa_exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from tutoring.db.models import AuthToken, Project, Session, Message, Question, User
+from tutoring.db.models import AuthToken, Project, Session, ChatEvent, User
+
+
+# === Pydantic data models for chat_event.data ===
+
+class ToolEventData(BaseModel):
+    tool_name: str
+    tool_input: dict | None = None
+    tool_output: str | None = None
+
+
+class QuizEventData(BaseModel):
+    topic: str
+    q_type: Literal["single", "multi", "short"]
+    stem: str
+    options: list[str] | None = None
+    answer: str
+    analysis: str | None = None
+    user_answer: str | None = None
 
 
 # === User ===
@@ -97,8 +118,6 @@ async def create_session(
 
 
 async def get_session(session: AsyncSession, session_id: UUID) -> Session | None:
-    # selectinload(Session.project) 使路由可读取 `project_name`，
-    # 而不触发 lazy load（在 async 下没有 greenlet 会失败）。
     stmt = (
         select(Session)
         .where(Session.id == session_id)
@@ -140,23 +159,16 @@ async def delete_session(session: AsyncSession, session_id: UUID) -> None:
     await session.commit()
 
 
-# === Message ===
+# === ChatEvent ===
 
-async def save_message(session: AsyncSession, *, session_id: UUID, role: str, content: str) -> Message:
-    obj = Message(session_id=session_id, role=role, content=content)
-    session.add(obj)
-    await session.commit()
-    await session.refresh(obj)
-    return obj
-
-
-async def save_tool_message(
-    session: AsyncSession, *, session_id: UUID, tool_name: str,
-    tool_input: dict | None, tool_output: str | None,
-) -> Message:
-    obj = Message(
-        session_id=session_id, role="tool", content="",
-        tool_name=tool_name, tool_input=tool_input, tool_output=tool_output,
+async def save_event(
+    session: AsyncSession, *, session_id: UUID, type: str,
+    content: str | None = None, data: dict | None = None,
+    status: str | None = None,
+) -> ChatEvent:
+    obj = ChatEvent(
+        session_id=session_id, type=type, content=content,
+        data=data, status=status,
     )
     session.add(obj)
     await session.commit()
@@ -164,79 +176,51 @@ async def save_tool_message(
     return obj
 
 
-async def list_messages(session: AsyncSession, session_id: UUID, *, limit: int = 100, offset: int = 0) -> list[Message]:
+async def list_events(session: AsyncSession, session_id: UUID) -> list[ChatEvent]:
     stmt = (
-        select(Message)
-        .where(Message.session_id == session_id)
-        .order_by(Message.created_at.asc())
-        .limit(limit)
-        .offset(offset)
+        select(ChatEvent)
+        .where(ChatEvent.session_id == session_id)
+        .order_by(ChatEvent.created_at.asc())
     )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
 
-async def get_last_message(session: AsyncSession, session_id: UUID) -> Message | None:
+async def update_quiz_status(
+    session: AsyncSession, event_id: UUID, *,
+    status: str, user_answer: str | None = None,
+) -> None:
+    existing = await session.get(ChatEvent, event_id)
+    if existing:
+        if existing.data:
+            existing.data["user_answer"] = user_answer
+        existing.status = status
+        existing.answered_at = datetime.now(timezone.utc)
+        await session.commit()
+
+
+async def has_pending_quiz(session: AsyncSession, session_id: UUID) -> bool:
     stmt = (
-        select(Message)
-        .where(Message.session_id == session_id)
-        .order_by(Message.created_at.desc())
+        select(sa_exists(ChatEvent))
+        .where(
+            ChatEvent.session_id == session_id,
+            ChatEvent.type == "quiz",
+            ChatEvent.status == "pending",
+        )
+    )
+    result = await session.execute(stmt)
+    return result.scalar()
+
+
+async def get_last_user_event(session: AsyncSession, session_id: UUID) -> ChatEvent | None:
+    stmt = (
+        select(ChatEvent)
+        .where(ChatEvent.session_id == session_id, ChatEvent.type == "user")
+        .order_by(ChatEvent.created_at.desc())
         .limit(1)
     )
     result = await session.execute(stmt)
     return result.scalars().first()
-
-
-# === Question ===
-
-async def upsert_pending_question(
-    session: AsyncSession, *, session_id: UUID, topic: str, q_type: str,
-    stem: str, options: list | None, answer: str, analysis: str | None,
-) -> Question:
-    """幂等：若 (session_id, topic) 已存在 pending 题目则返回，否则插入。"""
-    stmt = (
-        select(Question)
-        .where(Question.session_id == session_id, Question.topic == topic, Question.status == "pending")
-    )
-    result = await session.execute(stmt)
-    existing = result.scalars().first()
-    if existing:
-        return existing
-    obj = Question(
-        session_id=session_id, topic=topic, q_type=q_type,
-        stem=stem, options=options, answer=answer, analysis=analysis,
-        status="pending",
-    )
-    session.add(obj)
-    await session.commit()
-    await session.refresh(obj)
-    return obj
-
-
-async def get_pending_question(session: AsyncSession, session_id: UUID, topic: str) -> Question | None:
-    stmt = (
-        select(Question)
-        .where(Question.session_id == session_id, Question.topic == topic, Question.status == "pending")
-    )
-    result = await session.execute(stmt)
-    return result.scalars().first()
-
-
-async def update_question(session: AsyncSession, question_id: UUID, **fields) -> None:
-    fields["answered_at"] = fields.get("answered_at", datetime.now(timezone.utc))
-    await session.execute(update(Question).where(Question.id == question_id).values(**fields))
-    await session.commit()
-
-
-async def list_questions(
-    session: AsyncSession, session_id: UUID, *, status: str | None = None,
-) -> list[Question]:
-    stmt = select(Question).where(Question.session_id == session_id)
-    if status:
-        stmt = stmt.where(Question.status == status)
-    stmt = stmt.order_by(Question.created_at.asc())
-    result = await session.execute(stmt)
-    return list(result.scalars().all())
 
 
 # === Project ===

@@ -2,10 +2,12 @@
 
 Re-export repository functions for ergonomic access via `from
 tutoring import db; await db.create_project(...)`.
-Engine/session factory 位于 core.database。
+Engine/session factory located at core.database.
 """
-from tutoring.db.models import AuthToken, Project, Session, Message, Question, User
+from tutoring.db.models import AuthToken, Project, Session, ChatEvent, User
 from tutoring.db.repos import (
+    ToolEventData,
+    QuizEventData,
     # User
     get_user_by_username,
     get_user_by_id,
@@ -23,14 +25,12 @@ from tutoring.db.repos import (
     list_sessions,
     touch_session,
     delete_session,
-    # Message
-    save_message,
-    list_messages,
-    # Question
-    upsert_pending_question,
-    get_pending_question,
-    update_question,
-    list_questions,
+    # ChatEvent
+    save_event,
+    list_events,
+    update_quiz_status,
+    has_pending_quiz,
+    get_last_user_event,
     # Project
     create_project,
     get_project,
@@ -40,39 +40,32 @@ from tutoring.db.repos import (
 )
 
 __all__ = [
-    # Models
     "AuthToken",
     "Project",
     "Session",
-    "Message",
-    "Question",
+    "ChatEvent",
     "User",
-    # User repos
+    "ToolEventData",
+    "QuizEventData",
     "get_user_by_username",
     "get_user_by_id",
     "create_user",
     "list_users_by_role",
     "delete_user",
     "update_password",
-    # AuthToken repos
     "create_token",
     "get_token_with_user",
     "delete_token",
-    # Session repos
     "create_session",
     "get_session",
     "list_sessions",
     "touch_session",
-    "end_session",
-    # Message repos
-    "save_message",
-    "list_messages",
-    # Question repos
-    "upsert_pending_question",
-    "get_pending_question",
-    "update_question",
-    "list_questions",
-    # Project repos
+    "delete_session",
+    "save_event",
+    "list_events",
+    "update_quiz_status",
+    "has_pending_quiz",
+    "get_last_user_event",
     "create_project",
     "get_project",
     "list_projects",
