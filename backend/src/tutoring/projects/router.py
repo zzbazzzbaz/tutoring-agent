@@ -1,5 +1,3 @@
-"""Project CRUD 端点。路由只调 service + model_validate，无业务逻辑。
-写操作限教师，读操作登录即可。"""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status

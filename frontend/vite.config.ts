@@ -11,6 +11,16 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
+    port: 8001,
+    strictPort: true,
+    allowedHosts: ['8001.frp.chatgqt.top'],
+    hmr: {
+      protocol: 'wss',
+      host: '8001.frp.chatgqt.top',
+      port: 443,
+      clientPort: 443,
+    },
     proxy: {
       '/health': 'http://localhost:8000',
       '/auth': 'http://localhost:8000',

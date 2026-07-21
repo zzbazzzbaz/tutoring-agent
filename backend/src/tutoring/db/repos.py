@@ -1,4 +1,3 @@
-"""Async repository functions. No class (YAGNI)."""
 import uuid
 from datetime import datetime, timezone
 from uuid import UUID

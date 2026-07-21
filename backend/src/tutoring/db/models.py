@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Text, ForeignKey, func
+from sqlalchemy import Text, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, TIMESTAMP
 from sqlmodel import SQLModel, Field, Column, Relationship
 
@@ -54,7 +54,8 @@ class Project(SQLModel, table=True):
     status: str = Field(default="draft", max_length=20, index=True)  # draft/published
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
-    updated_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
+    updated_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
 
     sessions: list["Session"] = Relationship(back_populates="project")
 
@@ -87,7 +88,8 @@ class Session(SQLModel, table=True):
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
     last_active_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
-    updated_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
+    updated_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
 
     project: Project | None = Relationship(back_populates="sessions")
     user: User | None = Relationship(back_populates="sessions")

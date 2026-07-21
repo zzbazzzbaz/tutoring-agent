@@ -1,22 +1,16 @@
 import logging
 from typing import Literal
 
-from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from lightrag import LightRAG, QueryParam
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tutoring.agent.schemas import PresentQuestionArgs, SearchKnowledgeArgs
 
 logger = logging.getLogger(__name__)
 
 
-def make_tools(
-    *,
-    rag: LightRAG,
-    db_session_factory: async_sessionmaker[AsyncSession] | None = None,
-) -> list[BaseTool]:
-    """构建 agent 工具列表，闭包捕获依赖。"""
+def make_tools(*, rag: LightRAG) -> list[BaseTool]:
+    """构建 agent 工具列表，闭包捕获 rag 依赖。"""
 
     @tool(
         description="检索课程知识库（知识图谱 + RAG），返回相关知识片段。当学生提问或讨论某个概念时，先调用此工具检索相关知识，再基于检索内容设计追问或出题。",
@@ -54,7 +48,6 @@ def make_tools(
         q_type: Literal["single", "multi", "short"],
         stem: str,
         options: list[str] | None,
-        config: RunnableConfig,
     ) -> dict:
         from langgraph.types import interrupt
         import uuid as _uuid

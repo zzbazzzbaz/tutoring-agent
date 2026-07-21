@@ -3,12 +3,11 @@ import inspect
 import json
 import logging
 import uuid
-from typing import AsyncIterator
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.agent.prompts import AgentContext
 from tutoring.core.config import settings
@@ -203,7 +202,6 @@ async def run_agent_background(
     user_msg: str,
     context: AgentContext,
     queue: asyncio.Queue,
-    db_session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> None:
     config = _stream_config(session_id)
     try:
@@ -237,7 +235,6 @@ async def run_resume_background(
     answer: str | None,
     context: AgentContext,
     queue: asyncio.Queue,
-    db_session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> None:
     config = _stream_config(session_id)
     resume_value: dict = {"action": action}

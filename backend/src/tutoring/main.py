@@ -30,18 +30,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine = create_engine(settings.database_url)
     await init_db(engine)
     db_session_factory = create_session_factory(engine)
-    logger.info("DB initialized: %s", settings.database_url)
+    logger.info("1. DB initialized: %s", settings.database_url)
 
     # 2. LangGraph AsyncPostgresSaver
     pg_conn_str = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
     async with AsyncPostgresSaver.from_conn_string(pg_conn_str) as checkpointer:
         await checkpointer.setup()  # 幂等
-        logger.info("LangGraph checkpointer ready")
+        logger.info("2. LangGraph checkpointer ready")
 
         # 3. LightRAG SDK 实例（连同一个 PG + Neo4j）
         rag = create_rag()
         await rag.initialize_storages()
-        logger.info("LightRAG SDK initialized")
+        logger.info("3. LightRAG SDK initialized")
 
         # 4. 构建 agent 单例
         app.state.agent = None
@@ -50,11 +50,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             app.state.agent = build_agent(
                 checkpointer=checkpointer,
                 rag=rag,
-                db_session_factory=db_session_factory,
             )
-            logger.info("Agent built")
+            logger.info("4. Agent built")
         except Exception as e:
-            logger.warning("Agent 构建失败: %s", e)
+            logger.error("Agent 构建失败: %s", e)
             app.state.agent = None
 
         # 注入状态

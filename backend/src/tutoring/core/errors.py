@@ -1,4 +1,3 @@
-"""统一错误类型与异常处理器。对外格式：{"detail": {"error": {"code", "message"}}}。"""
 import logging
 
 from fastapi import FastAPI, Request

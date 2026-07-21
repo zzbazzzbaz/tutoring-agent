@@ -1,8 +1,3 @@
-"""Chat SSE: send_message + quiz resume.
-
-Agent runs in background asyncio.Task, SSE consumes from asyncio.Queue.
-Client disconnect doesn't cancel the agent.
-"""
 import asyncio
 import json
 import uuid
@@ -11,7 +6,7 @@ from typing import AsyncIterator
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from langgraph.graph.state import CompiledStateGraph
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.chat import service as chat_service
 from tutoring.chat.schemas import QuizResumeRequest, SendMessageRequest
@@ -20,7 +15,6 @@ from tutoring.core.deps import (
     get_agent,
     get_current_user,
     get_db,
-    get_db_session_factory,
 )
 from tutoring.core.errors import AppError
 from tutoring.db import repos
@@ -54,7 +48,6 @@ async def send_message(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
     agent: CompiledStateGraph = Depends(get_agent),
-    db_session_factory: async_sessionmaker[AsyncSession] = Depends(get_db_session_factory),
 ):
     sess = await chat_service.get_writable_session(db_session, session_id, user)
 
@@ -71,7 +64,7 @@ async def send_message(
     queue: asyncio.Queue = asyncio.Queue()
     task = asyncio.create_task(
         chat_service.run_agent_background(
-            agent, session_id, body.content, ctx, queue, db_session_factory,
+            agent, session_id, body.content, ctx, queue,
         )
     )
     chat_service._running_tasks[session_id] = task
@@ -90,7 +83,6 @@ async def resume_quiz_endpoint(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
     agent: CompiledStateGraph = Depends(get_agent),
-    db_session_factory: async_sessionmaker[AsyncSession] = Depends(get_db_session_factory),
 ):
     sess = await chat_service.get_writable_session(db_session, session_id, user)
 
@@ -105,7 +97,7 @@ async def resume_quiz_endpoint(
     queue: asyncio.Queue = asyncio.Queue()
     task = asyncio.create_task(
         chat_service.run_resume_background(
-            agent, session_id, body.action, body.answer, ctx, queue, db_session_factory,
+            agent, session_id, body.action, body.answer, ctx, queue,
         )
     )
     chat_service._running_tasks[session_id] = task
