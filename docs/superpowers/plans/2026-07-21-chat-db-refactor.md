@@ -638,17 +638,26 @@ Replace `upsert_pending_question` and `update_question` calls:
         return {"question_id": str(quiz_event.id), "student_answer": user_answer}
 ```
 
-- [ ] **Step 5: Verify backend compiles and starts**
+- [ ] **Step 5: Update conftest.py cleanup**
+
+In `backend/tests/conftest.py`, replace `DELETE FROM question` and `DELETE FROM message` with:
+
+```python
+        await conn.execute(text("DELETE FROM chat_event"))
+        await conn.execute(text("DELETE FROM session"))
+```
+
+- [ ] **Step 6: Verify backend compiles and starts**
 
 ```bash
 cd backend && uv run python -c "from tutoring.main import app; print('OK')"
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add backend/src/tutoring/chat/sse.py backend/src/tutoring/chat/router.py backend/src/tutoring/agent/tools.py
-git commit -m "refactor: update SSE, router, tools for chat_event table"
+git add backend/src/tutoring/chat/sse.py backend/src/tutoring/chat/router.py backend/src/tutoring/agent/tools.py backend/tests/conftest.py
+git commit -m "refactor: update SSE, router, tools, tests for chat_event table"
 ```
 
 ---
