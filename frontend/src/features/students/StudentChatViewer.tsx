@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, MessageSquare, MessagesSquare, MessageSquarePlus } from 'lucide-react'
 import { usersApi } from '@/api/users'
+import { sessionsApi } from '@/api/sessions'
 import { formatRelativeTime } from '@/lib/formatDate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -44,15 +45,8 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
     setSelectedSession(session)
     setLoadingItems(true)
     try {
-      const [messages, questions] = await Promise.all([
-        usersApi.listSessionMessages(session.id),
-        usersApi.listSessionQuestions(session.id),
-      ])
-      const chatItems: ChatItem[] = [
-        ...messages.map(m => ({ type: 'message' as const, data: m })),
-        ...questions.map(q => ({ type: 'quiz' as const, data: q })),
-      ].sort((a, b) => +new Date(a.data.created_at) - +new Date(b.data.created_at))
-      setItems(chatItems)
+      const history = await sessionsApi.getHistory(session.id)
+      setItems(history.items)
     } finally {
       setLoadingItems(false)
     }

@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { sessionsApi } from '@/api/sessions'
 import { streamMessage, resumeQuiz } from '@/api/chat'
 import { createSelectors } from '@/lib/utils'
-import type { SessionOut } from '@/types/session'
+import type { SessionOut, HistoryResponse } from '@/types/session'
 import type { QuestionOut, QuizInterruptData } from '@/types/question'
 import type { ChatItem, StreamStatus } from '@/types/chat'
 
@@ -23,8 +23,38 @@ interface ChatState {
   selectSession: (id: string) => Promise<void>
   sendMessage: (content: string) => Promise<void>
   submitQuiz: (action: 'answer' | 'skip', answer?: string) => Promise<void>
+  retryLastMessage: () => Promise<void>
+  recoverFromHistory: () => Promise<void>
   resetStream: () => void
   clearCurrent: () => void
+}
+
+function makeAgentMsg(sessionId: string, content: string) {
+  return {
+    type: 'message' as const,
+    data: {
+      id: crypto.randomUUID(),
+      session_id: sessionId,
+      role: 'agent' as const,
+      content,
+      created_at: new Date().toISOString(),
+    },
+  }
+}
+
+function makeToolItem(sessionId: string, toolName: string, toolInput: Record<string, unknown>) {
+  return {
+    type: 'message' as const,
+    data: {
+      id: crypto.randomUUID(),
+      session_id: sessionId,
+      role: 'tool' as const,
+      content: '',
+      tool_name: toolName,
+      tool_input: toolInput,
+      created_at: new Date().toISOString(),
+    },
+  }
 }
 
 const useChatStore = create<ChatState>((set, get) => ({
@@ -52,16 +82,16 @@ const useChatStore = create<ChatState>((set, get) => ({
   selectSession: async id => {
     set({ loadingSession: true, streamStatus: 'idle', pendingQuiz: null, streamingContent: '', lastError: null })
     try {
-      const [session, messages, questions] = await Promise.all([
+      const [session, history] = await Promise.all([
         sessionsApi.get(id),
-        sessionsApi.listMessages(id),
-        sessionsApi.listQuestions(id),
+        sessionsApi.getHistory(id),
       ])
-      const items: ChatItem[] = [
-        ...messages.map(m => ({ type: 'message' as const, data: m })),
-        ...questions.map(q => ({ type: 'quiz' as const, data: q })),
-      ].sort((a, b) => +new Date(a.data.created_at) - +new Date(b.data.created_at))
-      set({ currentSession: session, items })
+      set({
+        currentSession: session,
+        items: history.items,
+        pendingQuiz: history.pending_quiz,
+        streamStatus: history.pending_quiz ? 'quiz_interrupted' : (history.processing ? 'streaming' : 'idle'),
+      })
     } finally {
       set({ loadingSession: false })
     }
@@ -96,51 +126,45 @@ const useChatStore = create<ChatState>((set, get) => ({
       for await (const ev of streamMessage(currentSession.id, content, ac.signal)) {
         switch (ev.event) {
           case 'text':
-            set(state => ({
-              streamingContent: state.streamingContent + ev.data.content,
-            }))
+            set(state => ({ streamingContent: state.streamingContent + ev.data.content }))
+            break
+          case 'tool_start':
+            set(state => ({ items: [...state.items, makeToolItem(currentSession.id, ev.data.tool_name, ev.data.tool_input)] }))
             break
           case 'quiz_interrupt':
             set({ pendingQuiz: ev.data, streamStatus: 'quiz_interrupted' })
             break
           case 'done':
             if (get().streamStatus === 'streaming') {
-              const agentMsg = {
-                type: 'message' as const,
-                data: {
-                  id: crypto.randomUUID(),
-                  session_id: currentSession.id,
-                  role: 'agent' as const,
-                  content: get().streamingContent,
-                  created_at: new Date().toISOString(),
-                },
-              }
-              set(state => ({
-                items: [...state.items, agentMsg],
-                streamStatus: 'idle' as const,
-                streamingContent: '',
-              }))
+              set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamStatus: 'idle' as const, streamingContent: '' }))
             } else if (get().streamStatus === 'quiz_interrupted') {
-              set({ streamingContent: '' })
+              if (get().streamingContent) {
+                set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamingContent: '' }))
+              } else {
+                set({ streamingContent: '' })
+              }
             }
             break
           case 'error':
             set({ streamStatus: 'error', lastError: ev.data })
             toast.error(ev.data.message)
-            set(state => ({ items: state.items.filter(it => it !== userMsg) }))
             break
         }
       }
       if (get().streamStatus === 'streaming') {
         set({ streamStatus: 'error', lastError: { message: '连接中断', code: 'STREAM_CLOSED' } })
         toast.error('连接中断')
-        set(state => ({ items: state.items.filter(it => it !== userMsg) }))
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') {
-        set({ streamStatus: 'error', lastError: { message: String(e), code: 'NETWORK' } })
-        toast.error('网络错误')
-        set(state => ({ items: state.items.filter(it => it !== userMsg) }))
+        const is409 = e.message?.includes('409')
+        if (is409) {
+          toast.info('请先回答上方题目')
+          await get().recoverFromHistory()
+        } else {
+          await new Promise(r => setTimeout(r, 2000))
+          await get().recoverFromHistory()
+        }
       }
     } finally {
       set({ currentAbort: null })
@@ -159,6 +183,9 @@ const useChatStore = create<ChatState>((set, get) => ({
           case 'text':
             set(state => ({ streamingContent: state.streamingContent + ev.data.content }))
             break
+          case 'tool_start':
+            set(state => ({ items: [...state.items, makeToolItem(currentSession.id, ev.data.tool_name, ev.data.tool_input)] }))
+            break
           case 'quiz_interrupt':
             set({ pendingQuiz: ev.data, streamStatus: 'quiz_interrupted' })
             break
@@ -176,24 +203,14 @@ const useChatStore = create<ChatState>((set, get) => ({
                 answered_at: new Date().toISOString(),
               }
               const qItem = { type: 'quiz' as const, data: question }
-              const agentMsg = {
-                type: 'message' as const,
-                data: {
-                  id: crypto.randomUUID(),
-                  session_id: currentSession.id,
-                  role: 'agent' as const,
-                  content: get().streamingContent,
-                  created_at: new Date().toISOString(),
-                },
-              }
-              set(state => ({
-                items: [...state.items, qItem, agentMsg],
-                pendingQuiz: null,
-                streamStatus: 'idle' as const,
-                streamingContent: '',
-              }))
+              const agentMsg = makeAgentMsg(currentSession.id, get().streamingContent)
+              set(state => ({ items: [...state.items, qItem, agentMsg], pendingQuiz: null, streamStatus: 'idle' as const, streamingContent: '' }))
             } else if (get().streamStatus === 'quiz_interrupted') {
-              set({ streamingContent: '' })
+              if (get().streamingContent) {
+                set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamingContent: '' }))
+              } else {
+                set({ streamingContent: '' })
+              }
             }
             break
           case 'error':
@@ -203,16 +220,88 @@ const useChatStore = create<ChatState>((set, get) => ({
         }
       }
       if (get().streamStatus === 'streaming') {
-        set({ streamStatus: 'quiz_interrupted', lastError: { message: '连接中断', code: 'STREAM_CLOSED' } })
+        set({ streamStatus: 'quiz_interrupted', lastError: { message: '连接中断，请重新答题', code: 'STREAM_CLOSED' } })
         toast.error('连接中断，请重新答题')
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') {
-        set({ streamStatus: 'quiz_interrupted', lastError: { message: String(e), code: 'NETWORK' } })
-        toast.error('网络错误，请重新答题')
+        await new Promise(r => setTimeout(r, 2000))
+        await get().recoverFromHistory()
       }
     } finally {
       set({ currentAbort: null })
+    }
+  },
+
+  retryLastMessage: async () => {
+    const { currentSession, items } = get()
+    if (!currentSession) return
+    const lastUserMsg = [...items].reverse().find(i => i.type === 'message' && i.data.role === 'user')
+    if (!lastUserMsg || lastUserMsg.type !== 'message') return
+
+    set({ streamStatus: 'streaming', streamingContent: '', lastError: null })
+    const ac = new AbortController()
+    set({ currentAbort: ac })
+
+    try {
+      for await (const ev of streamMessage(currentSession.id, lastUserMsg.data.content, ac.signal, true)) {
+        switch (ev.event) {
+          case 'text':
+            set(state => ({ streamingContent: state.streamingContent + ev.data.content }))
+            break
+          case 'tool_start':
+            set(state => ({ items: [...state.items, makeToolItem(currentSession.id, ev.data.tool_name, ev.data.tool_input)] }))
+            break
+          case 'quiz_interrupt':
+            set({ pendingQuiz: ev.data, streamStatus: 'quiz_interrupted' })
+            break
+          case 'done':
+            if (get().streamStatus === 'streaming') {
+              set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamStatus: 'idle' as const, streamingContent: '' }))
+            } else if (get().streamStatus === 'quiz_interrupted') {
+              if (get().streamingContent) {
+                set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamingContent: '' }))
+              } else {
+                set({ streamingContent: '' })
+              }
+            }
+            break
+          case 'error':
+            set({ streamStatus: 'error', lastError: ev.data })
+            toast.error(ev.data.message)
+            break
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') {
+        await new Promise(r => setTimeout(r, 2000))
+        await get().recoverFromHistory()
+      }
+    } finally {
+      set({ currentAbort: null })
+    }
+  },
+
+  recoverFromHistory: async () => {
+    const { currentSession } = get()
+    if (!currentSession) return
+    try {
+      const history: HistoryResponse = await sessionsApi.getHistory(currentSession.id)
+      if (history.pending_quiz) {
+        set({ items: history.items, pendingQuiz: history.pending_quiz, streamStatus: 'quiz_interrupted', streamingContent: '' })
+      } else if (history.processing) {
+        set({ items: history.items, streamStatus: 'streaming' })
+        setTimeout(() => get().recoverFromHistory(), 3000)
+      } else {
+        const lastAgent = [...history.items].reverse().find(i => i.type === 'message' && i.data.role === 'agent')
+        if (lastAgent) {
+          set({ items: history.items, streamStatus: 'idle', streamingContent: '' })
+        } else {
+          set({ items: history.items, streamStatus: 'error', lastError: { message: '连接中断，点击重试', code: 'RETRYABLE' }, streamingContent: '' })
+        }
+      }
+    } catch {
+      set({ streamStatus: 'error', lastError: { message: '网络错误', code: 'NETWORK' } })
     }
   },
 

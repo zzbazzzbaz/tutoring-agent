@@ -1,8 +1,6 @@
 import { apiClient } from './client'
 import type { UserOut } from '@/types/user'
 import type { SessionOut } from '@/types/session'
-import type { MessageOut } from '@/types/message'
-import type { QuestionOut } from '@/types/question'
 
 export interface ImportResult {
   total: number
@@ -48,16 +46,6 @@ export const usersApi = {
     const { data } = await apiClient.get<SessionOut[]>(`/users/${userId}/sessions`, {
       params: { limit: 50 },
     })
-    return data
-  },
-  listSessionMessages: async (sessionId: string) => {
-    const { data } = await apiClient.get<MessageOut[]>(`/sessions/${sessionId}/messages`, {
-      params: { limit: 500 },
-    })
-    return data
-  },
-  listSessionQuestions: async (sessionId: string) => {
-    const { data } = await apiClient.get<QuestionOut[]>(`/sessions/${sessionId}/questions`)
     return data
   },
 }

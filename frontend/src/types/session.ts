@@ -1,3 +1,6 @@
+import type { ChatItem } from './chat'
+import type { QuizInterruptData } from './question'
+
 export interface SessionOut {
   id: string
   user_id: string
@@ -12,4 +15,10 @@ export interface SessionOut {
 export interface SessionCreate {
   mode: 'free' | 'project'
   project_id?: string
+}
+
+export interface HistoryResponse {
+  items: ChatItem[]
+  pending_quiz: QuizInterruptData | null
+  processing: boolean
 }

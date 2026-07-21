@@ -7,6 +7,7 @@ export async function* streamMessage(
   sessionId: string,
   content: string,
   signal?: AbortSignal,
+  retry: boolean = false,
 ): AsyncGenerator<SSEEvent> {
   const token = getAuthToken()
   const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`, {
@@ -15,7 +16,7 @@ export async function* streamMessage(
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, retry }),
     signal,
   })
   if (!res.ok) {

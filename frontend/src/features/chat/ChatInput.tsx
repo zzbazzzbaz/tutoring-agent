@@ -8,9 +8,10 @@ interface ChatInputProps {
   onSend: (content: string) => void
   disabled: boolean
   placeholder?: string
+  hint?: string
 }
 
-export default function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled, placeholder, hint }: ChatInputProps) {
   const { t } = useTranslation()
   const [value, setValue] = useState('')
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -36,20 +37,25 @@ export default function ChatInput({ onSend, disabled, placeholder }: ChatInputPr
   }
 
   return (
-    <div className="flex items-end gap-2 border-t p-3">
-      <Textarea
-        ref={ref}
-        value={value}
-        onChange={e => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder || t('chat.inputPlaceholder')}
-        disabled={disabled}
-        className="min-h-[40px] max-h-32 resize-none"
-        rows={1}
-      />
-      <Button onClick={handleSend} disabled={disabled || !value.trim()} size="icon">
-        <Send className="size-4" />
-      </Button>
+    <div className="border-t p-3">
+      {hint && (
+        <p className="mb-1.5 text-xs text-muted-foreground">{hint}</p>
+      )}
+      <div className="flex items-end gap-2">
+        <Textarea
+          ref={ref}
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder || t('chat.inputPlaceholder')}
+          disabled={disabled}
+          className="min-h-[40px] max-h-32 resize-none"
+          rows={1}
+        />
+        <Button onClick={handleSend} disabled={disabled || !value.trim()} size="icon">
+          <Send className="size-4" />
+        </Button>
+      </div>
     </div>
   )
 }

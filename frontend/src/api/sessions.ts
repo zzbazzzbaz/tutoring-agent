@@ -1,7 +1,5 @@
 import { apiClient } from './client'
-import type { SessionOut, SessionCreate } from '@/types/session'
-import type { MessageOut } from '@/types/message'
-import type { QuestionOut } from '@/types/question'
+import type { SessionOut, SessionCreate, HistoryResponse } from '@/types/session'
 
 export const sessionsApi = {
   list: async (params?: { status?: string; mode?: string; limit?: number; offset?: number }) => {
@@ -19,12 +17,8 @@ export const sessionsApi = {
   delete: async (id: string) => {
     await apiClient.delete(`/sessions/${id}`)
   },
-  listMessages: async (id: string, params?: { limit?: number; offset?: number }) => {
-    const { data } = await apiClient.get<MessageOut[]>(`/sessions/${id}/messages`, { params })
-    return data
-  },
-  listQuestions: async (id: string, params?: { status?: string }) => {
-    const { data } = await apiClient.get<QuestionOut[]>(`/sessions/${id}/questions`, { params })
+  getHistory: async (id: string) => {
+    const { data } = await apiClient.get<HistoryResponse>(`/sessions/${id}/history`)
     return data
   },
 }
