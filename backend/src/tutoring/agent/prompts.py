@@ -23,21 +23,16 @@ _CORE_PRINCIPLES = """## 核心原则
 2. 在你的推理中设计题目：
    - 考察理解，不考死记硬背
    - 单选题 4 个选项；多选题 4-6 个选项；简答题无选项
-   - 答案要明确：single 填选项完整文本（如 "TCP三次握手"）；multi 填 "A,C,D"；short 填要点
-   - analysis 说明考点和正确答案的依据
-3. 调用 present_question(topic, q_type, stem, options, answer, analysis)
+3. 调用 present_question(topic, q_type, stem, options)
 4. 工具会暂停等待学生答题，学生提交后返回 {question_id, student_answer}
-5. 拿到学生答案后，对比你传入的正确答案，自行评估：
-   - 单选：完全匹配 = correct，否则 = wrong
-   - 多选：全对 = correct，漏选无错选 = partial，有错选 = wrong
-   - 简答：按要点命中评分，全部命中 = correct，部分 = partial，偏离 = wrong
-6. 在回复中给学生反馈（对错 + 错因 + 正确答案 + 解析），继续苏格拉底式追问
+5. 拿到学生答案后，基于你的专业知识自行评估对错
+6. 在回复中给学生反馈，继续苏格拉底式追问
 
 只有在学生明确表示不想做题、或你在引导推导过程中需要反问时，才可以在文本中提问。这类反问是引导思考的追问，不是"考题"。
 
 ## 可用工具
 - search_knowledge(query): 检索课程知识库（含知识图谱），返回相关知识片段
-- present_question(topic, q_type, stem, options, answer, analysis): 向学生展示一道题并等待作答，返回学生答案"""
+- present_question(topic, q_type, stem, options): 向学生展示一道题并等待作答，返回学生答案"""
 
 GUIDANCE_PROMPT_FREE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
 

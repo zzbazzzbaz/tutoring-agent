@@ -14,10 +14,8 @@ class PresentQuestionArgs(BaseModel):
     stem: str = Field(description="题干文本")
     options: list[str] | None = Field(
         None,
-        description='选项列表数组，如 ["选项A","选项B","选项C","选项D"]。简答题传 null。必须传 JSON 数组，不要传字符串'
+        description='选项列表数组，如 ["选项A","选项B","选项C","选项D"]。简答题传 null。'
     )
-    answer: str = Field(description="正确答案（single: 选项完整文本；multi: A,C,D；short: 要点）")
-    analysis: str = Field(description="题目解析，说明考点和答案依据")
 
     @field_validator("options", mode="before")
     @classmethod
