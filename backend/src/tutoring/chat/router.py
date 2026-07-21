@@ -2,11 +2,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.chat import service as chat_service
 from tutoring.chat.schemas import HistoryOut, SessionCreate, SessionOut
-from tutoring.core.deps import CurrentUser, get_current_user, get_db
+from tutoring.core.deps import CurrentUser, get_agent, get_current_user, get_db
 from tutoring.db import repos
 from tutoring.projects import service as project_service
 
@@ -68,7 +69,8 @@ async def get_history(
     session_id: UUID,
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
+    agent: CompiledStateGraph = Depends(get_agent),
 ) -> HistoryOut:
     await chat_service.get_readable_session(db_session, session_id, user)
-    result = await chat_service.build_history(db_session, session_id)
+    result = await chat_service.build_history(agent, session_id)
     return HistoryOut(**result)

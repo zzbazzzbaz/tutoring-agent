@@ -61,16 +61,9 @@ async def send_message(
     if chat_service.get_running_task(session_id):
         raise AppError(409, "SESSION_PROCESSING", "Agent is already running for this session")
 
-    if await chat_service.is_interrupted(db_session, session_id):
+    if await chat_service.is_interrupted(agent, session_id):
         raise AppError(409, "SESSION_INTERRUPTED", "Session is paused at a quiz; call /quiz/resume first")
 
-    if body.retry:
-        existing = await repos.list_events(db_session, session_id)
-        already_saved = any(e.type == "user" and e.content == body.content for e in existing)
-        if not already_saved:
-            await repos.save_event(db_session, session_id=session_id, type="user", content=body.content)
-    else:
-        await repos.save_event(db_session, session_id=session_id, type="user", content=body.content)
     await repos.touch_session(db_session, session_id)
 
     ctx = await chat_service.build_agent_context(db_session, sess)
@@ -104,7 +97,7 @@ async def resume_quiz_endpoint(
     if chat_service.get_running_task(session_id):
         raise AppError(409, "SESSION_PROCESSING", "Agent is already running for this session")
 
-    if not await chat_service.is_interrupted(db_session, session_id):
+    if not await chat_service.is_interrupted(agent, session_id):
         raise AppError(409, "SESSION_NOT_INTERRUPTED", "Session is not paused; no quiz to resume")
 
     ctx = await chat_service.build_agent_context(db_session, sess)

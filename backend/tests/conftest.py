@@ -35,7 +35,6 @@ async def cleanup_db():
     yield
     engine = create_engine(settings.database_url)
     async with engine.begin() as conn:
-        await conn.execute(text("DELETE FROM chat_event"))
         await conn.execute(text("DELETE FROM session"))
         await conn.execute(text("DELETE FROM project"))
         await conn.execute(text("DELETE FROM checkpoint_writes"))
