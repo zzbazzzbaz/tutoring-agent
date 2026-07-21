@@ -39,6 +39,9 @@ class MessageOut(BaseModel):
     session_id: UUID
     role: str
     content: str
+    tool_name: str | None = None
+    tool_input: dict | None = None
+    tool_output: str | None = None
     created_at: datetime
 
 
@@ -63,6 +66,7 @@ class QuestionOut(BaseModel):
 class SendMessageRequest(BaseModel):
 
     content: str = Field(min_length=1)
+    retry: bool = False
 
 
 class QuizResumeRequest(BaseModel):
@@ -76,3 +80,14 @@ class QuizResumeRequest(BaseModel):
         if self.action == "answer" and not self.answer:
             raise ValueError("answer is required when action='answer'")
         return self
+
+
+class HistoryItemOut(BaseModel):
+    type: str
+    data: dict
+
+
+class HistoryOut(BaseModel):
+    items: list[HistoryItemOut]
+    pending_quiz: dict | None = None
+    processing: bool = False
