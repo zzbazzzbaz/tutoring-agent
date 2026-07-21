@@ -16,8 +16,7 @@ from tutoring.core.lightrag import create_rag
 from tutoring.auth import router as auth_router
 from tutoring.core import health as health_router
 from tutoring.projects import router as projects_router
-from tutoring.chat import router as chat_rest_router
-from tutoring.chat import sse as chat_sse_router
+from tutoring.chat import router as chat_router
 from tutoring.users import router as users_router
 
 logger = logging.getLogger(__name__)
@@ -86,5 +85,5 @@ app.include_router(auth_router.router)
 app.include_router(users_router.router)
 app.include_router(health_router.router)
 app.include_router(projects_router.router)
-app.include_router(chat_rest_router.router)
-app.include_router(chat_sse_router.router)
+app.include_router(chat_router.router)
+app.include_router(chat_router.sse_router)

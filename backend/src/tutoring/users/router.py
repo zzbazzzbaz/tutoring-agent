@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tutoring.chat import service as chat_service
+from tutoring.chat import sessions as chat_sessions
 from tutoring.chat.schemas import SessionOut
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
@@ -78,7 +78,7 @@ async def list_user_sessions(
         limit=limit,
         offset=offset,
     )
-    return [SessionOut.model_validate(chat_service.session_to_out_dict(s)) for s in sessions]
+    return [SessionOut.model_validate(chat_sessions.session_to_out_dict(s)) for s in sessions]
 
 
 @router.post("/students/import", response_model=ImportResult)
