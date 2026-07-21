@@ -151,6 +151,20 @@ async def save_message(session: AsyncSession, *, session_id: UUID, role: str, co
     return obj
 
 
+async def save_tool_message(
+    session: AsyncSession, *, session_id: UUID, tool_name: str,
+    tool_input: dict | None, tool_output: str | None,
+) -> Message:
+    obj = Message(
+        session_id=session_id, role="tool", content="",
+        tool_name=tool_name, tool_input=tool_input, tool_output=tool_output,
+    )
+    session.add(obj)
+    await session.commit()
+    await session.refresh(obj)
+    return obj
+
+
 async def list_messages(session: AsyncSession, session_id: UUID, *, limit: int = 100, offset: int = 0) -> list[Message]:
     stmt = (
         select(Message)
@@ -161,6 +175,17 @@ async def list_messages(session: AsyncSession, session_id: UUID, *, limit: int =
     )
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_last_message(session: AsyncSession, session_id: UUID) -> Message | None:
+    stmt = (
+        select(Message)
+        .where(Message.session_id == session_id)
+        .order_by(Message.created_at.desc())
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().first()
 
 
 # === Question ===
