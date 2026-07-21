@@ -126,8 +126,6 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
                         quiz={event}
                         status={event.status as 'pending' | 'answered' | 'skipped'}
                         userAnswer={(event.data as QuizEventData)?.user_answer}
-                        correctAnswer={(event.data as QuizEventData)?.answer}
-                        analysis={(event.data as QuizEventData)?.analysis}
                         onSubmit={() => {}}
                         onSkip={() => {}}
                       />

@@ -45,8 +45,6 @@ export default function ChatView() {
                   quiz={event}
                   status={event.status as 'pending' | 'answered' | 'skipped'}
                   userAnswer={(event.data as QuizEventData)?.user_answer}
-                  correctAnswer={(event.data as QuizEventData)?.answer}
-                  analysis={(event.data as QuizEventData)?.analysis}
                   onSubmit={() => {}}
                   onSkip={() => {}}
                 />

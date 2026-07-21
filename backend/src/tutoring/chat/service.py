@@ -86,13 +86,16 @@ def _stream_config(session_id: uuid.UUID) -> dict:
 
 
 def _event_to_dict(e) -> dict:
+    data = e.data
+    if e.type == "quiz" and data:
+        data = {k: v for k, v in data.items() if k not in ("answer", "analysis")}
     return {
         "id": str(e.id),
         "session_id": str(e.session_id),
         "type": e.type,
         "created_at": e.created_at.isoformat() if e.created_at else None,
         "content": e.content,
-        "data": e.data,
+        "data": data,
         "status": e.status,
         "answered_at": e.answered_at.isoformat() if e.answered_at else None,
     }

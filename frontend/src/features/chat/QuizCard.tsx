@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -14,13 +13,11 @@ interface QuizCardProps {
   quiz: ChatEvent
   status: 'pending' | 'answered' | 'skipped'
   userAnswer?: string | null
-  correctAnswer?: string
-  analysis?: string | null
   onSubmit: (answer: string) => void
   onSkip: () => void
 }
 
-export default function QuizCard({ quiz, status, userAnswer, correctAnswer, analysis, onSubmit, onSkip }: QuizCardProps) {
+export default function QuizCard({ quiz, status, userAnswer, onSubmit, onSkip }: QuizCardProps) {
   const { t } = useTranslation()
   const data = quiz.data as QuizEventData
   const qType = data.q_type
@@ -49,7 +46,6 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
     )
   }
 
-  const isCorrect = status === 'answered' && userAnswer === correctAnswer
   const questionId = quiz.id
   const optionIdx = (i: number) => String.fromCharCode(65 + i)
 
@@ -61,9 +57,8 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
         </Badge>
         <span className="text-xs text-muted-foreground">{t('chat.quiz.topic')}: {data.topic}</span>
         {locked && (
-          <Badge variant={isCorrect ? 'default' : 'destructive'} className="ml-auto">
-            {isCorrect ? <CheckCircle2 className="mr-1 size-3" /> : <XCircle className="mr-1 size-3" />}
-            {isCorrect ? t('chat.quiz.correct') : t('chat.quiz.wrong')}
+          <Badge variant="outline" className="ml-auto">
+            {status === 'skipped' ? t('chat.quiz.skip') : t('chat.quiz.submit')}
           </Badge>
         )}
       </div>
@@ -111,24 +106,9 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
         />
       )}
 
-      {locked && (
-        <div className="mt-4 space-y-2 border-t pt-3">
-          {userAnswer && (
-            <div className="text-sm">
-              <span className="font-medium">{t('chat.quiz.yourAnswer')}:</span> {userAnswer}
-            </div>
-          )}
-          {correctAnswer && (
-            <div className="text-sm">
-              <span className="font-medium">{t('chat.quiz.correctAnswer')}:</span> {correctAnswer}
-            </div>
-          )}
-          {analysis && (
-            <div className="text-sm">
-              <div className="font-medium">{t('chat.quiz.analysis')}:</div>
-              <MarkdownRenderer content={analysis} />
-            </div>
-          )}
+      {locked && userAnswer && (
+        <div className="mt-4 border-t pt-3 text-sm">
+          <span className="font-medium">{t('chat.quiz.yourAnswer')}:</span> {userAnswer}
         </div>
       )}
 

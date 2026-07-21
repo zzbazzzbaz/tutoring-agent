@@ -80,10 +80,20 @@ def make_tools(
         ).model_dump()
 
         async with _db_session() as db_session:
-            quiz_event = await repos.save_event(
-                db_session, session_id=session_id,
-                type="quiz", data=quiz_data, status="pending",
+            events = await repos.list_events(db_session, session_id)
+            existing = next(
+                (e for e in events
+                 if e.type == "quiz" and e.status == "pending"
+                 and e.data and e.data.get("topic") == topic),
+                None,
             )
+            if existing:
+                quiz_event = existing
+            else:
+                quiz_event = await repos.save_event(
+                    db_session, session_id=session_id,
+                    type="quiz", data=quiz_data, status="pending",
+                )
 
         student_answer = interrupt(
             {
