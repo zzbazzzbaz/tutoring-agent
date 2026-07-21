@@ -105,7 +105,10 @@ GET /sessions/{id}/history
 
 **核心逻辑**：
 
-1. 从 LangGraph checkpoint 读取 state，将 checkpoint 中有但 DB 没有的 AIMessage 同步到 DB `message` 表。
+1. 从 LangGraph checkpoint 读取 state，将 checkpoint 中有但 DB 没有的消息同步到 DB `message` 表：
+   - AIMessage -> `role="agent"`, `content=msg.text`
+   - ToolMessage -> `role="tool"`, `tool_name`/`tool_input`/`tool_output` 从对应 AIMessage 的 tool_calls 提取
+   - 通过消息内容或 `tool_call_id` 去重，避免重复存储。
 2. 检查 `state.next` 是否非空（=interrupt），如果是则读取 interrupt 数据作为 `pending_quiz`。
 3. 重新查 DB 获取完整 messages + questions，按 `created_at` 排序合并为时间线。
 4. 返回 `{items, pending_quiz}`。
