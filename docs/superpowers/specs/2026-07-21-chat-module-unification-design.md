@@ -21,7 +21,7 @@
 ### Agent 断线恢复策略：两者结合
 
 - **P0**：Checkpoint 恢复 — History API 从 LangGraph checkpoint 同步已完成的消息到 DB。SSE 断了 agent 就停，但已完成的结果可恢复。
-- **P2（未来）**：后台任务 — Agent 在 `asyncio.create_task` 中跑，SSE 只 tails 输出。断了 agent 继续跑。本期不实现。
+- **P2**：后台任务 — Agent 在 `asyncio.create_task` 中跑，SSE 只 tails 输出。断了 agent 继续跑。前端轮询 History API 获取结果。
 
 ### 重试方式：自动恢复 + 手动重试
 
@@ -252,7 +252,7 @@ event: tool_start     {"tool_name": "search_knowledge", "tool_input": {"query": 
 - **SSE Last-Event-ID 重连**：需要服务端事件缓冲，复杂度高。checkpoint 恢复已足够。
 - **WebSocket**：当前不需要双向通信。
 - **断线自动重连 SSE**：不重连同一个流，而是查 history 恢复。更简单更可靠。
-- **P2 后台任务**：本期不实现，作为后续优化。
+- **P2 后台任务**：本期实现，见下方 P2 架构。
 
 ---
 
@@ -314,3 +314,6 @@ event: tool_start     {"tool_name": "search_knowledge", "tool_input": {"query": 
 - quiz 在视口内可见（scroll 跟随）
 - `retry=true` 不重复存 user 消息
 - SSE 心跳防止代理超时
+- 后台任务：SSE 断开后 agent 继续执行，前端轮询 history 获取结果
+- 后台任务：同一 session 并发请求被拒绝（409 SESSION_PROCESSING）
+- 后台任务：History API 返回 `processing: true` 时前端自动轮询
