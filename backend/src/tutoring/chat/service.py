@@ -88,13 +88,23 @@ def _stream_config(session_id: uuid.UUID) -> dict:
 
 def _yield_tool_starts(message) -> list[dict]:
     events = []
-    if hasattr(message, "tool_calls") and message.tool_calls:
-        for tc in message.tool_calls:
-            if tc["name"] != "present_question":
+    tc = getattr(message, "tool_calls", None)
+    if tc is None:
+        return events
+    import inspect
+    if inspect.isawaitable(tc):
+        return events
+    try:
+        for call in tc:
+            name = call.get("name", "") if isinstance(call, dict) else getattr(call, "name", "")
+            if name and name != "present_question":
+                args = call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {})
                 events.append({"event": "tool_start", "data": {
-                    "tool_name": tc["name"],
-                    "tool_input": tc["args"],
+                    "tool_name": name,
+                    "tool_input": args,
                 }})
+    except TypeError:
+        pass
     return events
 
 
@@ -280,13 +290,14 @@ async def build_history(
     config = _stream_config(session_id)
     state = await agent.aget_state(config)
     if state.next:
-        try:
-            task = get_running_task(session_id)
-            if not task:
-                interrupts = await agent.aget_state_history(config)
-                pass
-        except Exception:
-            pass
+        for task in state.tasks:
+            if hasattr(task, "interrupts") and task.interrupts:
+                for intr in task.interrupts:
+                    if hasattr(intr, "value"):
+                        pending_quiz = intr.value
+                        break
+            if pending_quiz:
+                break
 
     task = get_running_task(session_id)
     processing = bool(task and not task.done())

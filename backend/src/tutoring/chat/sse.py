@@ -72,8 +72,9 @@ async def send_message(
         )
 
     if body.retry:
-        last = await repos.get_last_message(db_session, session_id)
-        if not (last and last.role == "user" and last.content == body.content):
+        existing = await repos.list_messages(db_session, session_id)
+        already_saved = any(m.role == "user" and m.content == body.content for m in existing)
+        if not already_saved:
             await repos.save_message(
                 db_session, session_id=session_id, role="user", content=body.content
             )
