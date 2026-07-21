@@ -1,4 +1,3 @@
-"""异步 repository 函数。无类（YAGNI）。"""
 import uuid
 from datetime import datetime, timezone
 from uuid import UUID

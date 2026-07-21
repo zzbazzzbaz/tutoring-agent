@@ -1,4 +1,3 @@
-"""认证业务逻辑：login / logout / verify_token + 密码哈希。"""
 import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 

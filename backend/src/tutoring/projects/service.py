@@ -1,4 +1,3 @@
-"""Project 领域服务：业务规则集中于此。"""
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError

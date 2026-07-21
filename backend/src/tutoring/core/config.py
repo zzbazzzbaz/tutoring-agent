@@ -1,4 +1,3 @@
-"""应用配置，由 .env 通过 pydantic-settings 驱动。"""
 import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

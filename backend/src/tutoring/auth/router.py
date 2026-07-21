@@ -1,4 +1,3 @@
-"""认证路由：login / logout / me。"""
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 

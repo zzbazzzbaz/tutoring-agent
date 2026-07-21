@@ -1,4 +1,3 @@
-"""FastAPI 依赖注入。"""
 from dataclasses import dataclass
 from typing import AsyncIterator
 from uuid import UUID
