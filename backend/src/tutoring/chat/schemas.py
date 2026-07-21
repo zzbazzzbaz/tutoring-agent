@@ -31,36 +31,24 @@ class SessionOut(BaseModel):
     created_at: datetime
 
 
-class MessageOut(BaseModel):
+class ChatEventOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     session_id: UUID
-    role: str
-    content: str
-    tool_name: str | None = None
-    tool_input: dict | None = None
-    tool_output: str | None = None
+    type: str
     created_at: datetime
-
-
-class QuestionOut(BaseModel):
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    session_id: UUID
-    topic: str
-    q_type: str
-    stem: str
-    options: list[str] | None = None
-    answer: str
-    analysis: str | None = None
-    status: str
-    user_answer: str | None = None
-    created_at: datetime
+    content: str | None = None
+    data: dict | None = None
+    status: str | None = None
     answered_at: datetime | None = None
+
+
+class HistoryOut(BaseModel):
+    items: list[ChatEventOut]
+    pending_quiz: ChatEventOut | None = None
+    processing: bool = False
 
 
 class SendMessageRequest(BaseModel):
@@ -76,18 +64,6 @@ class QuizResumeRequest(BaseModel):
 
     @model_validator(mode="after")
     def check_answer_required(self):
-        """action='answer' 时 answer 必填。"""
         if self.action == "answer" and not self.answer:
             raise ValueError("answer is required when action='answer'")
         return self
-
-
-class HistoryItemOut(BaseModel):
-    type: str
-    data: dict
-
-
-class HistoryOut(BaseModel):
-    items: list[HistoryItemOut]
-    pending_quiz: dict | None = None
-    processing: bool = False
