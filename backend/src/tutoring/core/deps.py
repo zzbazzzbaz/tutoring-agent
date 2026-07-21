@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import Depends, Header, Request
 from langgraph.graph.state import CompiledStateGraph
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tutoring.auth import service as auth_service
 from tutoring.core.errors import AppError
@@ -43,3 +43,8 @@ async def get_current_user(
 def get_agent(request: Request) -> CompiledStateGraph:
     """从 app.state 获取 Agent 单例。"""
     return request.app.state.agent
+
+
+def get_db_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
+    """从 app.state 获取 DB session factory（后台任务用）。"""
+    return request.app.state.db_session_factory

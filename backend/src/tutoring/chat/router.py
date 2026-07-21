@@ -1,17 +1,17 @@
-"""Session CRUD + 消息 + 题目端点。"""
+"""Session CRUD + History 端点。"""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.chat import service as chat_service
 from tutoring.chat.schemas import (
+    HistoryOut,
     SessionCreate,
     SessionOut,
-    MessageOut,
-    QuestionOut,
 )
-from tutoring.core.deps import CurrentUser, get_current_user, get_db
+from tutoring.core.deps import CurrentUser, get_agent, get_current_user, get_db
 from tutoring.db import repos
 from tutoring.projects import service as project_service
 
@@ -72,26 +72,13 @@ async def end_session(
     await repos.delete_session(db_session, session_id)
 
 
-@router.get("/{session_id}/messages", response_model=list[MessageOut])
-async def list_messages(
+@router.get("/{session_id}/history", response_model=HistoryOut)
+async def get_history(
     session_id: UUID,
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
-) -> list[MessageOut]:
+    agent: CompiledStateGraph = Depends(get_agent),
+) -> HistoryOut:
     await chat_service.get_readable_session(db_session, session_id, user)
-    msgs = await repos.list_messages(db_session, session_id, limit=limit, offset=offset)
-    return [MessageOut.model_validate(m) for m in msgs]
-
-
-@router.get("/{session_id}/questions", response_model=list[QuestionOut])
-async def list_questions(
-    session_id: UUID,
-    status_filter: str | None = Query(None, alias="status"),
-    user: CurrentUser = Depends(get_current_user),
-    db_session: AsyncSession = Depends(get_db),
-) -> list[QuestionOut]:
-    await chat_service.get_readable_session(db_session, session_id, user)
-    qs = await repos.list_questions(db_session, session_id, status=status_filter)
-    return [QuestionOut.model_validate(q) for q in qs]
+    result = await chat_service.build_history(agent, db_session, session_id)
+    return HistoryOut(**result)
