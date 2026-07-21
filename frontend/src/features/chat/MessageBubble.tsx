@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Check, Copy, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
-import type { ChatEvent } from '@/types/message'
+import type { HistoryItem } from '@/types/message'
 
-export default function MessageBubble({ message }: { message: ChatEvent }) {
+export default function MessageBubble({ message }: { message: HistoryItem }) {
   const [copied, setCopied] = useState(false)
   const isUser = message.type === 'user'
   const content = message.content || ''

@@ -12,7 +12,7 @@ import MessageBubble from '@/features/chat/MessageBubble'
 import QuizCard from '@/features/chat/QuizCard'
 import ToolCallBubble from '@/features/chat/ToolCallBubble'
 import type { SessionOut } from '@/types/session'
-import type { ChatEvent, QuizEventData } from '@/types/message'
+import type { HistoryItem } from '@/types/message'
 
 interface StudentChatViewerProps {
   userId: string
@@ -25,7 +25,7 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
   const [sessions, setSessions] = useState<SessionOut[]>([])
   const [loadingSessions, setLoadingSessions] = useState(true)
   const [selectedSession, setSelectedSession] = useState<SessionOut | null>(null)
-  const [items, setItems] = useState<ChatEvent[]>([])
+  const [items, setItems] = useState<HistoryItem[]>([])
   const [loadingItems, setLoadingItems] = useState(false)
 
   const loadSessions = useCallback(async () => {
@@ -112,20 +112,20 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
           )}
           {selectedSession && !loadingItems && (
             <div className="space-y-4">
-              {items.map((event) => {
+              {items.map((event, idx) => {
                 switch (event.type) {
                   case 'user':
                   case 'agent':
-                    return <MessageBubble key={event.id} message={event} />
-                  case 'tool':
-                    return <ToolCallBubble key={event.id} message={event} />
+                    return <MessageBubble key={idx} message={event} />
+                  case 'tool_call':
+                    return <ToolCallBubble key={idx} message={event} />
                   case 'quiz':
                     return (
                       <QuizCard
-                        key={event.id}
+                        key={idx}
                         quiz={event}
                         status={event.status as 'pending' | 'answered' | 'skipped'}
-                        userAnswer={(event.data as QuizEventData)?.user_answer}
+                        userAnswer={event.user_answer}
                         onSubmit={() => {}}
                         onSkip={() => {}}
                       />

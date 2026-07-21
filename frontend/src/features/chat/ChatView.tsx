@@ -5,7 +5,7 @@ import ChatInput from './ChatInput'
 import QuizCard from './QuizCard'
 import ToolCallBubble from './ToolCallBubble'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
-import type { QuizEventData } from '@/types/message'
+import type { HistoryItem } from '@/types/message'
 
 export default function ChatView() {
   const items = useChatStore(s => s.items)
@@ -27,24 +27,35 @@ export default function ChatView() {
   const inputDisabled = streamStatus === 'streaming' || streamStatus === 'quiz_interrupted'
   const showRetry = streamStatus === 'error' && lastError?.code === 'RETRYABLE'
 
+  const pendingQuizItem: HistoryItem | null = pendingQuiz ? {
+    type: 'quiz',
+    quiz_id: pendingQuiz.question_id,
+    topic: pendingQuiz.topic,
+    q_type: pendingQuiz.q_type,
+    stem: pendingQuiz.stem,
+    options: pendingQuiz.options,
+    status: 'pending',
+    user_answer: null,
+  } : null
+
   return (
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {items.map((event) => {
-          switch (event.type) {
+        {items.map((item, idx) => {
+          switch (item.type) {
             case 'user':
             case 'agent':
-              return <MessageBubble key={event.id} message={event} />
-            case 'tool':
-              return <ToolCallBubble key={event.id} message={event} />
+              return <MessageBubble key={idx} message={item} />
+            case 'tool_call':
+              return <ToolCallBubble key={idx} message={item} />
             case 'quiz':
-              if (event.status === 'pending') return null
+              if (item.status === 'pending') return null
               return (
                 <QuizCard
-                  key={event.id}
-                  quiz={event}
-                  status={event.status as 'pending' | 'answered' | 'skipped'}
-                  userAnswer={(event.data as QuizEventData)?.user_answer}
+                  key={idx}
+                  quiz={item}
+                  status={item.status as 'pending' | 'answered' | 'skipped'}
+                  userAnswer={item.user_answer}
                   onSubmit={() => {}}
                   onSkip={() => {}}
                 />
@@ -61,9 +72,9 @@ export default function ChatView() {
             </div>
           </div>
         )}
-        {streamStatus === 'quiz_interrupted' && pendingQuiz && (
+        {streamStatus === 'quiz_interrupted' && pendingQuizItem && (
           <QuizCard
-            quiz={pendingQuiz}
+            quiz={pendingQuizItem}
             status="pending"
             onSubmit={answer => submitQuiz('answer', answer)}
             onSkip={() => submitQuiz('skip')}

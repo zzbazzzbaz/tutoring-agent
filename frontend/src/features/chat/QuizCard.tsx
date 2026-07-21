@@ -7,10 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
-import type { ChatEvent, QuizEventData } from '@/types/message'
+import type { HistoryItem } from '@/types/message'
 
 interface QuizCardProps {
-  quiz: ChatEvent
+  quiz: HistoryItem
   status: 'pending' | 'answered' | 'skipped'
   userAnswer?: string | null
   onSubmit: (answer: string) => void
@@ -19,9 +19,11 @@ interface QuizCardProps {
 
 export default function QuizCard({ quiz, status, userAnswer, onSubmit, onSkip }: QuizCardProps) {
   const { t } = useTranslation()
-  const data = quiz.data as QuizEventData
-  const qType = data.q_type
-  const options = data.options ?? []
+  const qType = quiz.q_type || 'single'
+  const options = quiz.options ?? []
+  const stem = quiz.stem || ''
+  const topic = quiz.topic || ''
+  const questionId = quiz.quiz_id || ''
   const [selected, setSelected] = useState<string[]>([])
   const [shortAnswer, setShortAnswer] = useState('')
   const locked = status !== 'pending'
@@ -46,7 +48,6 @@ export default function QuizCard({ quiz, status, userAnswer, onSubmit, onSkip }:
     )
   }
 
-  const questionId = quiz.id
   const optionIdx = (i: number) => String.fromCharCode(65 + i)
 
   return (
@@ -55,7 +56,7 @@ export default function QuizCard({ quiz, status, userAnswer, onSubmit, onSkip }:
         <Badge variant="secondary">
           {qType === 'single' ? t('chat.quiz.single') : qType === 'multi' ? t('chat.quiz.multi') : t('chat.quiz.short')}
         </Badge>
-        <span className="text-xs text-muted-foreground">{t('chat.quiz.topic')}: {data.topic}</span>
+        <span className="text-xs text-muted-foreground">{t('chat.quiz.topic')}: {topic}</span>
         {locked && (
           <Badge variant="outline" className="ml-auto">
             {status === 'skipped' ? t('chat.quiz.skip') : t('chat.quiz.submit')}
@@ -64,7 +65,7 @@ export default function QuizCard({ quiz, status, userAnswer, onSubmit, onSkip }:
       </div>
 
       <div className="mb-4 text-sm">
-        <MarkdownRenderer content={data.stem} />
+        <MarkdownRenderer content={stem} />
       </div>
 
       {qType === 'single' && (
