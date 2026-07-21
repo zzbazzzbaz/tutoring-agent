@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button'
 import EmptyState from '@/features/shared/EmptyState'
 import MessageBubble from '@/features/chat/MessageBubble'
 import QuizCard from '@/features/chat/QuizCard'
+import ToolCallBubble from '@/features/chat/ToolCallBubble'
 import type { SessionOut } from '@/types/session'
-import type { ChatItem } from '@/types/chat'
+import type { ChatEvent, QuizEventData } from '@/types/message'
 
 interface StudentChatViewerProps {
   userId: string
@@ -24,7 +25,7 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
   const [sessions, setSessions] = useState<SessionOut[]>([])
   const [loadingSessions, setLoadingSessions] = useState(true)
   const [selectedSession, setSelectedSession] = useState<SessionOut | null>(null)
-  const [items, setItems] = useState<ChatItem[]>([])
+  const [items, setItems] = useState<ChatEvent[]>([])
   const [loadingItems, setLoadingItems] = useState(false)
 
   const loadSessions = useCallback(async () => {
@@ -111,25 +112,27 @@ export default function StudentChatViewer({ userId, userName, onBack }: StudentC
           )}
           {selectedSession && !loadingItems && (
             <div className="space-y-4">
-              {items.map((item, idx) => {
-                if (item.type === 'message') {
-                  return <MessageBubble key={idx} message={item.data} />
-                } else if (item.type === 'quiz') {
-                  const q = item.data
-                  return (
-                    <QuizCard
-                      key={idx}
-                      quiz={q}
-                      status={q.status}
-                      userAnswer={q.user_answer}
-                      correctAnswer={q.answer}
-                      analysis={q.analysis}
-                      onSubmit={() => {}}
-                      onSkip={() => {}}
-                    />
-                  )
+              {items.map((event) => {
+                switch (event.type) {
+                  case 'user':
+                  case 'agent':
+                    return <MessageBubble key={event.id} message={event} />
+                  case 'tool':
+                    return <ToolCallBubble key={event.id} message={event} />
+                  case 'quiz':
+                    return (
+                      <QuizCard
+                        key={event.id}
+                        quiz={event}
+                        status={event.status as 'pending' | 'answered' | 'skipped'}
+                        userAnswer={(event.data as QuizEventData)?.user_answer}
+                        correctAnswer={(event.data as QuizEventData)?.answer}
+                        analysis={(event.data as QuizEventData)?.analysis}
+                        onSubmit={() => {}}
+                        onSkip={() => {}}
+                      />
+                    )
                 }
-                return null
               })}
             </div>
           )}

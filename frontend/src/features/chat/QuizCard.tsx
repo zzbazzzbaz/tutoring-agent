@@ -8,10 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
-import type { QuestionOut, QuizInterruptData } from '@/types/question'
+import type { ChatEvent, QuizEventData } from '@/types/message'
 
 interface QuizCardProps {
-  quiz: QuizInterruptData | QuestionOut
+  quiz: ChatEvent
   status: 'pending' | 'answered' | 'skipped'
   userAnswer?: string | null
   correctAnswer?: string
@@ -22,8 +22,9 @@ interface QuizCardProps {
 
 export default function QuizCard({ quiz, status, userAnswer, correctAnswer, analysis, onSubmit, onSkip }: QuizCardProps) {
   const { t } = useTranslation()
-  const qType = quiz.q_type
-  const options = quiz.options ?? []
+  const data = quiz.data as QuizEventData
+  const qType = data.q_type
+  const options = data.options ?? []
   const [selected, setSelected] = useState<string[]>([])
   const [shortAnswer, setShortAnswer] = useState('')
   const locked = status !== 'pending'
@@ -49,7 +50,7 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
   }
 
   const isCorrect = status === 'answered' && userAnswer === correctAnswer
-  const questionId = 'question_id' in quiz ? quiz.question_id : (quiz as QuestionOut).id
+  const questionId = quiz.id
   const optionIdx = (i: number) => String.fromCharCode(65 + i)
 
   return (
@@ -58,7 +59,7 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
         <Badge variant="secondary">
           {qType === 'single' ? t('chat.quiz.single') : qType === 'multi' ? t('chat.quiz.multi') : t('chat.quiz.short')}
         </Badge>
-        <span className="text-xs text-muted-foreground">{t('chat.quiz.topic')}: {quiz.topic}</span>
+        <span className="text-xs text-muted-foreground">{t('chat.quiz.topic')}: {data.topic}</span>
         {locked && (
           <Badge variant={isCorrect ? 'default' : 'destructive'} className="ml-auto">
             {isCorrect ? <CheckCircle2 className="mr-1 size-3" /> : <XCircle className="mr-1 size-3" />}
@@ -68,16 +69,16 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
       </div>
 
       <div className="mb-4 text-sm">
-        <MarkdownRenderer content={quiz.stem} />
+        <MarkdownRenderer content={data.stem} />
       </div>
 
       {qType === 'single' && (
         <RadioGroup
           value={selected[0] ?? ''}
-          onValueChange={v => setSelected([v])}
+          onValueChange={(v: string) => setSelected([v])}
           disabled={locked}
         >
-          {options.map((opt, i) => (
+          {options.map((opt: string, i: number) => (
             <div key={i} className="flex items-center gap-2">
               <RadioGroupItem value={optionIdx(i)} id={`q-${questionId}-${i}`} />
               <Label htmlFor={`q-${questionId}-${i}`}>{opt}</Label>
@@ -88,7 +89,7 @@ export default function QuizCard({ quiz, status, userAnswer, correctAnswer, anal
 
       {qType === 'multi' && (
         <div className="space-y-2">
-          {options.map((opt, i) => (
+          {options.map((opt: string, i: number) => (
             <div key={i} className="flex items-center gap-2">
               <Checkbox
                 checked={selected.includes(optionIdx(i))}

@@ -5,6 +5,7 @@ import ChatInput from './ChatInput'
 import QuizCard from './QuizCard'
 import ToolCallBubble from './ToolCallBubble'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
+import type { QuizEventData } from '@/types/message'
 
 export default function ChatView() {
   const items = useChatStore(s => s.items)
@@ -29,28 +30,27 @@ export default function ChatView() {
   return (
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {items.map((item, idx) => {
-          if (item.type === 'message') {
-            if (item.data.role === 'tool') {
-              return <ToolCallBubble key={idx} message={item.data} />
-            }
-            return <MessageBubble key={idx} message={item.data} />
-          } else if (item.type === 'quiz') {
-            const q = item.data
-            return (
-              <QuizCard
-                key={idx}
-                quiz={q}
-                status={q.status}
-                userAnswer={q.user_answer}
-                correctAnswer={q.answer}
-                analysis={q.analysis}
-                onSubmit={() => {}}
-                onSkip={() => {}}
-              />
-            )
+        {items.map((event) => {
+          switch (event.type) {
+            case 'user':
+            case 'agent':
+              return <MessageBubble key={event.id} message={event} />
+            case 'tool':
+              return <ToolCallBubble key={event.id} message={event} />
+            case 'quiz':
+              return (
+                <QuizCard
+                  key={event.id}
+                  quiz={event}
+                  status={event.status as 'pending' | 'answered' | 'skipped'}
+                  userAnswer={(event.data as QuizEventData)?.user_answer}
+                  correctAnswer={(event.data as QuizEventData)?.answer}
+                  analysis={(event.data as QuizEventData)?.analysis}
+                  onSubmit={() => {}}
+                  onSkip={() => {}}
+                />
+              )
           }
-          return null
         })}
         {streamStatus === 'streaming' && streamingContent && (
           <div className="flex gap-3">

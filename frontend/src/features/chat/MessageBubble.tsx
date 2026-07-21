@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { Check, Copy, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import MarkdownRenderer from '@/features/shared/MarkdownRenderer'
-import type { MessageOut } from '@/types/message'
+import type { ChatEvent } from '@/types/message'
 
-export default function MessageBubble({ message }: { message: MessageOut }) {
+export default function MessageBubble({ message }: { message: ChatEvent }) {
   const [copied, setCopied] = useState(false)
-  const isUser = message.role === 'user'
+  const isUser = message.type === 'user'
+  const content = message.content || ''
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.content)
+    navigator.clipboard.writeText(content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -30,10 +31,10 @@ export default function MessageBubble({ message }: { message: MessageOut }) {
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+            <p className="whitespace-pre-wrap text-sm">{content}</p>
           ) : (
             <div className="text-sm">
-              <MarkdownRenderer content={message.content} />
+              <MarkdownRenderer content={content} />
             </div>
           )}
         </div>

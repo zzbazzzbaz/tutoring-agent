@@ -4,15 +4,15 @@ import { sessionsApi } from '@/api/sessions'
 import { streamMessage, resumeQuiz } from '@/api/chat'
 import { createSelectors } from '@/lib/utils'
 import type { SessionOut, HistoryResponse } from '@/types/session'
-import type { QuestionOut, QuizInterruptData } from '@/types/question'
-import type { ChatItem, StreamStatus } from '@/types/chat'
+import type { ChatEvent, QuizEventData, ToolEventData } from '@/types/message'
+import type { StreamStatus } from '@/types/chat'
 
 interface ChatState {
   sessions: SessionOut[]
   currentSession: SessionOut | null
-  items: ChatItem[]
+  items: ChatEvent[]
   streamStatus: StreamStatus
-  pendingQuiz: QuizInterruptData | null
+  pendingQuiz: ChatEvent | null
   streamingContent: string
   lastError: { message: string; code: string } | null
   currentAbort: AbortController | null
@@ -29,31 +29,17 @@ interface ChatState {
   clearCurrent: () => void
 }
 
-function makeAgentMsg(sessionId: string, content: string) {
+function makeEvent(sessionId: string, type: ChatEvent['type'], extra: Partial<ChatEvent> = {}): ChatEvent {
   return {
-    type: 'message' as const,
-    data: {
-      id: crypto.randomUUID(),
-      session_id: sessionId,
-      role: 'agent' as const,
-      content,
-      created_at: new Date().toISOString(),
-    },
-  }
-}
-
-function makeToolItem(sessionId: string, toolName: string, toolInput: Record<string, unknown>) {
-  return {
-    type: 'message' as const,
-    data: {
-      id: crypto.randomUUID(),
-      session_id: sessionId,
-      role: 'tool' as const,
-      content: '',
-      tool_name: toolName,
-      tool_input: toolInput,
-      created_at: new Date().toISOString(),
-    },
+    id: crypto.randomUUID(),
+    session_id: sessionId,
+    type,
+    created_at: new Date().toISOString(),
+    content: null,
+    data: null,
+    status: null,
+    answered_at: null,
+    ...extra,
   }
 }
 
@@ -102,19 +88,10 @@ const useChatStore = create<ChatState>((set, get) => ({
     if (!currentSession) return
     if (get().streamStatus === 'streaming' || get().streamStatus === 'quiz_interrupted') return
 
-    const userMsg = {
-      type: 'message' as const,
-      data: {
-        id: crypto.randomUUID(),
-        session_id: currentSession.id,
-        role: 'user' as const,
-        content,
-        created_at: new Date().toISOString(),
-      },
-    }
+    const userMsg = makeEvent(currentSession.id, 'user', { content })
     set(state => ({
       items: [...state.items, userMsg],
-      streamStatus: 'streaming' as const,
+      streamStatus: 'streaming',
       streamingContent: '',
       lastError: null,
     }))
@@ -129,17 +106,36 @@ const useChatStore = create<ChatState>((set, get) => ({
             set(state => ({ streamingContent: state.streamingContent + ev.data.content }))
             break
           case 'tool_start':
-            set(state => ({ items: [...state.items, makeToolItem(currentSession.id, ev.data.tool_name, ev.data.tool_input)] }))
+            set(state => ({
+              items: [...state.items, makeEvent(currentSession.id, 'tool', {
+                data: {
+                  tool_name: ev.data.tool_name,
+                  tool_input: ev.data.tool_input,
+                  tool_output: null,
+                } as ToolEventData,
+              })],
+            }))
             break
           case 'quiz_interrupt':
-            set({ pendingQuiz: ev.data, streamStatus: 'quiz_interrupted' })
+            set({ pendingQuiz: makeEvent(currentSession.id, 'quiz', {
+              id: ev.data.question_id,
+              data: {
+                topic: ev.data.topic,
+                q_type: ev.data.q_type,
+                stem: ev.data.stem,
+                options: ev.data.options,
+                answer: '',
+                analysis: null,
+              } as QuizEventData,
+              status: 'pending',
+            }), streamStatus: 'quiz_interrupted' })
             break
           case 'done':
             if (get().streamStatus === 'streaming') {
-              set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamStatus: 'idle' as const, streamingContent: '' }))
+              set(state => ({ items: [...state.items, makeEvent(currentSession.id, 'agent', { content: get().streamingContent })], streamStatus: 'idle', streamingContent: '' }))
             } else if (get().streamStatus === 'quiz_interrupted') {
               if (get().streamingContent) {
-                set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamingContent: '' }))
+                set(state => ({ items: [...state.items, makeEvent(currentSession.id, 'agent', { content: get().streamingContent })], streamingContent: '' }))
               } else {
                 set({ streamingContent: '' })
               }
@@ -184,30 +180,33 @@ const useChatStore = create<ChatState>((set, get) => ({
             set(state => ({ streamingContent: state.streamingContent + ev.data.content }))
             break
           case 'tool_start':
-            set(state => ({ items: [...state.items, makeToolItem(currentSession.id, ev.data.tool_name, ev.data.tool_input)] }))
+            set(state => ({
+              items: [...state.items, makeEvent(currentSession.id, 'tool', {
+                data: { tool_name: ev.data.tool_name, tool_input: ev.data.tool_input, tool_output: null } as ToolEventData,
+              })],
+            }))
             break
           case 'quiz_interrupt':
-            set({ pendingQuiz: ev.data, streamStatus: 'quiz_interrupted' })
+            set({ pendingQuiz: makeEvent(currentSession.id, 'quiz', {
+              id: ev.data.question_id,
+              data: { topic: ev.data.topic, q_type: ev.data.q_type, stem: ev.data.stem, options: ev.data.options, answer: '', analysis: null } as QuizEventData,
+              status: 'pending',
+            }), streamStatus: 'quiz_interrupted' })
             break
           case 'done':
             if (get().streamStatus === 'streaming') {
-              const question: QuestionOut = {
+              const quizData = pendingQuiz.data as QuizEventData
+              const answeredQuiz: ChatEvent = {
                 ...pendingQuiz,
-                id: pendingQuiz.question_id,
-                session_id: currentSession.id,
-                answer: '',
-                analysis: null,
+                data: { ...quizData, user_answer: action === 'skip' ? null : (answer ?? null) },
                 status: action === 'skip' ? 'skipped' : 'answered',
-                user_answer: action === 'skip' ? null : (answer ?? null),
-                created_at: new Date().toISOString(),
                 answered_at: new Date().toISOString(),
               }
-              const qItem = { type: 'quiz' as const, data: question }
-              const agentMsg = makeAgentMsg(currentSession.id, get().streamingContent)
-              set(state => ({ items: [...state.items, qItem, agentMsg], pendingQuiz: null, streamStatus: 'idle' as const, streamingContent: '' }))
+              const agentMsg = makeEvent(currentSession.id, 'agent', { content: get().streamingContent })
+              set(state => ({ items: [...state.items, answeredQuiz, agentMsg], pendingQuiz: null, streamStatus: 'idle', streamingContent: '' }))
             } else if (get().streamStatus === 'quiz_interrupted') {
               if (get().streamingContent) {
-                set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamingContent: '' }))
+                set(state => ({ items: [...state.items, makeEvent(currentSession.id, 'agent', { content: get().streamingContent })], streamingContent: '' }))
               } else {
                 set({ streamingContent: '' })
               }
@@ -236,31 +235,37 @@ const useChatStore = create<ChatState>((set, get) => ({
   retryLastMessage: async () => {
     const { currentSession, items } = get()
     if (!currentSession) return
-    const lastUserMsg = [...items].reverse().find(i => i.type === 'message' && i.data.role === 'user')
-    if (!lastUserMsg || lastUserMsg.type !== 'message') return
+    const lastUserMsg = [...items].reverse().find(e => e.type === 'user')
+    if (!lastUserMsg) return
 
     set({ streamStatus: 'streaming', streamingContent: '', lastError: null })
     const ac = new AbortController()
     set({ currentAbort: ac })
 
     try {
-      for await (const ev of streamMessage(currentSession.id, lastUserMsg.data.content, ac.signal, true)) {
+      for await (const ev of streamMessage(currentSession.id, lastUserMsg.content!, ac.signal, true)) {
         switch (ev.event) {
           case 'text':
             set(state => ({ streamingContent: state.streamingContent + ev.data.content }))
             break
           case 'tool_start':
-            set(state => ({ items: [...state.items, makeToolItem(currentSession.id, ev.data.tool_name, ev.data.tool_input)] }))
+            set(state => ({ items: [...state.items, makeEvent(currentSession.id, 'tool', {
+              data: { tool_name: ev.data.tool_name, tool_input: ev.data.tool_input, tool_output: null } as ToolEventData,
+            })] }))
             break
           case 'quiz_interrupt':
-            set({ pendingQuiz: ev.data, streamStatus: 'quiz_interrupted' })
+            set({ pendingQuiz: makeEvent(currentSession.id, 'quiz', {
+              id: ev.data.question_id,
+              data: { topic: ev.data.topic, q_type: ev.data.q_type, stem: ev.data.stem, options: ev.data.options, answer: '', analysis: null } as QuizEventData,
+              status: 'pending',
+            }), streamStatus: 'quiz_interrupted' })
             break
           case 'done':
             if (get().streamStatus === 'streaming') {
-              set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamStatus: 'idle' as const, streamingContent: '' }))
+              set(state => ({ items: [...state.items, makeEvent(currentSession.id, 'agent', { content: get().streamingContent })], streamStatus: 'idle', streamingContent: '' }))
             } else if (get().streamStatus === 'quiz_interrupted') {
               if (get().streamingContent) {
-                set(state => ({ items: [...state.items, makeAgentMsg(currentSession.id, get().streamingContent)], streamingContent: '' }))
+                set(state => ({ items: [...state.items, makeEvent(currentSession.id, 'agent', { content: get().streamingContent })], streamingContent: '' }))
               } else {
                 set({ streamingContent: '' })
               }
@@ -293,7 +298,7 @@ const useChatStore = create<ChatState>((set, get) => ({
         set({ items: history.items, streamStatus: 'streaming' })
         setTimeout(() => get().recoverFromHistory(), 3000)
       } else {
-        const lastAgent = [...history.items].reverse().find(i => i.type === 'message' && i.data.role === 'agent')
+        const lastAgent = [...history.items].reverse().find(e => e.type === 'agent')
         if (lastAgent) {
           set({ items: history.items, streamStatus: 'idle', streamingContent: '' })
         } else {

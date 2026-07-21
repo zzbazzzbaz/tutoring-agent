@@ -1,5 +1,4 @@
-import type { ChatItem } from './chat'
-import type { QuizInterruptData } from './question'
+import type { ChatEvent } from './message'
 
 export interface SessionOut {
   id: string
@@ -18,7 +17,7 @@ export interface SessionCreate {
 }
 
 export interface HistoryResponse {
-  items: ChatItem[]
-  pending_quiz: QuizInterruptData | null
+  items: ChatEvent[]
+  pending_quiz: ChatEvent | null
   processing: boolean
 }
