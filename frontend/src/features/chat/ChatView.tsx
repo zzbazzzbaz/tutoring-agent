@@ -38,6 +38,7 @@ export default function ChatView() {
             case 'tool':
               return <ToolCallBubble key={event.id} message={event} />
             case 'quiz':
+              if (event.status === 'pending') return null
               return (
                 <QuizCard
                   key={event.id}
