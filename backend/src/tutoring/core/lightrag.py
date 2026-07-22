@@ -10,7 +10,9 @@ from tutoring.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs):
+async def _llm_model_func(prompt, system_prompt=None, history_messages=None, **kwargs):
+    if history_messages is None:
+        history_messages = []
     return await openai_complete_if_cache(
         settings.llm_model,
         prompt,
@@ -27,7 +29,7 @@ async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwar
     max_token_size=8192,
     model_name=settings.embedding_model,
 )
-async def embedding_func(texts: list[str]) -> np.ndarray:
+async def _embedding_func(texts: list[str]) -> np.ndarray:
     return await openai_embed.func(
         texts,
         model=settings.embedding_model,
@@ -40,8 +42,8 @@ def create_rag() -> LightRAG:
 
     rag = LightRAG(
         workspace="workspace-1",
-        llm_model_func=llm_model_func,
-        embedding_func=embedding_func,
+        llm_model_func=_llm_model_func,
+        embedding_func=_embedding_func,
         kv_storage="PGKVStorage",
         vector_storage="PGVectorStorage",
         graph_storage="Neo4JStorage",

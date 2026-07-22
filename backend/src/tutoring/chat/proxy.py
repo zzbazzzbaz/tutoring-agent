@@ -45,7 +45,7 @@ async def runs_stream(
 
     # 保留前端传入的 input/command/stream_mode；注入服务端控制参数
     body["assistant_id"] = "tutor"
-    body["context"] = await session_service.build_agent_context(db_session, sess)
+    body["context"] = await session_service.build_agent_context(db_session, sess) # todo /src/tutoring/agent/prompts.py 探索跟这个聚合，提高工程化
     body["multitask_strategy"] = "reject"
     body["on_disconnect"] = "continue"
     body.setdefault("if_not_exists", "create")

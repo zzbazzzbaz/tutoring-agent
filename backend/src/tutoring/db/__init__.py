@@ -1,4 +1,3 @@
-"""Database layer: models and repository functions."""
 from tutoring.db.models import AuthToken, Project, Session, User
 from tutoring.db.repos import (
     # User
