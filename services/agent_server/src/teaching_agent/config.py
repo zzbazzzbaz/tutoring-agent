@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_SHARED_ENV_FILE = Path(__file__).resolve().parents[3] / "backend" / ".env"
+_SHARED_ENV_FILE = Path(__file__).resolve().parents[2].parent / "api_server" / ".env"
 
 
 class Settings(BaseSettings):

@@ -26,7 +26,7 @@ The browser's bearer token cannot be validated locally because it is an opaque d
 - [x] Implement an HTTP client for the backend authorisation endpoint.
 - [x] Implement LangGraph authentication and deny-by-default resource authorisation.
 - [x] Bind backend-issued prompt context in the graph factory and ignore untrusted client context.
-- [x] Add `.python-version`, `pyproject.toml`, `uv.lock`, `langgraph.json`, and `.env.example`; load the shared `backend/.env` directly.
+- [x] Add `.python-version`, `pyproject.toml`, `uv.lock`, `langgraph.json`, and `.env.example`; load the shared `services/api_server/.env` directly.
 - [x] Perform a self-review of the phase and record any corrections.
 - [x] Continue under the user's explicit instruction to complete the implementation.
 
@@ -64,7 +64,7 @@ The browser's bearer token cannot be validated locally because it is an opaque d
 
 - [x] Do not over-engineer the solution or retain duplicate proxy code.
 - [x] Do not add placeholder or TODO code.
-- [x] Never commit secrets copied from `backend/.env`; generated environment files must remain ignored.
+- [x] Never commit secrets copied from `services/api_server/.env`; generated environment files must remain ignored.
 - [x] Fail closed when backend authorisation is unavailable.
 - [x] Do not persist the original bearer token in graph state, thread metadata, or checkpoints.
 - [x] Keep `session.id` and LangGraph `thread_id` identical.

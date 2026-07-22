@@ -7,6 +7,6 @@
     "path": "./src/teaching_agent/auth.py:auth",
     "disable_studio_auth": true
   },
-  "env": "../backend/.env",
+  "env": "../api_server/.env",
   "python_version": "3.13"
 }
