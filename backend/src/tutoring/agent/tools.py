@@ -1,11 +1,10 @@
-import json
 import logging
 from typing import Literal
 
 from langchain_core.tools import BaseTool, tool
 from lightrag import LightRAG, QueryParam
 
-from tutoring.agent.schemas import PresentQuestionArgs, SearchKnowledgeArgs
+from tutoring.agent.schemas import PresentQuestionArgs, QuizResume, SearchKnowledgeArgs
 
 logger = logging.getLogger(__name__)
 
@@ -64,21 +63,9 @@ def make_tools(*, rag: LightRAG) -> list[BaseTool]:
             }
         )
 
-        # 归一化 resume 值为 dict：
-        # - dict（网关 SDK）：直接用
-        # - str 是 JSON 编码的 dict（Studio 填了 JSON 文本）：json.loads 解开
-        # - str 是裸答案（Studio 直接填答案文本）：包成 {"answer": ...}
-        if isinstance(student_answer, str):
-            try:
-                parsed = json.loads(student_answer)
-            except (json.JSONDecodeError, TypeError):
-                parsed = None
-            student_answer = parsed if isinstance(parsed, dict) else {"answer": student_answer}
-        elif not isinstance(student_answer, dict):
-            student_answer = {"answer": str(student_answer) if student_answer is not None else ""}
-
-        if student_answer.get("action") == "skip":
+        resume = QuizResume.model_validate(student_answer)
+        if resume.action == "skip":
             return {"question_id": quiz_id, "action": "skipped"}
-        return {"question_id": quiz_id, "student_answer": student_answer.get("answer", "")}
+        return {"question_id": quiz_id, "student_answer": resume.answer}
 
     return [search_knowledge, present_question]

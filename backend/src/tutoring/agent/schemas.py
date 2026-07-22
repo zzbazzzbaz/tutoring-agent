@@ -1,7 +1,7 @@
 import json
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SearchKnowledgeArgs(BaseModel):
@@ -41,3 +41,31 @@ class PresentQuestionArgs(BaseModel):
                 pass
             return [v]
         return None
+
+
+class QuizResume(BaseModel):
+    """present_question 的 interrupt resume 值。
+
+    兼容三种来源：
+    - dict（网关/前端 SDK）：{"action":"answer","answer":"A"} 或 {"action":"skip"}
+    - JSON 字符串（Studio 填了 JSON 文本）：'{"action":"answer","answer":"A"}'
+    - 裸字符串（Studio 直接填答案）："A"
+    """
+
+    action: Literal["answer", "skip"] = "answer"
+    answer: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_resume(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, dict):
+                    return parsed
+            except (ValueError, TypeError):
+                pass
+            return {"action": "answer", "answer": v}
+        if isinstance(v, dict):
+            return v
+        return {"action": "answer", "answer": str(v) if v is not None else ""}
