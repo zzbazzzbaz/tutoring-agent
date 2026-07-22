@@ -33,7 +33,7 @@ async def authorize_with_backend(
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(
-                f"{settings.backend_internal_url.rstrip('/')}/internal/agent/authorize",
+                f"{settings.backend_internal_url.rstrip('/')}/auth/internal/agent/authorize",
                 headers=headers,
                 json=payload,
             )

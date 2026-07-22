@@ -20,10 +20,10 @@ from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.sessions import service as session_service
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/auth/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse)
 async def login(
     body: LoginRequest,
     db_session: AsyncSession = Depends(get_db),
@@ -33,7 +33,7 @@ async def login(
     return LoginResponse(token=token, user=UserPublic.model_validate(user))
 
 
-@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     request: Request,
     db_session: AsyncSession = Depends(get_db),
@@ -44,14 +44,14 @@ async def logout(
         await auth_service.logout(db_session, token)
 
 
-@router.get("/auth/me", response_model=MeResponse)
+@router.get("/me", response_model=MeResponse)
 async def me(user: CurrentUser = Depends(get_current_user)) -> MeResponse:
     return MeResponse(
         id=user.id, username=user.username, role=user.role, name=user.name
     )
 
 
-@router.post("/auth/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(
     body: ChangePasswordRequest,
     user: CurrentUser = Depends(get_current_user),
