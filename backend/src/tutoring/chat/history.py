@@ -1,28 +1,25 @@
 """会话历史重建（读侧）。
 
-LangGraph 把整段对话存在 checkpoint 里，build_history 读取这些原始消息，
-还原成前端可渲染的 item 列表，并附带"当前是否有未答 quiz"和"是否正在处理"。
+数据源从 LangGraph Server 的 threads/state API 取（JSON），用 messages_from_dict
+转回消息对象后复用 _extract_items 还原成前端 item 列表。
 """
+import inspect
 import json
-import uuid
 
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
-from langgraph.graph.state import CompiledStateGraph
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage, messages_from_dict
 
-from tutoring.chat import tasks
-from tutoring.chat.streaming import iter_tool_calls, stream_config
+from tutoring.chat import server_client
 
 
-async def build_history(
-    agent: CompiledStateGraph, session_id: uuid.UUID
-) -> dict:
+async def build_history(thread_id: str) -> dict:
     """重建会话历史：item 列表 + pending_quiz + processing 标志。"""
-    config = stream_config(session_id)
-    state = await agent.aget_state(config)
+    state = await server_client.get_state(thread_id)
+    raw_msgs = (state.get("values") or {}).get("messages") or []
+    messages = messages_from_dict(raw_msgs)
 
-    items = _extract_items(state.values.get("messages") or [])
+    items = _extract_items(messages)
     pending_quiz = _extract_pending_quiz(state)
-    processing = bool(tasks.get(session_id))
+    processing = await server_client.has_active_run(thread_id)
 
     return {"items": items, "pending_quiz": pending_quiz, "processing": processing}
 
@@ -31,18 +28,9 @@ async def build_history(
 
 
 def _extract_items(messages: list) -> list[dict]:
-    """把 LangGraph 原始消息序列还原成前端 item 列表。
-
-    三种消息各自处理：
-    - HumanMessage -> user item
-    - AIMessage -> 可能含 tool_calls：普通工具 -> tool_call item；
-      present_question -> quiz item（标记 pending，等待对应 ToolMessage 回填）；
-      文本部分 -> agent item
-    - ToolMessage -> present_question 的返回值，回填之前那个 quiz item 的
-      状态（skipped / answered）和 quiz_id
-    """
+    """把消息序列还原成前端 item 列表（逻辑不变）。"""
     items: list[dict] = []
-    pending_quizzes: list[int] = []  # 等待 ToolMessage 回填的 quiz item 下标
+    pending_quizzes: list[int] = []
 
     for msg in messages:
         if isinstance(msg, HumanMessage):
@@ -60,10 +48,8 @@ def _collect_human_message(msg: HumanMessage, items: list[dict]) -> None:
         items.append({"type": "user", "content": msg.text})
 
 
-def _collect_ai_message(
-    msg: AIMessage, items: list[dict], pending_quizzes: list[int]
-) -> None:
-    for name, args in iter_tool_calls(msg):
+def _collect_ai_message(msg: AIMessage, items: list[dict], pending_quizzes: list[int]) -> None:
+    for name, args in _iter_tool_calls(msg):
         if name == "present_question":
             items.append(_build_quiz_item(args))
             pending_quizzes.append(len(items) - 1)
@@ -73,9 +59,7 @@ def _collect_ai_message(
         items.append({"type": "agent", "content": msg.text})
 
 
-def _apply_tool_result(
-    msg: ToolMessage, items: list[dict], pending_quizzes: list[int]
-) -> None:
+def _apply_tool_result(msg: ToolMessage, items: list[dict], pending_quizzes: list[int]) -> None:
     """present_question 的返回值回填到对应的 quiz item。
 
     因为 present_question 会 interrupt 暂停整图，pending 队列里等待的下一个
@@ -92,6 +76,23 @@ def _apply_tool_result(
             items[idx]["status"] = "answered"
             items[idx]["user_answer"] = result["student_answer"]
         items[idx]["quiz_id"] = result.get("question_id", "")
+
+
+def _iter_tool_calls(message) -> list[tuple[str, dict]]:
+    """安全遍历 tool_calls 为 (name, args)。从 streaming.py 迁入（Task 6 删 streaming）。"""
+    tc = getattr(message, "tool_calls", None)
+    if not tc or inspect.isawaitable(tc):
+        return []
+    try:
+        return [
+            (
+                call.get("name", "") if isinstance(call, dict) else getattr(call, "name", ""),
+                call.get("args", {}) if isinstance(call, dict) else getattr(call, "args", {}),
+            )
+            for call in tc
+        ]
+    except TypeError:
+        return []
 
 
 def _build_quiz_item(args: dict) -> dict:
@@ -126,12 +127,12 @@ def _parse_tool_result(content_str: str) -> dict:
         return {}
 
 
-def _extract_pending_quiz(state) -> dict | None:
-    """从 checkpoint state 里取出当前未答 quiz 的 interrupt 值。"""
-    if not state.next:
+def _extract_pending_quiz(state: dict) -> dict | None:
+    """从 Server state（dict）取当前未答 quiz 的 interrupt 值。"""
+    if not state.get("next"):
         return None
-    for task in state.tasks:
-        for intr in getattr(task, "interrupts", None) or []:
-            if hasattr(intr, "value"):
-                return intr.value
+    for task in state.get("tasks") or []:
+        for intr in task.get("interrupts") or []:
+            if "value" in intr:
+                return intr["value"]
     return None

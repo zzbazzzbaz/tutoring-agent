@@ -95,10 +95,9 @@ async def get_history(
         session_id: UUID,
         user: CurrentUser = Depends(get_current_user),
         db_session: AsyncSession = Depends(get_db),
-        agent: CompiledStateGraph = Depends(get_agent),
 ) -> HistoryOut:
     await chat_sessions.get_readable_session(db_session, session_id, user)
-    result = await chat_history.build_history(agent, session_id)
+    result = await chat_history.build_history(str(session_id))
     return HistoryOut(**result)
 
 
