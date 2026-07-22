@@ -2,7 +2,6 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tutoring.core.config import COURSE_NAME
 from tutoring.core.deps import CurrentUser
 from tutoring.core.errors import AppError
 from tutoring.db import repos
@@ -48,11 +47,10 @@ async def build_agent_context(db: AsyncSession, sess: Session) -> dict:
         proj = await repos.get_project(db, sess.project_id)
         return {
             "mode": "project",
-            "course_name": COURSE_NAME,
             "project_name": proj.name if proj else "",
             "project_background_md": proj.background_md if proj else "",
         }
-    return {"mode": "free", "course_name": COURSE_NAME}
+    return {"mode": "free"}
 
 
 def session_to_out_dict(sess: Session) -> dict:

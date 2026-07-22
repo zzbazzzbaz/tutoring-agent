@@ -1,8 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-COURSE_NAME = "计算机网络"
-CORS_ORIGINS = ["*"]
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

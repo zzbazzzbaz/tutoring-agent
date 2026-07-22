@@ -26,6 +26,8 @@ _CORE_PRINCIPLES = """## 核心原则
 - search_knowledge(query): 检索课程知识库并返回相关知识片段
 - present_question(topic, q_type, stem, options): 展示题目并等待作答"""
 
+_COURSE_NAME = "计算机网络"
+
 _FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
 
 {core_principles}
@@ -49,7 +51,7 @@ _PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{co
 
 
 def render_system_prompt(context: AgentContextV1) -> str:
-    values = {"course_name": context.course_name, "core_principles": _CORE_PRINCIPLES}
+    values = {"course_name": _COURSE_NAME, "core_principles": _CORE_PRINCIPLES}
     if context.mode == "project":
         return _PROJECT_TEMPLATE.format(
             **values,

@@ -53,7 +53,7 @@ async def test_run_authorization_uses_writable_session_and_touches_it(monkeypatc
 
     async def build_context(db, authorized_session):
         assert authorized_session is session
-        return {"mode": "free", "course_name": "计算机网络"}
+        return {"mode": "free"}
 
     monkeypatch.setattr(router.session_service, "get_writable_session", get_writable)
     monkeypatch.setattr(router.session_service, "touch_session", touch)
@@ -68,7 +68,7 @@ async def test_run_authorization_uses_writable_session_and_touches_it(monkeypatc
 
     assert calls == [("write", session_id, user.id), ("touch", session_id)]
     assert result.session_access == "run"
-    assert result.agent_context.course_name == "计算机网络"
+    assert result.agent_context.mode == "free"
 
 
 @pytest.mark.asyncio
@@ -83,7 +83,6 @@ async def test_read_authorization_uses_readable_session_without_touch(monkeypatc
     async def build_context(db, authorized_session):
         return {
             "mode": "project",
-            "course_name": "计算机网络",
             "project_name": "网络规划",
             "project_background_md": "项目背景",
         }

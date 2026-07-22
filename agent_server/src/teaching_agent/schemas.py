@@ -10,7 +10,6 @@ class AgentContextV1(BaseModel):
 
     version: Literal[1] = 1
     mode: Literal["free", "project"]
-    course_name: str = Field(min_length=1)
     project_name: str = ""
     project_background_md: str = ""
 

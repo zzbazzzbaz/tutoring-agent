@@ -9,7 +9,7 @@ from teaching_agent.prompts import prompt_middleware
 from teaching_agent.schemas import AgentContextV1
 from teaching_agent.tools import TOOLS
 
-_INTROSPECTION_CONTEXT = AgentContextV1(mode="free", course_name="课程")
+_INTROSPECTION_CONTEXT = AgentContextV1(mode="free")
 
 
 def build_agent(context: AgentContextV1) -> CompiledStateGraph:

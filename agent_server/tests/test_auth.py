@@ -22,7 +22,7 @@ async def test_authenticate_run_uses_backend(monkeypatch):
             name="Student",
             session_id=session_id,
             session_access="run",
-            agent_context=AgentContextV1(mode="free", course_name="网络"),
+            agent_context=AgentContextV1(mode="free"),
         )
 
     monkeypatch.setattr(auth_module, "authorize_with_backend", fake_authorize)
@@ -40,7 +40,7 @@ async def test_authenticate_run_uses_backend(monkeypatch):
         "access": "run",
         "touch": True,
     }
-    assert result["agent_context"]["course_name"] == "网络"
+    assert result["agent_context"]["mode"] == "free"
     assert "threads:run" in result["permissions"]
 
 
@@ -106,7 +106,7 @@ async def test_create_run_stamps_owner_and_removes_client_context():
     value = {
         "thread_id": session_id,
         "metadata": {},
-        "kwargs": {"context": {"course_name": "伪造课程"}, "input": {}},
+        "kwargs": {"context": {"mode": "project"}, "input": {}},
     }
 
     filters = await auth_module.create_run(SimpleNamespace(user=user), value)

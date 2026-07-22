@@ -1,7 +1,7 @@
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class LoginRequest(BaseModel):
@@ -53,7 +53,6 @@ class AgentContextV1(BaseModel):
 
     version: Literal[1] = 1
     mode: Literal["free", "project"]
-    course_name: str = Field(min_length=1)
     project_name: str = ""
     project_background_md: str = ""
 
