@@ -12,7 +12,7 @@ from tutoring.db.models import Session
 async def _load_session(db: AsyncSession, session_id: uuid.UUID) -> Session:
     """加载会话，不存在则 404。"""
     sess = await repos.get_session(db, session_id)
-    if not sess:
+    if not sess or sess.deleted_at is not None:
         raise AppError(404, "SESSION_NOT_FOUND", f"Session {session_id} not found")
     return sess
 

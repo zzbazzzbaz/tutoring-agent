@@ -1,5 +1,3 @@
-import os
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,13 +6,6 @@ class Settings(BaseSettings):
 
     # 数据库
     database_url: str
-
-    # LLM（DashScope，OpenAI 兼容）
-    dashscope_api_key: str
-    dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen3.6-flash"
-    embedding_model: str = "text-embedding-v4"
-    embedding_dim: int = 1024
 
     # 课程
     course_name: str = "计算机网络"
@@ -27,21 +18,7 @@ class Settings(BaseSettings):
 
     # LangGraph Server
     langgraph_server_url: str = "http://localhost:2024"
-
-    langsmith_tracing: bool = False
-    langsmith_endpoint: str = "https://api.smith.langchain.com"
-    langsmith_api_key: str = ""
-    langsmith_project: str = "teaching-agent"
+    agent_server_secret: str
 
 
 settings = Settings()
-
-
-def setup_langsmith() -> None:
-    """把 LangSmith 配置推到 os.environ，让 langchain 自动埋点生效。"""
-    if not settings.langsmith_tracing:
-        return
-    os.environ["LANGSMITH_TRACING"] = "true"
-    os.environ["LANGSMITH_ENDPOINT"] = settings.langsmith_endpoint
-    os.environ["LANGSMITH_API_KEY"] = settings.langsmith_api_key
-    os.environ["LANGSMITH_PROJECT"] = settings.langsmith_project

@@ -1,6 +1,0 @@
-{
-  "dependencies": ["."],
-  "graphs": { "tutor": "./src/tutoring/agent/server_runtime.py:get_graph" },
-  "env": ".env",
-  "python_version": "3.13"
-}

@@ -1,0 +1,12 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "tutor": "./src/teaching_agent/graph.py:get_graph"
+  },
+  "auth": {
+    "path": "./src/teaching_agent/auth.py:auth",
+    "disable_studio_auth": true
+  },
+  "env": "../backend/.env",
+  "python_version": "3.13"
+}

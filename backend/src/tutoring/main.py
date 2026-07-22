@@ -2,20 +2,17 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from tutoring.core.config import settings, setup_langsmith
-
-setup_langsmith()
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from tutoring.core.database import create_engine, create_session_factory, init_db
-from tutoring.core.errors import register_exception_handlers
+from tutoring.agent_access import router as agent_access_router
 from tutoring.auth import router as auth_router
 from tutoring.core import health as health_router
+from tutoring.core.config import settings
+from tutoring.core.database import create_engine, create_session_factory, init_db
+from tutoring.core.errors import register_exception_handlers
 from tutoring.projects import router as projects_router
 from tutoring.sessions import router as sessions_router
-from tutoring.chat import proxy as chat_proxy_router
 from tutoring.users import router as users_router
 
 logger = logging.getLogger(__name__)
@@ -46,8 +43,8 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
+app.include_router(agent_access_router.router)
 app.include_router(users_router.router)
 app.include_router(health_router.router)
 app.include_router(projects_router.router)
 app.include_router(sessions_router.router)
-app.include_router(chat_proxy_router.router)

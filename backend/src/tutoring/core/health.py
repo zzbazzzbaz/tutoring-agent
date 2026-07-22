@@ -27,14 +27,8 @@ async def health(request: Request) -> dict:
     except Exception:
         components["langgraph_server"] = "fail"
 
-    import langchain
-    from importlib.metadata import version as pkg_version
     return {
         "status": "healthy" if all(v == "ok" for v in components.values()) else "degraded",
         "components": components,
-        "versions": {
-            "api": "0.2.0",
-            "langchain": langchain.__version__,
-            "langgraph": pkg_version("langgraph"),
-        },
+        "versions": {"api": "0.2.0"},
     }
