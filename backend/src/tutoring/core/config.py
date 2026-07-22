@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins: str = "*"
 
+    # LangGraph Server
+    langgraph_server_url: str = "http://localhost:2024"
+
     langsmith_tracing: bool = False
     langsmith_endpoint: str = "https://api.smith.langchain.com"
     langsmith_api_key: str = ""
