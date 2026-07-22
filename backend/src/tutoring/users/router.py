@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tutoring.sessions import service as session_service
-from tutoring.sessions.schemas import SessionOut
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.db import repos
+from tutoring.sessions import service as session_service
+from tutoring.sessions.schemas import SessionOut
 from tutoring.users import service as user_service
 from tutoring.users.schemas import ImportResult, UserOut
 
@@ -100,6 +100,7 @@ async def download_template(
 ) -> StreamingResponse:
     _require_teacher(user)
     import io
+
     import openpyxl
     wb = openpyxl.Workbook()
     ws = wb.active

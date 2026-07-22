@@ -1,11 +1,10 @@
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from tutoring.agent_access import router as agent_access_router
 from tutoring.auth import router as auth_router
 from tutoring.core import health as health_router
 from tutoring.core.config import settings
@@ -43,7 +42,6 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
-app.include_router(agent_access_router.router)
 app.include_router(users_router.router)
 app.include_router(health_router.router)
 app.include_router(projects_router.router)

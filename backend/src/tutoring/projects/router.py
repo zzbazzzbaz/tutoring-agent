@@ -7,7 +7,7 @@ from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.projects import service as project_service
-from tutoring.projects.schemas import ProjectCreate, ProjectUpdate, ProjectOut
+from tutoring.projects.schemas import ProjectCreate, ProjectOut, ProjectUpdate
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

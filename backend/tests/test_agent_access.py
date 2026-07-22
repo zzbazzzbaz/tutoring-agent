@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from tutoring.agent_access import router
-from tutoring.agent_access.schemas import AgentAuthorizeRequest
+from tutoring.auth import router
+from tutoring.auth.schemas import AgentAuthorizeRequest
 from tutoring.core.config import settings
 from tutoring.core.deps import CurrentUser
 from tutoring.core.errors import AppError

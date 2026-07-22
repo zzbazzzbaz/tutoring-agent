@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Text, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, TIMESTAMP
-from sqlmodel import SQLModel, Field, Column, Relationship
+from sqlalchemy import ForeignKey, Text, func
+from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlmodel import Column, Field, Relationship, SQLModel
 
 
 class User(SQLModel, table=True):
@@ -18,7 +19,9 @@ class User(SQLModel, table=True):
     password_hash: str = Field(sa_column=Column(Text))
     role: str = Field(max_length=20, index=True)  # student/teacher
     name: str = Field(max_length=100)
-    created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
 
     sessions: list["Session"] = Relationship(back_populates="user", cascade_delete=True)
     tokens: list["AuthToken"] = Relationship(back_populates="user", cascade_delete=True)
@@ -36,7 +39,9 @@ class AuthToken(SQLModel, table=True):
             index=True,
         ),
     )
-    created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
 
     user: "User" = Relationship(back_populates="tokens")
 
@@ -53,7 +58,9 @@ class Project(SQLModel, table=True):
     background_md: str = Field(sa_column=Column(Text))
     status: str = Field(default="draft", max_length=20, index=True)  # draft/published
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
-    created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
     updated_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
 
@@ -86,8 +93,12 @@ class Session(SQLModel, table=True):
     )
     title: str | None = Field(default=None, max_length=200)
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
-    last_active_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
-    created_at: datetime = Field(sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()))
+    last_active_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
     updated_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
 

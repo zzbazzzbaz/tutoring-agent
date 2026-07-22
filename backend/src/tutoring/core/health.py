@@ -1,14 +1,11 @@
-import httpx
 from fastapi import APIRouter, Request
-
-from tutoring.core.config import settings
 
 router = APIRouter()
 
 
 @router.get("/health")
 async def health(request: Request) -> dict:
-    components = {"database": "unknown", "langgraph_server": "unknown"}
+    components = {"database": "unknown"}
 
     # DB 检查
     try:
@@ -18,14 +15,6 @@ async def health(request: Request) -> dict:
         components["database"] = "ok"
     except Exception:
         components["database"] = "fail"
-
-    # LangGraph Server 检查（agent/rag 现由 Server 托管）
-    try:
-        async with httpx.AsyncClient(timeout=5) as c:
-            resp = await c.get(f"{settings.langgraph_server_url.rstrip('/')}/ok")
-            components["langgraph_server"] = "ok" if resp.status_code == 200 else "fail"
-    except Exception:
-        components["langgraph_server"] = "fail"
 
     return {
         "status": "healthy" if all(v == "ok" for v in components.values()) else "degraded",

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from tutoring.db.models import AuthToken, Project, Session, User
-
 
 # === User ===
 
@@ -126,21 +125,27 @@ async def list_sessions(
 
 async def touch_session(session: AsyncSession, session_id: UUID) -> None:
     await session.execute(
-        update(Session).where(Session.id == session_id).values(last_active_at=datetime.now(timezone.utc))
+        update(Session).where(Session.id == session_id).values(last_active_at=datetime.now(UTC))
     )
     await session.commit()
 
 
 async def delete_session(session: AsyncSession, session_id: UUID) -> None:
     await session.execute(
-        update(Session).where(Session.id == session_id).values(deleted_at=datetime.now(timezone.utc))
+        update(Session).where(Session.id == session_id).values(deleted_at=datetime.now(UTC))
     )
     await session.commit()
 
 
 # === Project ===
 
-async def create_project(session: AsyncSession, *, name: str, background_md: str, status: str = "draft") -> Project:
+async def create_project(
+    session: AsyncSession,
+    *,
+    name: str,
+    background_md: str,
+    status: str = "draft",
+) -> Project:
     obj = Project(name=name, background_md=background_md, status=status)
     session.add(obj)
     await session.commit()
@@ -169,6 +174,6 @@ async def update_project(session: AsyncSession, project_id: UUID, **fields) -> P
 
 async def delete_project(session: AsyncSession, project_id: UUID) -> None:
     await session.execute(
-        update(Project).where(Project.id == project_id).values(deleted_at=datetime.now(timezone.utc))
+        update(Project).where(Project.id == project_id).values(deleted_at=datetime.now(UTC))
     )
     await session.commit()

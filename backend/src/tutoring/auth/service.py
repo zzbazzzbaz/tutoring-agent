@@ -33,7 +33,9 @@ async def verify_token(db: AsyncSession, token: str) -> User:
     return auth_token.user
 
 
-async def change_password(db: AsyncSession, user: User, old_password: str, new_password: str) -> None:
+async def change_password(
+    db: AsyncSession, user: User, old_password: str, new_password: str
+) -> None:
     if not verify_password(old_password, user.password_hash):
         raise AppError(401, "INVALID_CREDENTIALS", "旧密码错误")
     await repos.update_password(db, user.id, hash_password(new_password))

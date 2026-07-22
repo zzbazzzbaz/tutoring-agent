@@ -1,5 +1,5 @@
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from typing import AsyncIterator
 from uuid import UUID
 
 from fastapi import Depends, Header, Request

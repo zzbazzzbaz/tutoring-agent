@@ -15,9 +15,11 @@ async def create_project(
         return await repos.create_project(
             db, name=name, background_md=background_md, status=status
         )
-    except IntegrityError:
+    except IntegrityError as exc:
         await db.rollback()
-        raise AppError(409, "PROJECT_NAME_CONFLICT", f"Project name '{name}' already exists")
+        raise AppError(
+            409, "PROJECT_NAME_CONFLICT", f"Project name '{name}' already exists"
+        ) from exc
 
 
 async def get_project_or_404(db: AsyncSession, project_id: UUID) -> Project:
