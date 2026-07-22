@@ -1,11 +1,14 @@
+import httpx
 from fastapi import APIRouter, Request
+
+from tutoring.core.config import settings
 
 router = APIRouter()
 
 
 @router.get("/health")
 async def health(request: Request) -> dict:
-    components = {"database": "ok", "lightrag": "unknown", "agent": "unknown"}
+    components = {"database": "unknown", "langgraph_server": "unknown"}
 
     # DB 检查
     try:
@@ -16,24 +19,18 @@ async def health(request: Request) -> dict:
     except Exception:
         components["database"] = "fail"
 
-    # LightRAG 检查
+    # LangGraph Server 检查（agent/rag 现由 Server 托管）
     try:
-        rag = request.app.state.rag
-        components["lightrag"] = "ready" if rag is not None else "not_initialized"
+        async with httpx.AsyncClient(timeout=5) as c:
+            resp = await c.get(f"{settings.langgraph_server_url.rstrip('/')}/ok")
+            components["langgraph_server"] = "ok" if resp.status_code == 200 else "fail"
     except Exception:
-        components["lightrag"] = "fail"
-
-    # Agent 检查
-    try:
-        agent = request.app.state.agent
-        components["agent"] = "ready" if agent is not None else "not_built"
-    except Exception:
-        components["agent"] = "fail"
+        components["langgraph_server"] = "fail"
 
     import langchain
     from importlib.metadata import version as pkg_version
     return {
-        "status": "healthy" if all(v in ("ok", "ready") for v in components.values()) else "degraded",
+        "status": "healthy" if all(v == "ok" for v in components.values()) else "degraded",
         "components": components,
         "versions": {
             "api": "0.2.0",

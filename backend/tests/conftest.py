@@ -4,6 +4,9 @@
 用 httpx.ASGITransport 绕过网络层，进程内调 FastAPI app。
 
 每个测试重建 lifespan，build_agent 不再缓存单例，自然引用新 checkpointer。
+
+集成测试（test_chat_streaming / test_proxy / test_server_client 等）额外需要
+`langgraph dev` 在 http://localhost:2024 运行（langgraph_server_url 默认指向它）。
 """
 import pytest_asyncio
 from asgi_lifespan import LifespanManager

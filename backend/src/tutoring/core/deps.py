@@ -3,7 +3,6 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from fastapi import Depends, Header, Request
-from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tutoring.auth import service as auth_service
@@ -37,11 +36,6 @@ async def get_current_user(
     token = authorization.removeprefix("Bearer ").strip()
     user = await auth_service.verify_token(db_session, token)
     return CurrentUser(id=user.id, username=user.username, role=user.role, name=user.name)
-
-
-def get_agent(request: Request) -> CompiledStateGraph:
-    """从 app.state 获取 Agent 单例。"""
-    return request.app.state.agent
 
 
 def get_db_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
