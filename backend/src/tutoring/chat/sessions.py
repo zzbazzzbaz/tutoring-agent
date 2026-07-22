@@ -2,7 +2,6 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tutoring.agent.prompts import AgentContext
 from tutoring.core.config import settings
 from tutoring.core.deps import CurrentUser
 from tutoring.core.errors import AppError
@@ -43,17 +42,17 @@ async def touch_session(db: AsyncSession, session_id: uuid.UUID) -> None:
     await repos.touch_session(db, session_id)
 
 
-async def build_agent_context(db: AsyncSession, sess: Session) -> AgentContext:
-    """根据会话模式构造注入 agent 的上下文（project 模式附带项目背景）。"""
+async def build_agent_context(db: AsyncSession, sess: Session) -> dict:
+    """构造传给 Server 的 context dict（与 AgentContext 字段一致，Server 侧再强转）。"""
     if sess.mode == "project" and sess.project_id:
         proj = await repos.get_project(db, sess.project_id)
-        return AgentContext(
-            mode="project",
-            course_name=settings.course_name,
-            project_name=proj.name if proj else "",
-            project_background_md=proj.background_md if proj else "",
-        )
-    return AgentContext(mode="free", course_name=settings.course_name)
+        return {
+            "mode": "project",
+            "course_name": settings.course_name,
+            "project_name": proj.name if proj else "",
+            "project_background_md": proj.background_md if proj else "",
+        }
+    return {"mode": "free", "course_name": settings.course_name}
 
 
 def session_to_out_dict(sess: Session) -> dict:
