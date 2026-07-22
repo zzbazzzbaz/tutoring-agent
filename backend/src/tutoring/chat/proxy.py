@@ -1,7 +1,7 @@
-"""伪装 LangGraph Server 的流式端点：POST /threads/{thread_id}/runs/stream。
+"""伪装 LangGraph Server 协议端点，前端用 @langchain/langgraph-sdk 直接打。
 
-前端用 @langchain/langgraph-sdk 打这里。网关职责：鉴权 -> 加载 session ->
-拼 context -> 注入并发/断线参数 -> is_interrupted 守卫 -> httpx 透传 Server SSE。
+- GET  /threads/{thread_id}/state       鉴权后透传 Server state
+- POST /threads/{thread_id}/runs/stream  鉴权 + 注入 context/并发参数 -> 透传 SSE
 """
 from uuid import UUID
 
@@ -19,12 +19,23 @@ router = APIRouter(tags=["chat"])
 _SSE_HEADERS = {"X-Accel-Buffering": "no", "Cache-Control": "no-cache"}
 
 
+@router.get("/threads/{thread_id}/state")
+async def get_state(
+        thread_id: UUID,
+        user: CurrentUser = Depends(get_current_user),
+        db_session: AsyncSession = Depends(get_db),
+) -> dict:
+    """透传 Server 的 thread state（messages + interrupts + next）。"""
+    await session_service.get_readable_session(db_session, thread_id, user)
+    return await server_client.get_state(str(thread_id))
+
+
 @router.post("/threads/{thread_id}/runs/stream")
 async def runs_stream(
-    thread_id: UUID,
-    request: Request,
-    user: CurrentUser = Depends(get_current_user),
-    db_session: AsyncSession = Depends(get_db),
+        thread_id: UUID,
+        request: Request,
+        user: CurrentUser = Depends(get_current_user),
+        db_session: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """透传 Server 的 runs/stream；前端 SDK 原生接收事件。"""
     sess = await session_service.get_writable_session(db_session, thread_id, user)

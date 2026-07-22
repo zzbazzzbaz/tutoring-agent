@@ -7,7 +7,7 @@ FastAPI 网关 + LangGraph Server（agent 运行时）+ LightRAG + LangChain 1.x
 - `core/` 共享内核：config / errors / database / deps / health / lightrag（不依赖任何业务模块）
 - `db/` 唯一数据真相：models + repos（纯数据访问，无业务规则）
 - `sessions/` 会话实体管理：CRUD + 权限 + 上下文构造（router + service + schemas）
-- `chat/` 实时交互层：history 重建 + SSE 代理 + server_client（httpx → LangGraph Server）
+- `chat/` Server 代理层：SSE 流式代理 + state 代理 + server_client（httpx → LangGraph Server）
 - `projects/` 项目管理、`users/` 用户管理、`auth/` 认证授权（token + bcrypt + role）
 - `agent/` LangChain agent：factory + tools + prompts + schemas（零 FastAPI 依赖，由 LangGraph Server 加载）
 - `langgraph.json` Server 配置（graph `tutor` → `agent/server_runtime.py:get_graph`）
@@ -35,4 +35,4 @@ chat.proxy 透传 Server SSE，不做事件翻译。
 - 错误：raise `core.errors.AppError(status, code, message)`，对外格式 `{"detail": {"error": {...}}}` 不可变
 - 路由依赖 `get_current_user`（CurrentUser.id/.role），不直接读 header
 - agent 工具通过 `make_tools(rag=...)` 闭包注入依赖，禁止模块级全局态
-- thread_id = session_id（1:1）；SSE 原生透传，前端用 `@langchain/langgraph-sdk`
+- thread_id = session_id（1:1）；SSE / state 原生透传，前端用 `@langchain/langgraph-sdk` 统一渲染流式与历史
