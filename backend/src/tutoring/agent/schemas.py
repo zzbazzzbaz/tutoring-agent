@@ -44,12 +44,10 @@ class PresentQuestionArgs(BaseModel):
 
 
 class QuizResume(BaseModel):
-    """present_question 的 interrupt resume 值。
-
-    兼容三种来源：
-    - dict（网关/前端 SDK）：{"action":"answer","answer":"A"} 或 {"action":"skip"}
-    - JSON 字符串（Studio 填了 JSON 文本）：'{"action":"answer","answer":"A"}'
-    - 裸字符串（Studio 直接填答案）："A"
+    """
+    支持两种来源：
+    - dict：{"action":"answer","answer":"A"} 或 {"action":"skip"}
+    - JSON 字符串：'{"action":"answer","answer":"A"}'
     """
 
     action: Literal["answer", "skip"] = "answer"
@@ -60,12 +58,7 @@ class QuizResume(BaseModel):
     def _coerce_resume(cls, v):
         if isinstance(v, str):
             try:
-                parsed = json.loads(v)
-                if isinstance(parsed, dict):
-                    return parsed
+                return json.loads(v)
             except (ValueError, TypeError):
                 pass
-            return {"action": "answer", "answer": v}
-        if isinstance(v, dict):
-            return v
-        return {"action": "answer", "answer": str(v) if v is not None else ""}
+        return v
