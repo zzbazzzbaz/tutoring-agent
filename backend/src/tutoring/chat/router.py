@@ -1,7 +1,3 @@
-"""chat 模块的 REST 入口：会话历史重建。
-
-session CRUD 见 sessions/router.py；流式代理见 proxy.py。
-"""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends

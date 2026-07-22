@@ -1,4 +1,3 @@
-"""sessions 模块的 REST 入口：/sessions 会话增删查改。"""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
