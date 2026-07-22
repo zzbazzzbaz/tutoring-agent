@@ -1,5 +1,4 @@
 from langchain.agents import create_agent
-from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from lightrag import LightRAG
 
@@ -8,15 +7,12 @@ from tutoring.agent.prompts import AgentContext, main_agent_system_prompt
 from tutoring.agent.tools import make_tools
 
 
-def build_agent(
-    checkpointer: BaseCheckpointSaver,
-    rag: LightRAG,
-) -> CompiledStateGraph:
-    """构建 agent。每次调用都新建实例。
+def build_agent(*, rag: LightRAG, checkpointer=None) -> CompiledStateGraph:
+    """构建 agent。Server 路径不传 checkpointer（Server 运行时注入）。
 
     Args:
-        checkpointer: 已 .setup() 的 BaseCheckpointSaver 实例
         rag: LightRAG SDK 实例（知识库查询）
+        checkpointer: 仅遗留路径用；Server 托管时为 None
 
     Returns:
         CompiledStateGraph: 可用于 astream_events / aget_state 等
