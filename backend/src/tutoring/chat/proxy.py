@@ -10,9 +10,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.chat import server_client
-from tutoring.chat import sessions as chat_sessions
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
+from tutoring.sessions import service as session_service
 
 router = APIRouter(tags=["chat"])
 
@@ -27,14 +27,14 @@ async def runs_stream(
     db_session: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """透传 Server 的 runs/stream；前端 SDK 原生接收事件。"""
-    sess = await chat_sessions.get_writable_session(db_session, thread_id, user)
+    sess = await session_service.get_writable_session(db_session, thread_id, user)
 
     body = await request.json()
     tid = str(thread_id)
 
     # 保留前端传入的 input/command/stream_mode；注入服务端控制参数
     body["assistant_id"] = "tutor"
-    body["context"] = await chat_sessions.build_agent_context(db_session, sess)
+    body["context"] = await session_service.build_agent_context(db_session, sess)
     body["multitask_strategy"] = "reject"
     body["on_disconnect"] = "continue"
     body.setdefault("if_not_exists", "create")
@@ -49,7 +49,7 @@ async def runs_stream(
         raise AppError(409, "SESSION_NOT_INTERRUPTED", "Session is not paused; no quiz to resume")
 
     if is_input:
-        await chat_sessions.touch_session(db_session, thread_id)
+        await session_service.touch_session(db_session, thread_id)
 
     return StreamingResponse(
         server_client.proxy_run_stream(tid, body),
