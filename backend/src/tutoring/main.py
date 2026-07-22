@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from tutoring.auth import router as auth_router
 from tutoring.core import health as health_router
-from tutoring.core.config import settings
+from tutoring.core.config import CORS_ORIGINS, settings
 from tutoring.core.database import create_engine, create_session_factory, init_db
 from tutoring.core.errors import register_exception_handlers
 from tutoring.projects import router as projects_router
@@ -35,7 +35,7 @@ register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins.split(","),
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
