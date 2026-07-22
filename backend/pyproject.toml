@@ -1,7 +1,7 @@
 [project]
 name = "tutoring"
 version = "0.2.0"
-description = "Teaching Agent backend (FastAPI + LightRAG + LangChain 1.x)"
+description = "Teaching Agent backend (FastAPI + LangChain 1.x)"
 requires-python = ">=3.13"
 dependencies = [
     # ---- Web 框架与服务 ----
@@ -24,8 +24,6 @@ dependencies = [
     "asyncpg>=0.30",
     "psycopg[binary]>=3.2",
     "greenlet>=3.0",
-    # ---- RAG / 知识图谱 ----
-    "lightrag-hku>=1.5.4",
     "pgvector>=0.5.0",
     "neo4j>=6.2.0",
     # ---- 认证 ----

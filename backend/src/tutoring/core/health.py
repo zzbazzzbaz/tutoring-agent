@@ -36,6 +36,5 @@ async def health(request: Request) -> dict:
             "api": "0.2.0",
             "langchain": langchain.__version__,
             "langgraph": pkg_version("langgraph"),
-            "lightrag": pkg_version("lightrag-hku"),
         },
     }
