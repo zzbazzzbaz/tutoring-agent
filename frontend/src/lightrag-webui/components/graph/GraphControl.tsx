@@ -350,8 +350,7 @@ const GraphControl = ({ disableHoverEffect }: { disableHoverEffect?: boolean }) 
             attr.size = minEdgeSize
           }
           return attr
-        },
-        { attributes: ['size'] }
+        }
       )
 
       sigma.refresh()
