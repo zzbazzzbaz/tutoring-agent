@@ -1,3 +1,11 @@
+"use client";
+
+import { StudentTable } from "@/components/students/StudentTable";
+
 export default function TeacherStudentsPage() {
-  return <div className="p-4">学生管理（待实现）</div>;
+  return (
+    <div className="h-full overflow-y-auto">
+      <StudentTable />
+    </div>
+  );
 }
