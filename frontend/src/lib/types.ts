@@ -80,3 +80,63 @@ export interface ImportResult {
   skipped: number;
   errors: string[];
 }
+
+export type LightRAGDocumentStatus =
+  | "pending"
+  | "parsing"
+  | "analyzing"
+  | "processing"
+  | "preprocessed"
+  | "processed"
+  | "failed";
+
+export interface LightRAGDocument {
+  id: string;
+  content_summary?: string | null;
+  content_length?: number | null;
+  status: LightRAGDocumentStatus;
+  created_at?: string | null;
+  updated_at?: string | null;
+  track_id?: string | null;
+  chunks_count?: number | null;
+  error_msg?: string | null;
+  metadata?: Record<string, unknown>;
+  file_path?: string | null;
+}
+
+export interface LightRAGDocumentsResponse {
+  items: LightRAGDocument[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface LightRAGPipelineStatus {
+  busy: boolean;
+  job_name?: string | null;
+  docs?: number;
+  cur_batch?: number;
+  batchs?: number;
+  request_pending?: boolean;
+  latest_message?: string;
+  history_messages?: string[];
+}
+
+export interface LightRAGGraphNode {
+  id: string;
+  labels?: string[];
+  properties?: Record<string, unknown>;
+}
+
+export interface LightRAGGraphEdge {
+  id?: string;
+  source: string;
+  target: string;
+  type?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface LightRAGGraphResponse {
+  nodes: LightRAGGraphNode[];
+  edges: LightRAGGraphEdge[];
+}

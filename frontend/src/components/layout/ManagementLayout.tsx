@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ArrowLeft, FolderOpen, Users } from "lucide-react";
+import { ArrowLeft, Database, FolderOpen, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
@@ -32,6 +32,11 @@ export function ManagementLayout({
             label: "学生",
             href: "/teacher/manage/students",
             icon: Users,
+          },
+          {
+            label: "知识库",
+            href: "/teacher/manage/knowledge",
+            icon: Database,
           },
         ]
       : [
