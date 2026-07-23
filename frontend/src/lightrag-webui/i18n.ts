@@ -15,8 +15,12 @@ import ko from './locales/ko.json'
 import vi from './locales/vi.json'
 
 const getStoredLanguage = () => {
+  if (typeof window === 'undefined') {
+    return 'zh'
+  }
+
   try {
-    const settingsString = localStorage.getItem('settings-storage')
+    const settingsString = window.localStorage.getItem('settings-storage')
     if (settingsString) {
       const settings = JSON.parse(settingsString)
       return settings.state?.language || 'en'
