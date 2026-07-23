@@ -97,7 +97,7 @@ async def authorize_agent_request(
         session = await session_service.get_readable_session(db_session, body.session_id, user)
 
     context = AgentContextV1.model_validate(
-        await session_service.build_agent_context(db_session, session)
+        await auth_service.build_agent_context(db_session, session)
     )
     return AgentAuthorizeResponse(
         identity=str(user.id),

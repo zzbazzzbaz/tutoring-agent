@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.core.errors import AppError
 from tutoring.db import repos
-from tutoring.db.models import User
+from tutoring.db.models import Session, User
 
 
 def hash_password(password: str) -> str:
@@ -39,3 +39,15 @@ async def change_password(
     if not verify_password(old_password, user.password_hash):
         raise AppError(401, "INVALID_CREDENTIALS", "旧密码错误")
     await repos.update_password(db, user.id, hash_password(new_password))
+
+
+async def build_agent_context(db: AsyncSession, sess: Session) -> dict:
+    """构造传给 Server 的 context dict（与 AgentContext 字段一致，Server 侧再强转）。"""
+    if sess.mode == "project" and sess.project_id:
+        proj = await repos.get_project(db, sess.project_id)
+        return {
+            "mode": "project",
+            "project_name": proj.name if proj else "",
+            "project_background_md": proj.background_md if proj else "",
+        }
+    return {"mode": "free"}
