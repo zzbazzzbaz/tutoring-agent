@@ -8,11 +8,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     dashscope_api_key: SecretStr
-    dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen3.6-flash"
-    backend_internal_url: str = "http://127.0.0.1:8000"
+    dashscope_base_url: str
+    llm_model: str
+    backend_internal_url: str
     agent_server_secret: SecretStr
-    lightrag_query_url: str = "http://127.0.0.1:19621/query"
+    lightrag_query_url: str
 
 
 @lru_cache
