@@ -350,7 +350,10 @@ const GraphControl = ({ disableHoverEffect }: { disableHoverEffect?: boolean }) 
             attr.size = minEdgeSize
           }
           return attr
-        }
+        },
+        // In Next/Sigma integration this can run before edge program indices are ready.
+        // Including `type` in hints forces Sigma to re-index instead of partial repaint.
+        { attributes: ['size', 'type'] as Array<keyof EdgeType> }
       )
 
       sigma.refresh()
