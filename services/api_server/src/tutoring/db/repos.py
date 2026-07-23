@@ -10,6 +10,7 @@ from tutoring.db.models import AuthToken, Project, Session, User
 
 # === User ===
 
+
 async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
     stmt = select(User).where(User.username == username)
     result = await session.execute(stmt)
@@ -21,7 +22,12 @@ async def get_user_by_id(session: AsyncSession, user_id: UUID) -> User | None:
 
 
 async def create_user(
-    session: AsyncSession, *, username: str, password_hash: str, role: str, name: str,
+    session: AsyncSession,
+    *,
+    username: str,
+    password_hash: str,
+    role: str,
+    name: str,
 ) -> User:
     obj = User(username=username, password_hash=password_hash, role=role, name=name)
     session.add(obj)
@@ -54,6 +60,7 @@ async def update_password(session: AsyncSession, user_id: UUID, password_hash: s
 
 # === AuthToken ===
 
+
 async def create_token(session: AsyncSession, user_id: UUID) -> AuthToken:
     obj = AuthToken(token=uuid.uuid4().hex, user_id=user_id)
     session.add(obj)
@@ -63,11 +70,7 @@ async def create_token(session: AsyncSession, user_id: UUID) -> AuthToken:
 
 
 async def get_token_with_user(session: AsyncSession, token: str) -> AuthToken | None:
-    stmt = (
-        select(AuthToken)
-        .where(AuthToken.token == token)
-        .options(selectinload(AuthToken.user))
-    )
+    stmt = select(AuthToken).where(AuthToken.token == token).options(selectinload(AuthToken.user))
     result = await session.execute(stmt)
     return result.scalars().first()
 
@@ -85,8 +88,13 @@ async def delete_token(session: AsyncSession, token: str) -> bool:
 
 # === Session ===
 
+
 async def create_session(
-    session: AsyncSession, *, mode: str, user_id: UUID, project_id: UUID | None = None,
+    session: AsyncSession,
+    *,
+    mode: str,
+    user_id: UUID,
+    project_id: UUID | None = None,
 ) -> Session:
     obj = Session(mode=mode, user_id=user_id, project_id=project_id)
     session.add(obj)
@@ -96,23 +104,21 @@ async def create_session(
 
 
 async def get_session(session: AsyncSession, session_id: UUID) -> Session | None:
-    stmt = (
-        select(Session)
-        .where(Session.id == session_id)
-        .options(selectinload(Session.project))
-    )
+    stmt = select(Session).where(Session.id == session_id).options(selectinload(Session.project))
     result = await session.execute(stmt)
     return result.scalars().first()
 
 
 async def list_sessions(
-    session: AsyncSession, *, user_id: UUID | None = None,
-    mode: str | None = None, limit: int = 20, offset: int = 0,
+    session: AsyncSession,
+    *,
+    user_id: UUID | None = None,
+    mode: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
 ) -> list[Session]:
     stmt = (
-        select(Session)
-        .options(selectinload(Session.project))
-        .where(Session.deleted_at.is_(None))
+        select(Session).options(selectinload(Session.project)).where(Session.deleted_at.is_(None))
     )
     if user_id is not None:
         stmt = stmt.where(Session.user_id == user_id)
@@ -138,6 +144,7 @@ async def delete_session(session: AsyncSession, session_id: UUID) -> None:
 
 
 # === Project ===
+
 
 async def create_project(
     session: AsyncSession,

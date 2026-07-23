@@ -5,12 +5,12 @@ import pytest
 from langgraph_sdk import Auth
 
 from teaching_agent.auth import middleware as auth_module
-from teaching_agent.auth.backend_client import BackendAuthorizationError
-from teaching_agent.auth.models import AgentContextV1, AuthorizedPrincipal
+from teaching_agent.auth.schemas import AgentContextV1, AuthorizedPrincipal
+from teaching_agent.infrastructure.api_server_client import APIServerAuthorizationError
 
 
 @pytest.mark.asyncio
-async def test_authenticate_run_uses_backend(monkeypatch):
+async def test_authenticate_run_uses_api_server(monkeypatch):
     session_id = uuid4()
     received = {}
 
@@ -25,7 +25,7 @@ async def test_authenticate_run_uses_backend(monkeypatch):
             agent_context=AgentContextV1(mode="free"),
         )
 
-    monkeypatch.setattr(auth_module, "authorize_with_backend", fake_authorize)
+    monkeypatch.setattr(auth_module, "authorize_with_api_server", fake_authorize)
 
     result = await auth_module.authenticate(
         path=f"/threads/{session_id}/runs/stream",
@@ -47,9 +47,9 @@ async def test_authenticate_run_uses_backend(monkeypatch):
 @pytest.mark.asyncio
 async def test_authenticate_fails_closed(monkeypatch):
     async def unavailable(*args, **kwargs):
-        raise BackendAuthorizationError(503, "unavailable")
+        raise APIServerAuthorizationError(503, "unavailable")
 
-    monkeypatch.setattr(auth_module, "authorize_with_backend", unavailable)
+    monkeypatch.setattr(auth_module, "authorize_with_api_server", unavailable)
 
     with pytest.raises(Auth.exceptions.HTTPException) as exc_info:
         await auth_module.authenticate(

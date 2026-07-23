@@ -1,6 +1,4 @@
-from langchain.agents.middleware import ModelRequest, dynamic_prompt
-
-from teaching_agent.auth.models import AgentContextV1
+from teaching_agent.auth.schemas import AgentContextV1
 
 _CORE_PRINCIPLES = """## 核心原则
 1. 绝不直接给出答案。通过提问引导学生自己推导出结论。
@@ -26,9 +24,7 @@ _CORE_PRINCIPLES = """## 核心原则
 - search_knowledge(query): 检索课程知识库并返回相关知识片段
 - present_question(topic, q_type, stem, options): 展示题目并等待作答"""
 
-_COURSE_NAME = "计算机网络"
-
-_FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
+_FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《计算机网络》。
 
 {core_principles}
 
@@ -36,7 +32,7 @@ _FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{cours
 学生正在进行自由学习，围绕课程知识自由探索。
 """
 
-_PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
+_PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《计算机网络》。
 
 {core_principles}
 
@@ -51,19 +47,10 @@ _PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{co
 
 
 def render_system_prompt(context: AgentContextV1) -> str:
-    values = {"course_name": _COURSE_NAME, "core_principles": _CORE_PRINCIPLES}
     if context.mode == "project":
         return _PROJECT_TEMPLATE.format(
-            **values,
+            core_principles=_CORE_PRINCIPLES,
             project_name=context.project_name,
             project_background_md=context.project_background_md,
         )
-    return _FREE_TEMPLATE.format(**values)
-
-
-def prompt_middleware(context: AgentContextV1):
-    @dynamic_prompt
-    def trusted_system_prompt(_request: ModelRequest) -> str:
-        return render_system_prompt(context)
-
-    return trusted_system_prompt
+    return _FREE_TEMPLATE.format(core_principles=_CORE_PRINCIPLES)

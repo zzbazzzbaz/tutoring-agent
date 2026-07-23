@@ -102,6 +102,7 @@ async def download_template(
     import io
 
     import openpyxl
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.append(["学号", "姓名", "密码"])

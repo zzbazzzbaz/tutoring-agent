@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class SessionCreate(BaseModel):
-
     mode: Literal["free", "project"]
     project_id: UUID | None = None
 
@@ -18,7 +17,6 @@ class SessionCreate(BaseModel):
 
 
 class SessionOut(BaseModel):
-
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID

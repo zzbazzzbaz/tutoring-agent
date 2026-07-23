@@ -3,18 +3,18 @@ from uuid import UUID
 
 import httpx
 
-from teaching_agent.auth.models import AuthorizedPrincipal
+from teaching_agent.auth.schemas import AuthorizedPrincipal
 from teaching_agent.config import get_settings
 
 
-class BackendAuthorizationError(Exception):
+class APIServerAuthorizationError(Exception):
     def __init__(self, status_code: int, detail: str):
         super().__init__(detail)
         self.status_code = status_code
         self.detail = detail
 
 
-async def authorize_with_backend(
+async def authorize_with_api_server(
     authorization: str,
     *,
     session_id: UUID | None,
@@ -39,12 +39,12 @@ async def authorize_with_backend(
                 json=payload,
             )
     except httpx.HTTPError as exc:
-        raise BackendAuthorizationError(503, "Backend authorization is unavailable") from exc
+        raise APIServerAuthorizationError(503, "API Server authorization is unavailable") from exc
     if response.status_code >= 400:
-        raise BackendAuthorizationError(response.status_code, "Backend rejected the request")
+        raise APIServerAuthorizationError(response.status_code, "API Server rejected the request")
     try:
         return AuthorizedPrincipal.model_validate(response.json())
     except ValueError as exc:
-        raise BackendAuthorizationError(
-            502, "Backend returned an invalid authorization response"
+        raise APIServerAuthorizationError(
+            502, "API Server returned an invalid authorization response"
         ) from exc

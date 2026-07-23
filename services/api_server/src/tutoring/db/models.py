@@ -9,6 +9,7 @@ from sqlmodel import Column, Field, Relationship, SQLModel
 
 class User(SQLModel, table=True):
     """用户表：学生 / 教师。账号由后台创建。"""
+
     __tablename__ = "user"
 
     id: uuid.UUID = Field(
@@ -29,6 +30,7 @@ class User(SQLModel, table=True):
 
 class AuthToken(SQLModel, table=True):
     """登录 token。无过期，登出 = 删除行。"""
+
     __tablename__ = "auth_token"
 
     token: str = Field(max_length=64, sa_column=Column(Text, primary_key=True))
@@ -48,6 +50,7 @@ class AuthToken(SQLModel, table=True):
 
 class Project(SQLModel, table=True):
     """Project 元数据；在 project 模式下注入 agent 系统 prompt。"""
+
     __tablename__ = "project"
 
     id: uuid.UUID = Field(
@@ -62,13 +65,15 @@ class Project(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )
     updated_at: datetime = Field(
-        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
 
     sessions: list["Session"] = Relationship(back_populates="project")
 
 
 class Session(SQLModel, table=True):
     """聊天 session。id 复用为 LangGraph thread_id。"""
+
     __tablename__ = "session"
 
     id: uuid.UUID = Field(
@@ -100,7 +105,8 @@ class Session(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )
     updated_at: datetime = Field(
-        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()))
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
 
     project: Project | None = Relationship(back_populates="sessions")
     user: User | None = Relationship(back_populates="sessions")

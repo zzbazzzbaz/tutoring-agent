@@ -12,7 +12,6 @@ from tutoring.core.errors import AppError
 
 @dataclass(frozen=True)
 class CurrentUser:
-
     id: UUID
     username: str
     role: Literal["student", "teacher"]

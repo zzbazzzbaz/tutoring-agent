@@ -10,6 +10,7 @@ async def health(request: Request) -> dict:
     # DB 检查
     try:
         from sqlalchemy import text
+
         async with request.app.state.db_session_factory() as session:
             await session.execute(text("SELECT 1"))
         components["database"] = "ok"

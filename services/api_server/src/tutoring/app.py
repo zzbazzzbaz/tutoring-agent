@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Cleanup complete")
 
 
-app = FastAPI(title="Teaching Agent API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="API Server", version="0.2.0", lifespan=lifespan)
 register_exception_handlers(app)
 
 app.add_middleware(

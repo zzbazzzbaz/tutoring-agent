@@ -4,7 +4,10 @@ from uuid import UUID
 
 from langgraph_sdk import Auth
 
-from teaching_agent.auth.backend_client import BackendAuthorizationError, authorize_with_backend
+from teaching_agent.infrastructure.api_server_client import (
+    APIServerAuthorizationError,
+    authorize_with_api_server,
+)
 
 auth = Auth()
 _THREAD_PATH = re.compile(r"^/threads/([^/]+)(?:/|$)")
@@ -38,13 +41,13 @@ async def authenticate(
     is_run = session_id is not None and method == "POST" and "/runs" in path
     access = "run" if is_run else "read" if session_id is not None else "identity"
     try:
-        principal = await authorize_with_backend(
+        principal = await authorize_with_api_server(
             authorization,
             session_id=session_id,
             access=access,
             touch=is_run,
         )
-    except BackendAuthorizationError as exc:
+    except APIServerAuthorizationError as exc:
         status = exc.status_code if exc.status_code in {401, 403, 404, 422, 503} else 502
         raise Auth.exceptions.HTTPException(status_code=status, detail=exc.detail) from exc
 

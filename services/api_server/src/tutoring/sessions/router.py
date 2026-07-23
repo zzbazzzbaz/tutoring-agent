@@ -14,9 +14,9 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 @router.post("", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
 async def create_session(
-        body: SessionCreate,
-        user: CurrentUser = Depends(get_current_user),
-        db_session: AsyncSession = Depends(get_db),
+    body: SessionCreate,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
 ) -> SessionOut:
     project_obj = None
     if body.mode == "project":
@@ -30,23 +30,27 @@ async def create_session(
 
 @router.get("", response_model=list[SessionOut])
 async def list_sessions(
-        mode: str | None = None,
-        limit: int = Query(20, ge=1, le=100),
-        offset: int = Query(0, ge=0),
-        user: CurrentUser = Depends(get_current_user),
-        db_session: AsyncSession = Depends(get_db),
+    mode: str | None = None,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
 ) -> list[SessionOut]:
     sessions = await repos.list_sessions(
-        db_session, user_id=user.id, mode=mode, limit=limit, offset=offset,
+        db_session,
+        user_id=user.id,
+        mode=mode,
+        limit=limit,
+        offset=offset,
     )
     return [SessionOut.model_validate(session_service.session_to_out_dict(s)) for s in sessions]
 
 
 @router.get("/{session_id}", response_model=SessionOut)
 async def get_session(
-        session_id: UUID,
-        user: CurrentUser = Depends(get_current_user),
-        db_session: AsyncSession = Depends(get_db),
+    session_id: UUID,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
 ) -> SessionOut:
     sess = await session_service.get_readable_session(db_session, session_id, user)
     return SessionOut.model_validate(session_service.session_to_out_dict(sess))
@@ -54,9 +58,9 @@ async def get_session(
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def end_session(
-        session_id: UUID,
-        user: CurrentUser = Depends(get_current_user),
-        db_session: AsyncSession = Depends(get_db),
+    session_id: UUID,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
 ) -> None:
     await session_service.get_writable_session(db_session, session_id, user)
     await repos.delete_session(db_session, session_id)
