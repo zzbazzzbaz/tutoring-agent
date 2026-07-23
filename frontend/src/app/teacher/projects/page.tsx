@@ -1,3 +1,11 @@
+"use client";
+
+import { ProjectTable } from "@/components/projects/ProjectTable";
+
 export default function TeacherProjectsPage() {
-  return <div className="p-4">教师项目管理（待实现）</div>;
+  return (
+    <div className="h-full overflow-y-auto">
+      <ProjectTable />
+    </div>
+  );
 }
