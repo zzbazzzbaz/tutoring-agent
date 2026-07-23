@@ -33,9 +33,9 @@ export function KnowledgePipelineStatus({ refreshKey }: { refreshKey: number }) 
   }, [refreshKey]);
 
   return (
-    <div className="rounded-md border bg-white p-4">
+    <div className="rounded-xl border bg-background p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold">处理状态</h2>
+        <h2 className="text-sm font-medium">状态</h2>
         <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
           <RefreshCw className="mr-2 size-4" />
           刷新
@@ -53,8 +53,8 @@ export function KnowledgePipelineStatus({ refreshKey }: { refreshKey: number }) 
           ))}
         </div>
         <p className="text-muted-foreground">
-          当前任务：{status?.job_name || "-"}；文档：{status?.docs ?? 0}；批次：
-          {status?.cur_batch ?? 0}/{status?.batchs ?? 0}
+          {status?.job_name || "-"} · {status?.docs ?? 0} 文档 · {status?.cur_batch ?? 0}/
+          {status?.batchs ?? 0}
         </p>
         {status?.latest_message && (
           <p className="text-muted-foreground">最近消息：{status.latest_message}</p>

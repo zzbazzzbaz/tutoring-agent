@@ -33,8 +33,8 @@ export function KnowledgeUpload({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="rounded-md border bg-white p-4">
-      <h2 className="mb-3 text-base font-semibold">文件上传</h2>
+    <div className="rounded-xl border bg-background p-4 shadow-sm">
+      <h2 className="mb-3 text-sm font-medium">上传文件</h2>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Input ref={inputRef} type="file" />
         <Button onClick={handleUpload} disabled={loading}>
@@ -42,9 +42,6 @@ export function KnowledgeUpload({ onUploaded }: { onUploaded: () => void }) {
           {loading ? "上传中..." : "上传文件"}
         </Button>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        上传后 LightRAG 会异步解析并构建 chunk、实体和关系。
-      </p>
     </div>
   );
 }

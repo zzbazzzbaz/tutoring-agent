@@ -5,6 +5,7 @@ import { KnowledgeDocumentTable } from "@/components/knowledge/KnowledgeDocument
 import { KnowledgeGraphPanel } from "@/components/knowledge/KnowledgeGraphPanel";
 import { KnowledgePipelineStatus } from "@/components/knowledge/KnowledgePipelineStatus";
 import { KnowledgeUpload } from "@/components/knowledge/KnowledgeUpload";
+import { cn } from "@/lib/utils";
 
 export function KnowledgeBasePage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -15,38 +16,42 @@ export function KnowledgeBasePage() {
   }
 
   return (
-    <div className="space-y-4 p-4">
-      <div>
-        <h1 className="text-xl font-bold">知识库</h1>
-        <p className="text-sm text-muted-foreground">
-          管理全局 LightRAG 文件、处理状态和知识图谱。
-        </p>
+    <div className="flex h-full flex-col overflow-hidden bg-muted/20">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
+        <h1 className="text-base font-semibold">知识库</h1>
+        <div className="flex rounded-lg bg-muted p-1">
+          {[
+            ["documents", "文件"],
+            ["graph", "图谱"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                tab === value
+                  ? "bg-background font-medium shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              onClick={() => setTab(value as "documents" | "graph")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex gap-2">
-        <button
-          className={`rounded-md px-3 py-2 text-sm ${tab === "documents" ? "bg-muted font-medium" : "text-muted-foreground"}`}
-          onClick={() => setTab("documents")}
-        >
-          文件管理
-        </button>
-        <button
-          className={`rounded-md px-3 py-2 text-sm ${tab === "graph" ? "bg-muted font-medium" : "text-muted-foreground"}`}
-          onClick={() => setTab("graph")}
-        >
-          知识图谱
-        </button>
-      </div>
-      {tab === "documents" ? (
-        <>
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-            <KnowledgeUpload onUploaded={refresh} />
-            <KnowledgePipelineStatus refreshKey={refreshKey} />
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {tab === "documents" ? (
+          <div className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+              <KnowledgeUpload onUploaded={refresh} />
+              <KnowledgePipelineStatus refreshKey={refreshKey} />
+            </div>
+            <KnowledgeDocumentTable refreshKey={refreshKey} onChanged={refresh} />
           </div>
-          <KnowledgeDocumentTable refreshKey={refreshKey} onChanged={refresh} />
-        </>
-      ) : (
-        <KnowledgeGraphPanel />
-      )}
+        ) : (
+          <KnowledgeGraphPanel />
+        )}
+      </div>
     </div>
   );
 }
