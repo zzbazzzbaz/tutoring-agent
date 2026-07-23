@@ -1,14 +1,11 @@
 from functools import lru_cache
-from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_SHARED_ENV_FILE = Path(__file__).resolve().parents[2].parent / "api_server" / ".env"
-
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=_SHARED_ENV_FILE, extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     dashscope_api_key: SecretStr
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"

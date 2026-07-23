@@ -4,7 +4,7 @@ from uuid import UUID
 
 from langgraph_sdk import Auth
 
-from teaching_agent.backend_client import BackendAuthorizationError, authorize_with_backend
+from teaching_agent.auth.backend_client import BackendAuthorizationError, authorize_with_backend
 
 auth = Auth()
 _THREAD_PATH = re.compile(r"^/threads/([^/]+)(?:/|$)")

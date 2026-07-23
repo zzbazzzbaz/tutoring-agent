@@ -1,6 +1,6 @@
 from langchain.agents.middleware import ModelRequest, dynamic_prompt
 
-from teaching_agent.schemas import AgentContextV1
+from teaching_agent.auth.models import AgentContextV1
 
 _CORE_PRINCIPLES = """## 核心原则
 1. 绝不直接给出答案。通过提问引导学生自己推导出结论。

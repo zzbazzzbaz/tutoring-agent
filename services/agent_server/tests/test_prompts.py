@@ -1,5 +1,5 @@
-from teaching_agent.prompts import render_system_prompt
-from teaching_agent.schemas import AgentContextV1
+from teaching_agent.agent.prompts import render_system_prompt
+from teaching_agent.auth.models import AgentContextV1
 
 
 def test_free_prompt_uses_server_course_configuration():

@@ -1,12 +1,12 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "tutor": "./src/teaching_agent/graph.py:get_graph"
+    "tutor": "./src/teaching_agent/app.py:get_graph"
   },
   "auth": {
-    "path": "./src/teaching_agent/auth.py:auth",
+    "path": "./src/teaching_agent/auth/middleware.py:auth",
     "disable_studio_auth": true
   },
-  "env": "../api_server/.env",
+  "env": ".env",
   "python_version": "3.13"
 }

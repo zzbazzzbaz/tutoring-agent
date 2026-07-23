@@ -4,9 +4,9 @@ from uuid import uuid4
 import pytest
 from langgraph_sdk import Auth
 
-from teaching_agent import auth as auth_module
-from teaching_agent.backend_client import BackendAuthorizationError
-from teaching_agent.schemas import AgentContextV1, AuthorizedPrincipal
+from teaching_agent.auth import middleware as auth_module
+from teaching_agent.auth.backend_client import BackendAuthorizationError
+from teaching_agent.auth.models import AgentContextV1, AuthorizedPrincipal
 
 
 @pytest.mark.asyncio
@@ -100,9 +100,7 @@ async def test_create_thread_stamps_authenticated_owner():
 @pytest.mark.asyncio
 async def test_create_run_stamps_owner_and_removes_client_context():
     session_id = uuid4()
-    user = SimpleNamespace(
-        identity="user-1", session_id=str(session_id), session_access="run"
-    )
+    user = SimpleNamespace(identity="user-1", session_id=str(session_id), session_access="run")
     value = {
         "thread_id": session_id,
         "metadata": {},

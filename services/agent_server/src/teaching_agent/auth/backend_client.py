@@ -1,9 +1,10 @@
+from typing import Literal
 from uuid import UUID
 
 import httpx
 
+from teaching_agent.auth.models import AuthorizedPrincipal
 from teaching_agent.config import get_settings
-from teaching_agent.schemas import AuthorizedPrincipal
 
 
 class BackendAuthorizationError(Exception):
@@ -17,7 +18,7 @@ async def authorize_with_backend(
     authorization: str,
     *,
     session_id: UUID | None,
-    access: str,
+    access: Literal["identity", "read", "run"],
     touch: bool = False,
 ) -> AuthorizedPrincipal:
     settings = get_settings()
