@@ -119,7 +119,7 @@ export interface LightRAGPipelineStatus {
   batchs?: number;
   request_pending?: boolean;
   latest_message?: string;
-  history_messages?: string[];
+  history_messages?: string[] | null;
 }
 
 export interface LightRAGGraphNode {

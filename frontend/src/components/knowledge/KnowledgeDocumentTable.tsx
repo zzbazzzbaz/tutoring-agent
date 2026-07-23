@@ -20,7 +20,8 @@ const statuses: Array<{ value: LightRAGDocumentStatus; label: string }> = [
 ];
 
 function statusLabel(status: string) {
-  return statuses.find((item) => item.value === status)?.label ?? status;
+  const lower = status.toLowerCase();
+  return statuses.find((item) => item.value === lower)?.label ?? status;
 }
 
 function fileName(doc: LightRAGDocument) {
@@ -120,7 +121,7 @@ export function KnowledgeDocumentTable({
                     )}
                   </td>
                   <td className="px-4 py-2">
-                    <Badge variant={doc.status === "failed" ? "destructive" : "secondary"}>
+                    <Badge variant={doc.status.toLowerCase() === "failed" ? "destructive" : "secondary"}>
                       {statusLabel(doc.status)}
                     </Badge>
                   </td>

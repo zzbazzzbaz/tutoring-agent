@@ -1,6 +1,6 @@
 import { api } from "./client";
 import type {
-  LightRAGDocumentsResponse,
+  LightRAGDocument,
   LightRAGDocumentStatus,
   LightRAGGraphResponse,
   LightRAGPipelineStatus,
@@ -17,7 +17,22 @@ export const lightragApi = {
     page: number;
     page_size: number;
     status_filter?: LightRAGDocumentStatus;
-  }) => api.post<LightRAGDocumentsResponse>("/lightrag/documents/paginated", params),
+  }) =>
+    api
+      .post<{
+        documents: unknown[];
+        pagination: {
+          total_count: number;
+          page: number;
+          page_size: number;
+        };
+      }>("/lightrag/documents/paginated", params)
+      .then((data) => ({
+        items: (data.documents ?? []) as LightRAGDocument[],
+        total: data.pagination?.total_count ?? 0,
+        page: data.pagination?.page ?? params.page,
+        page_size: data.pagination?.page_size ?? params.page_size,
+      })),
 
   statusCounts: () =>
     api.get<{ status_counts: Record<string, number> }>(
