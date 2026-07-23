@@ -7,8 +7,11 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { sessionsApi } from "@/lib/api/sessions";
+import { ASSISTANT_ID } from "@/lib/constants";
 import type { Session } from "@/lib/types";
+import { createClient } from "./client";
 
 interface SessionContextValue {
   sessions: Session[];
@@ -26,6 +29,7 @@ const SessionContext = createContext<SessionContextValue | undefined>(
 );
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { token } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
 
@@ -47,10 +51,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         mode,
         project_id: projectId,
       });
+      try {
+        await createClient(token ?? undefined).threads.create({
+          threadId: session.id,
+          graphId: ASSISTANT_ID,
+          ifExists: "do_nothing",
+        });
+      } catch (err) {
+        await sessionsApi.delete(session.id).catch(console.error);
+        throw err;
+      }
       setSessions((prev) => [session, ...prev]);
       return session;
     },
-    [],
+    [token],
   );
 
   const deleteSession = useCallback(async (id: string) => {

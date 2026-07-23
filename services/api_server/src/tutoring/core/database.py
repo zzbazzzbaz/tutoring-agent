@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -28,3 +29,6 @@ async def init_db(engine: AsyncEngine) -> None:
     """幂等：如不存在则创建所有业务表。在 lifespan 启动时调用一次。"""
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+        await conn.execute(
+            text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)')
+        )

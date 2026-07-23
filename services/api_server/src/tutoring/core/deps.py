@@ -16,6 +16,7 @@ class CurrentUser:
     username: str
     role: Literal["student", "teacher"]
     name: str
+    avatar_url: str | None = None
 
 
 async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
@@ -32,4 +33,10 @@ async def get_current_user(
         raise AppError(401, "MISSING_TOKEN", "缺少 Authorization Bearer token")
     token = authorization.removeprefix("Bearer ").strip()
     user = await auth_service.verify_token(db_session, token)
-    return CurrentUser(id=user.id, username=user.username, role=user.role, name=user.name)
+    return CurrentUser(
+        id=user.id,
+        username=user.username,
+        role=user.role,
+        name=user.name,
+        avatar_url=user.avatar_url,
+    )

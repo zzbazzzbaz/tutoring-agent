@@ -88,7 +88,7 @@ export function ProjectTable() {
                 <tr key={project.id} className="border-t">
                   <td className="px-4 py-2">
                     <Link
-                      href={`/teacher/projects/${project.id}`}
+                      href={`/teacher/manage/projects/${project.id}`}
                       className="font-medium text-primary hover:underline"
                     >
                       {project.name}

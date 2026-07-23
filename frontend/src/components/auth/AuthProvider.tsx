@@ -19,6 +19,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -94,9 +95,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role === "teacher" ? ROUTES.TEACHER_CHAT : ROUTES.STUDENT_CHAT;
   }, []);
 
+  const updateUser = useCallback((updates: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updates };
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ token, user, isAuthenticated: !!token, loading, login, logout }}
+      value={{ token, user, isAuthenticated: !!token, loading, login, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>

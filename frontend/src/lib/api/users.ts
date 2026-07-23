@@ -18,4 +18,7 @@ export const usersApi = {
     api.postForm<ImportResult>("/users/students/import", formData),
 
   downloadTemplate: () => api.getBlob("/users/students/template"),
+
+  uploadAvatar: (formData: FormData) =>
+    api.postForm<{ avatar_url: string }>("/users/me/avatar", formData),
 };

@@ -1,9 +1,11 @@
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from tutoring.auth import router as auth_router
 from tutoring.core import health as health_router
@@ -40,6 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+os.makedirs(os.path.join(settings.upload_dir, "avatars"), exist_ok=True)
+app.mount("/media", StaticFiles(directory=settings.upload_dir), name="media")
 
 app.include_router(auth_router.router)
 app.include_router(users_router.router)

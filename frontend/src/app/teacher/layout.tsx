@@ -1,7 +1,6 @@
 "use client";
 
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { AppSidebar } from "@/components/layout/AppSidebar";
 
 export default function TeacherLayout({
   children,
@@ -10,10 +9,7 @@ export default function TeacherLayout({
 }) {
   return (
     <RoleGuard role="teacher">
-      <div className="flex h-screen">
-        <AppSidebar role="teacher" />
-        <main className="flex-1 overflow-hidden">{children}</main>
-      </div>
+      <div className="h-screen overflow-hidden">{children}</div>
     </RoleGuard>
   );
 }

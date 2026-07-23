@@ -18,8 +18,8 @@ export const ASSISTANT_ID =
 export const ROUTES = {
   LOGIN: "/login",
   STUDENT_CHAT: "/student/chat",
-  STUDENT_PROJECTS: "/student/projects",
+  STUDENT_PROJECTS: "/student/manage/projects",
   TEACHER_CHAT: "/teacher/chat",
-  TEACHER_PROJECTS: "/teacher/projects",
-  TEACHER_STUDENTS: "/teacher/students",
+  TEACHER_PROJECTS: "/teacher/manage/projects",
+  TEACHER_STUDENTS: "/teacher/manage/students",
 } as const;

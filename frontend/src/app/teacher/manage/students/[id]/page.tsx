@@ -1,9 +1,9 @@
 "use client";
 
 import { use } from "react";
-import { ProjectDetail } from "@/components/projects/ProjectDetail";
+import { StudentSessionTable } from "@/components/students/StudentSessionTable";
 
-export default function TeacherProjectDetailPage({
+export default function TeacherManageStudentDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -11,7 +11,7 @@ export default function TeacherProjectDetailPage({
   const { id } = use(params);
   return (
     <div className="h-full overflow-y-auto">
-      <ProjectDetail id={id} basePath="/teacher" />
+      <StudentSessionTable studentId={id} />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export function StudentSessionTable({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.push("/teacher/students")}
+        onClick={() => router.push("/teacher/manage/students")}
         className="mb-4"
       >
         <ArrowLeft className="mr-2 size-4" />
@@ -109,7 +109,7 @@ export function StudentSessionTable({
                   </td>
                   <td className="px-4 py-2">
                     <Link
-                      href={`/teacher/students/${studentId}/sessions/${session.id}`}
+                      href={`/teacher/manage/students/${studentId}/sessions/${session.id}`}
                     >
                       <Button size="sm" variant="ghost">
                         <Eye className="mr-1 size-4" />

@@ -1,0 +1,13 @@
+"use client";
+
+import { use } from "react";
+import { ProjectDetail } from "@/components/projects/ProjectDetail";
+
+export default function StudentManageProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  return <ProjectDetail id={id} basePath="/student/manage" readOnly />;
+}

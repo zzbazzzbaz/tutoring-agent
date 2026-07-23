@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MarkdownText } from "@/components/chat/thread/markdown-text";
-import { AGENT_URL } from "@/lib/constants";
 import type { Message } from "@langchain/langgraph-sdk";
 
 export function ReadOnlyChatView({
@@ -71,7 +70,7 @@ export function ReadOnlyChatView({
           <Button
             variant="outline"
             onClick={() =>
-              router.push(`/teacher/students/${studentId}`)
+              router.push(`/teacher/manage/students/${studentId}`)
             }
             className="mt-4"
           >
@@ -95,7 +94,7 @@ export function ReadOnlyChatView({
           variant="ghost"
           size="sm"
           onClick={() =>
-            router.push(`/teacher/students/${studentId}`)
+            router.push(`/teacher/manage/students/${studentId}`)
           }
         >
           <ArrowLeft className="mr-2 size-4" />

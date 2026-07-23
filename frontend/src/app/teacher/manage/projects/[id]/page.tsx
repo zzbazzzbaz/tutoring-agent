@@ -3,11 +3,15 @@
 import { use } from "react";
 import { ProjectDetail } from "@/components/projects/ProjectDetail";
 
-export default function StudentProjectDetailPage({
+export default function TeacherManageProjectDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  return <ProjectDetail id={id} basePath="/student" readOnly />;
+  return (
+    <div className="h-full overflow-y-auto">
+      <ProjectDetail id={id} basePath="/teacher/manage" />
+    </div>
+  );
 }

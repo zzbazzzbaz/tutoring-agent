@@ -131,7 +131,7 @@ export function StudentTable() {
                   <td className="px-4 py-2">
                     <div className="flex gap-1">
                       <Link
-                        href={`/teacher/students/${student.id}`}
+                        href={`/teacher/manage/students/${student.id}`}
                       >
                         <Button size="sm" variant="ghost">
                           <Eye className="mr-1 size-4" />

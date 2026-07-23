@@ -46,7 +46,13 @@ async def logout(
 
 @router.get("/me", response_model=MeResponse)
 async def me(user: CurrentUser = Depends(get_current_user)) -> MeResponse:
-    return MeResponse(id=user.id, username=user.username, role=user.role, name=user.name)
+    return MeResponse(
+        id=user.id,
+        username=user.username,
+        role=user.role,
+        name=user.name,
+        avatar_url=user.avatar_url,
+    )
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)

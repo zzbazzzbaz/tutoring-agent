@@ -20,6 +20,7 @@ class User(SQLModel, table=True):
     password_hash: str = Field(sa_column=Column(Text))
     role: str = Field(max_length=20, index=True)  # student/teacher
     name: str = Field(max_length=100)
+    avatar_url: str | None = Field(default=None, max_length=500)
     created_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )

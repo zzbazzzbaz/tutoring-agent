@@ -19,3 +19,6 @@ deploy/.env
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Node/Frontend
+*.tsbuildinfo

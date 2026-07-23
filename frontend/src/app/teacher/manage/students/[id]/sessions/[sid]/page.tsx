@@ -3,7 +3,7 @@
 import { use } from "react";
 import { ReadOnlyChatView } from "@/components/chat/ReadOnlyChatView";
 
-export default function StudentSessionViewPage({
+export default function TeacherManageStudentSessionViewPage({
   params,
 }: {
   params: Promise<{ id: string; sid: string }>;

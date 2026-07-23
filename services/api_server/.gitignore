@@ -1,3 +1,6 @@
 
 # LangGraph dev cache
 .langgraph_api/
+
+# Uploads (user avatars etc.)
+uploads/

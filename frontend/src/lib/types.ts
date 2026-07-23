@@ -5,6 +5,7 @@ export interface User {
   username: string;
   role: UserRole;
   name: string;
+  avatar_url?: string | null;
 }
 
 export interface LoginResponse {
@@ -58,6 +59,7 @@ export interface Student {
   username: string;
   role: string;
   name: string;
+  avatar_url?: string | null;
   created_at: string;
 }
 

@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     database_url: str
     agent_server_secret: str
+    upload_dir: str = "uploads"
 
 
 settings = Settings()

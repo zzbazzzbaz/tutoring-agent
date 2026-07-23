@@ -1,15 +1,26 @@
 import io
+import os
 
 from openpyxl import load_workbook
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.auth.service import hash_password
+from tutoring.core.config import settings
 from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.db.models import User
 from tutoring.users.schemas import ImportResult
 
 DEFAULT_PASSWORD = "123456"
+
+ALLOWED_AVATAR_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
+MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5 MB
+AVATAR_EXT_MAP = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
 
 
 async def list_students(db: AsyncSession) -> list[User]:
@@ -76,3 +87,23 @@ async def import_students(db: AsyncSession, file_bytes: bytes) -> ImportResult:
         created += 1
 
     return ImportResult(total=total, created=created, skipped=skipped, errors=errors)
+
+
+async def upload_avatar(db: AsyncSession, user_id, file_content: bytes, content_type: str) -> str:
+    if content_type not in ALLOWED_AVATAR_TYPES:
+        raise AppError(422, "INVALID_FILE_TYPE", "仅支持 PNG/JPEG/WebP/GIF 格式")
+    if len(file_content) > MAX_AVATAR_SIZE:
+        raise AppError(422, "FILE_TOO_LARGE", "头像文件不能超过 5MB")
+
+    ext = AVATAR_EXT_MAP[content_type]
+    filename = f"{user_id}{ext}"
+    avatars_dir = os.path.join(settings.upload_dir, "avatars")
+    os.makedirs(avatars_dir, exist_ok=True)
+
+    file_path = os.path.join(avatars_dir, filename)
+    with open(file_path, "wb") as f:
+        f.write(file_content)
+
+    avatar_url = f"/media/avatars/{filename}"
+    await repos.update_avatar_url(db, user_id, avatar_url)
+    return avatar_url

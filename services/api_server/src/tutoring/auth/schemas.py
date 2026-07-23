@@ -16,6 +16,7 @@ class UserPublic(BaseModel):
     username: str
     role: str
     name: str
+    avatar_url: str | None = None
 
 
 class LoginResponse(BaseModel):

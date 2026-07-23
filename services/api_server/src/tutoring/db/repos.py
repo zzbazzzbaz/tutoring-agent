@@ -58,6 +58,13 @@ async def update_password(session: AsyncSession, user_id: UUID, password_hash: s
     await session.commit()
 
 
+async def update_avatar_url(session: AsyncSession, user_id: UUID, avatar_url: str | None) -> None:
+    await session.execute(
+        update(User).where(User.id == user_id).values(avatar_url=avatar_url)
+    )
+    await session.commit()
+
+
 # === AuthToken ===
 
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from tutoring.core.config import settings
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.db import repos
@@ -116,3 +117,16 @@ async def download_template(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=students_template.xlsx"},
     )
+
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> dict:
+    content = await file.read()
+    avatar_url = await user_service.upload_avatar(
+        db_session, user.id, content, file.content_type or ""
+    )
+    return {"avatar_url": avatar_url}
