@@ -76,10 +76,8 @@ function ScrollToBottom(props: { className?: string }) {
 }
 
 export function Thread({
-  onNewSession,
   onOpenSessions,
 }: {
-  onNewSession?: () => void;
   onOpenSessions?: () => void;
 } = {}) {
   const [artifactContext, setArtifactContext] = useArtifactContext();
@@ -313,29 +311,16 @@ export function Thread({
               footer={
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
+                    <div className="mb-8 flex items-center gap-3">
                       <h1 className="text-2xl font-semibold tracking-tight">
-                        教学助手
+                        有什么我能帮你的吗？
                       </h1>
                     </div>
                   )}
 
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                  {!threadId ? (
-                    <div className="mx-auto mb-8 w-full max-w-4xl rounded-2xl border p-8 text-center">
-                      <p className="text-muted-foreground">
-                        请从左侧选择一个会话，或点击「新建」创建新会话
-                      </p>
-                      <Button
-                        className="mt-4"
-                        onClick={() => onNewSession?.()}
-                      >
-                        <Plus className="mr-2 size-4" />
-                        新建会话
-                      </Button>
-                    </div>
-                  ) : (
+                  {!threadId ? null : (
                     <div
                       ref={dropRef}
                       className={cn(

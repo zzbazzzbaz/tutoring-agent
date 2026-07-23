@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FolderOpen,
+  GraduationCap,
   LogOut,
   MessageCircle,
   PanelLeftClose,
-  PenLine,
   Settings,
   UserCircle,
 } from "lucide-react";
@@ -65,16 +65,16 @@ export function ChatWorkspaceSidebar({
         <div className="flex items-center justify-between gap-3">
           <button
             className="flex min-w-0 items-center gap-2 rounded-lg text-left transition-colors hover:text-primary"
-            onClick={() => setProfileOpen(true)}
+            onClick={() => {
+              setSessionId(null);
+              onMobileOpenChange?.(false);
+            }}
           >
-            <Avatar className="size-8">
-              <AvatarImage src={avatarUrl(user?.avatar_url)} alt={user?.name} />
-              <AvatarFallback className="text-xs">
-                {user?.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <GraduationCap className="size-4" />
+            </span>
             <span className="truncate text-sm font-semibold">
-              {user?.name || "教学 Agent"}
+              教学 Agent
             </span>
           </button>
 
@@ -91,19 +91,17 @@ export function ChatWorkspaceSidebar({
             >
               <PanelLeftClose className="size-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
-              onClick={onNewSession}
-              title="开始新对话"
-            >
-              <PenLine className="size-4" />
-            </Button>
           </div>
         </div>
 
         <div className="mt-5 space-y-1">
+          <button
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            onClick={onNewSession}
+          >
+            <MessageCircle className="size-4 text-muted-foreground" />
+            新建对话
+          </button>
           <button
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
             onClick={() => setProfileOpen(true)}
@@ -174,15 +172,36 @@ export function ChatWorkspaceSidebar({
         )}
       </div>
       <div className="border-t px-3 py-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={logout}
-          className="size-9 rounded-xl text-muted-foreground hover:text-destructive"
-          title="退出登录"
-        >
-          <LogOut className="size-4" />
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          <button
+            className="flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors hover:text-primary"
+            onClick={() => setProfileOpen(true)}
+          >
+            <Avatar className="size-8">
+              <AvatarImage src={avatarUrl(user?.avatar_url)} alt={user?.name} />
+              <AvatarFallback className="text-xs">
+                {user?.name?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium">
+                {user?.name}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {user?.username}
+              </span>
+            </span>
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={logout}
+            className="size-8 shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
+            title="退出登录"
+          >
+            <LogOut className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

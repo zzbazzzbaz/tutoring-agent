@@ -78,14 +78,6 @@ function ChatShell({
         <StreamProvider readOnly={readOnly}>
           <ArtifactProvider>
             <Thread
-              onNewSession={
-                readOnly
-                  ? undefined
-                  : () => {
-                      setProjectPreselect(undefined);
-                      setModalOpen(true);
-                    }
-              }
               onOpenSessions={() => {
                 setSidebarCollapsed(false);
                 setMobileSidebarOpen(true);
