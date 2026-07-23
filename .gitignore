@@ -9,9 +9,6 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 
-# LightRAG working dir
-rag_storage/
-
 # Environment
 .env
 .venv/

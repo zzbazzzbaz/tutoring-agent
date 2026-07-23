@@ -1,0 +1,39 @@
+[project]
+name = "teaching-agent-server"
+version = "0.1.0"
+description = "LangGraph Agent Server for the teaching assistant"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.27,<1",
+    "langchain>=1.3,<2",
+    "langchain-openai>=1.3,<2",
+    "langgraph>=1.2,<2",
+    "langgraph-sdk>=0.4,<1",
+    "pydantic-settings>=2.5,<3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/teaching_agent"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "langgraph-cli[inmem]>=0.4.31,<0.5",
+    "pytest>=8,<9",
+    "pytest-asyncio>=0.24,<1",
+    "ruff>=0.15,<1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

@@ -1,0 +1,53 @@
+[project]
+name = "tutoring"
+version = "0.2.0"
+description = "Teaching Agent business backend"
+requires-python = ">=3.13"
+dependencies = [
+    # ---- Web 框架与服务 ----
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.12",
+    "httpx>=0.27",
+    # ---- 数据校验与配置 ----
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    # ---- 数据库 / ORM ----
+    "sqlmodel>=0.0.22",
+    "asyncpg>=0.30",
+    "greenlet>=3.0",
+    # ---- 认证 ----
+    "bcrypt>=4.0",
+    # ---- 文件处理 ----
+    "openpyxl>=3.1.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tutoring"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    # ---- 测试框架 ----
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    # ---- 测试工具 ----
+    "httpx>=0.27",
+    "asgi-lifespan>=2.1",
+    "ruff>=0.15,<1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"] # FastAPI 的 Depends/File 参数默认值是框架约定
