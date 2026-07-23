@@ -1,5 +1,8 @@
 ## 启动命令
 
+cd "/Volumes/ExternalStorageA/project/2026.7/教学Agent/deploy"
+docker compose -f docker-compose.yml up -d
+
 cd "/Volumes/ExternalStorageA/project/2026.7/教学Agent/services/api_server"
 uv run uvicorn tutoring.app:app --host 127.0.0.1 --port 8000 --reload
 
