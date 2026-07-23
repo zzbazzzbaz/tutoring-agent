@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usersApi } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/common/Pagination";
 import { Input } from "@/components/ui/input";
 import {
   Download,
@@ -17,6 +18,8 @@ import type { Student } from "@/lib/types";
 
 export function StudentTable() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [importOpen, setImportOpen] = useState(false);
@@ -24,15 +27,18 @@ export function StudentTable() {
   function refresh() {
     setLoading(true);
     usersApi
-      .listStudents()
-      .then(setStudents)
+      .listStudents(page)
+      .then((data) => {
+        setStudents(data.items);
+        setTotal(data.total);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [page]);
 
   const filtered = students.filter(
     (s) =>
@@ -110,9 +116,6 @@ export function StudentTable() {
               <tr>
                 <th className="px-4 py-2 text-left font-medium">学号</th>
                 <th className="px-4 py-2 text-left font-medium">姓名</th>
-                <th className="px-4 py-2 text-left font-medium">
-                  创建时间
-                </th>
                 <th className="px-4 py-2 text-left font-medium">操作</th>
               </tr>
             </thead>
@@ -122,11 +125,6 @@ export function StudentTable() {
                   <td className="px-4 py-2">{student.username}</td>
                   <td className="px-4 py-2 font-medium">
                     {student.name}
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {new Date(student.created_at).toLocaleDateString(
-                      "zh-CN",
-                    )}
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex gap-1">
@@ -158,6 +156,14 @@ export function StudentTable() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination
+              page={page}
+              pageSize={20}
+              total={total}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       )}
       <StudentImportDialog

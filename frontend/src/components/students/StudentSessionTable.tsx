@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usersApi } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/common/Pagination";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -17,19 +18,24 @@ export function StudentSessionTable({
   const router = useRouter();
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
-      usersApi.listStudents().then((students) => {
-        const s = students.find((s) => s.id === studentId);
+      usersApi.listStudents(1, 100).then((data) => {
+        const s = data.items.find((s) => s.id === studentId);
         if (s) setStudent(s);
       }),
-      usersApi.getSessions(studentId).then(setSessions),
+      usersApi.getSessions(studentId, page).then((data) => {
+        setSessions(data.items);
+        setTotal(data.total);
+      }),
     ])
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [studentId]);
+  }, [studentId, page]);
 
   if (loading) return <div className="p-4">加载中...</div>;
 
@@ -48,11 +54,6 @@ export function StudentSessionTable({
         <h1 className="text-xl font-bold">
           {student?.name} ({student?.username})
         </h1>
-        <p className="text-sm text-muted-foreground">
-          创建时间:{" "}
-          {student &&
-            new Date(student.created_at).toLocaleDateString("zh-CN")}
-        </p>
       </div>
       <h2 className="mb-3 text-lg font-semibold">会话记录</h2>
       {sessions.length === 0 ? (
@@ -121,6 +122,14 @@ export function StudentSessionTable({
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination
+              page={page}
+              pageSize={20}
+              total={total}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       )}
     </div>

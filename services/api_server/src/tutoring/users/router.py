@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tutoring.core.config import settings
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
+from tutoring.core.schemas import Page
 from tutoring.db import repos
 from tutoring.sessions import service as session_service
 from tutoring.sessions.schemas import SessionOut
@@ -21,14 +21,23 @@ def _require_teacher(user: CurrentUser) -> None:
         raise AppError(403, "TEACHER_ONLY", "仅教师可执行此操作")
 
 
-@router.get("/students", response_model=list[UserOut])
+@router.get("/students", response_model=Page[UserOut])
 async def list_students(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
-) -> list[UserOut]:
+) -> Page[UserOut]:
     _require_teacher(user)
-    students = await user_service.list_students(db_session)
-    return [UserOut.model_validate(s) for s in students]
+    offset = (page - 1) * page_size
+    students = await user_service.list_students(db_session, limit=page_size, offset=offset)
+    total = await repos.count_users_by_role(db_session, "student")
+    return Page(
+        items=[UserOut.model_validate(s) for s in students],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/teachers", response_model=list[UserOut])
@@ -62,24 +71,31 @@ async def reset_password(
     return {"message": "密码已重置为 123456"}
 
 
-@router.get("/{user_id}/sessions", response_model=list[SessionOut])
+@router.get("/{user_id}/sessions", response_model=Page[SessionOut])
 async def list_user_sessions(
     user_id: UUID,
     mode: str | None = None,
-    limit: int = Query(20, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
-) -> list[SessionOut]:
+) -> Page[SessionOut]:
     _require_teacher(user)
+    offset = (page - 1) * page_size
     sessions = await repos.list_sessions(
         db_session,
         user_id=user_id,
         mode=mode,
-        limit=limit,
+        limit=page_size,
         offset=offset,
     )
-    return [SessionOut.model_validate(session_service.session_to_out_dict(s)) for s in sessions]
+    total = await repos.count_sessions(db_session, user_id=user_id, mode=mode)
+    return Page(
+        items=[SessionOut.model_validate(session_service.session_to_out_dict(s)) for s in sessions],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.post("/students/import", response_model=ImportResult)

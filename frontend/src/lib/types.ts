@@ -31,6 +31,17 @@ export interface SessionCreate {
   project_id?: string;
 }
 
+export interface SessionUpdate {
+  title?: string | null;
+}
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export type ProjectStatus = "draft" | "published";
 
 export interface Project {

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SessionCreate(BaseModel):
@@ -27,3 +27,7 @@ class SessionOut(BaseModel):
     title: str | None
     last_active_at: datetime
     created_at: datetime
+
+
+class SessionUpdate(BaseModel):
+    title: str | None = Field(default=None, max_length=200)

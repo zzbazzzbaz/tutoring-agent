@@ -50,8 +50,8 @@ export function NewSessionModal({
   useEffect(() => {
     if (open && mode === "project") {
       projectsApi
-        .list("published")
-        .then(setProjects)
+        .list("published", 1, 100)
+        .then((data) => setProjects(data.items))
         .catch(console.error);
     }
   }, [open, mode]);
@@ -88,7 +88,6 @@ export function NewSessionModal({
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col gap-2">
-            <Label>模式选择</Label>
             <RadioGroup
               value={mode}
               onValueChange={(v) => setMode(v as "free" | "project")}

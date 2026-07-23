@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -38,6 +38,26 @@ async def create_user(
 
 async def list_users_by_role(session: AsyncSession, role: str) -> list[User]:
     stmt = select(User).where(User.role == role).order_by(User.created_at.desc())
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def count_users_by_role(session: AsyncSession, role: str) -> int:
+    stmt = select(func.count()).select_from(User).where(User.role == role)
+    result = await session.execute(stmt)
+    return int(result.scalar_one())
+
+
+async def list_users_by_role_paginated(
+    session: AsyncSession, role: str, *, limit: int, offset: int
+) -> list[User]:
+    stmt = (
+        select(User)
+        .where(User.role == role)
+        .order_by(User.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
@@ -136,6 +156,29 @@ async def list_sessions(
     return list(result.scalars().all())
 
 
+async def count_sessions(
+    session: AsyncSession,
+    *,
+    user_id: UUID | None = None,
+    mode: str | None = None,
+) -> int:
+    stmt = select(func.count()).select_from(Session).where(Session.deleted_at.is_(None))
+    if user_id is not None:
+        stmt = stmt.where(Session.user_id == user_id)
+    if mode:
+        stmt = stmt.where(Session.mode == mode)
+    result = await session.execute(stmt)
+    return int(result.scalar_one())
+
+
+async def update_session_title(
+    session: AsyncSession, session_id: UUID, title: str | None
+) -> Session | None:
+    await session.execute(update(Session).where(Session.id == session_id).values(title=title))
+    await session.commit()
+    return await get_session(session, session_id)
+
+
 async def touch_session(session: AsyncSession, session_id: UUID) -> None:
     await session.execute(
         update(Session).where(Session.id == session_id).values(last_active_at=datetime.now(UTC))
@@ -171,13 +214,29 @@ async def get_project(session: AsyncSession, project_id: UUID) -> Project | None
     return await session.get(Project, project_id)
 
 
-async def list_projects(session: AsyncSession, *, status: str | None = None) -> list[Project]:
+async def list_projects(
+    session: AsyncSession,
+    *,
+    status: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[Project]:
     stmt = select(Project).where(Project.deleted_at.is_(None))
     if status:
         stmt = stmt.where(Project.status == status)
     stmt = stmt.order_by(Project.created_at.desc())
+    if limit is not None:
+        stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def count_projects(session: AsyncSession, *, status: str | None = None) -> int:
+    stmt = select(func.count()).select_from(Project).where(Project.deleted_at.is_(None))
+    if status:
+        stmt = stmt.where(Project.status == status)
+    result = await session.execute(stmt)
+    return int(result.scalar_one())
 
 
 async def update_project(session: AsyncSession, project_id: UUID, **fields) -> Project | None:

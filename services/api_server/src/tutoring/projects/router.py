@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
+from tutoring.core.schemas import Page
 from tutoring.db import repos
 from tutoring.projects import service as project_service
 from tutoring.projects.schemas import ProjectCreate, ProjectOut, ProjectUpdate
@@ -30,14 +31,25 @@ async def create_project_endpoint(
     return ProjectOut.model_validate(proj)
 
 
-@router.get("", response_model=list[ProjectOut])
+@router.get("", response_model=Page[ProjectOut])
 async def list_projects(
-    status_filter: str | None = None,
+    status: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
-) -> list[ProjectOut]:
-    projects = await repos.list_projects(db_session, status=status_filter)
-    return [ProjectOut.model_validate(p) for p in projects]
+) -> Page[ProjectOut]:
+    offset = (page - 1) * page_size
+    projects = await repos.list_projects(
+        db_session, status=status, limit=page_size, offset=offset
+    )
+    total = await repos.count_projects(db_session, status=status)
+    return Page(
+        items=[ProjectOut.model_validate(p) for p in projects],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/{project_id}", response_model=ProjectOut)

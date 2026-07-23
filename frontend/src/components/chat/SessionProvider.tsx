@@ -21,6 +21,7 @@ interface SessionContextValue {
     mode: "free" | "project",
     projectId?: string,
   ) => Promise<Session>;
+  updateSession: (id: string, title: string | null) => Promise<Session>;
   deleteSession: (id: string) => Promise<void>;
 }
 
@@ -72,6 +73,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSessions((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  const updateSession = useCallback(async (id: string, title: string | null) => {
+    const session = await sessionsApi.update(id, { title });
+    setSessions((prev) => prev.map((s) => (s.id === id ? session : s)));
+    return session;
+  }, []);
+
   return (
     <SessionContext.Provider
       value={{
@@ -79,6 +86,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         sessionsLoading,
         refreshSessions,
         createSession,
+        updateSession,
         deleteSession,
       }}
     >

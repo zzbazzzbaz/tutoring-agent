@@ -1,9 +1,18 @@
 import { api } from "./client";
-import type { Project, ProjectCreate, ProjectUpdate } from "@/lib/types";
+import type { Page, Project, ProjectCreate, ProjectUpdate } from "@/lib/types";
+
+function buildListQuery(status?: string, page = 1, pageSize = 20) {
+  const params = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  if (status) params.set("status", status);
+  return params.toString();
+}
 
 export const projectsApi = {
-  list: (status?: string) =>
-    api.get<Project[]>(`/projects${status ? `?status=${status}` : ""}`),
+  list: (status?: string, page = 1, pageSize = 20) =>
+    api.get<Page<Project>>(`/projects?${buildListQuery(status, page, pageSize)}`),
 
   get: (id: string) => api.get<Project>(`/projects/${id}`),
 

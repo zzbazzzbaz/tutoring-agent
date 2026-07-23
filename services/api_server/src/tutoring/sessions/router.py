@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
+from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.projects import service as project_service
 from tutoring.sessions import service as session_service
-from tutoring.sessions.schemas import SessionCreate, SessionOut
+from tutoring.sessions.schemas import SessionCreate, SessionOut, SessionUpdate
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -53,6 +54,21 @@ async def get_session(
     db_session: AsyncSession = Depends(get_db),
 ) -> SessionOut:
     sess = await session_service.get_readable_session(db_session, session_id, user)
+    return SessionOut.model_validate(session_service.session_to_out_dict(sess))
+
+
+@router.patch("/{session_id}", response_model=SessionOut)
+async def update_session(
+    session_id: UUID,
+    body: SessionUpdate,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> SessionOut:
+    await session_service.get_writable_session(db_session, session_id, user)
+    title = body.title.strip() if body.title else None
+    sess = await repos.update_session_title(db_session, session_id, title)
+    if not sess:
+        raise AppError(404, "SESSION_NOT_FOUND", f"Session {session_id} not found")
     return SessionOut.model_validate(session_service.session_to_out_dict(sess))
 
 

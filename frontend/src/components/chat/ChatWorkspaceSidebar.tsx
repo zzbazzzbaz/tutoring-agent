@@ -6,14 +6,23 @@ import {
   FolderOpen,
   GraduationCap,
   LogOut,
+  MoreHorizontal,
   MessageCircle,
   PanelLeftClose,
+  Pencil,
   Settings,
+  Trash2,
   UserCircle,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -21,6 +30,7 @@ import { ProfileDialog } from "@/components/chat/ProfileDialog";
 import { useSessions } from "@/components/chat/SessionProvider";
 import { avatarUrl, cn } from "@/lib/utils";
 import type { Session, UserRole } from "@/lib/types";
+import { toast } from "sonner";
 
 function sessionTitle(session: Session) {
   return (
@@ -45,7 +55,8 @@ export function ChatWorkspaceSidebar({
   onMobileOpenChange?: (open: boolean) => void;
 }) {
   const { user, logout } = useAuth();
-  const { sessions, sessionsLoading, refreshSessions } = useSessions();
+  const { sessions, sessionsLoading, refreshSessions, updateSession, deleteSession } =
+    useSessions();
   const [sessionId, setSessionId] = useQueryState("session");
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -58,6 +69,28 @@ export function ChatWorkspaceSidebar({
       ? "/teacher/manage/projects"
       : "/student/manage/projects";
   const manageLabel = role === "teacher" ? "管理中心" : "项目中心";
+
+  async function handleRenameSession(session: Session) {
+    const nextTitle = prompt("请输入新的会话标题", sessionTitle(session));
+    if (nextTitle === null) return;
+    try {
+      await updateSession(session.id, nextTitle.trim() || null);
+      toast.success("会话已重命名");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "重命名失败");
+    }
+  }
+
+  async function handleDeleteSession(session: Session) {
+    if (!confirm(`确定删除会话「${sessionTitle(session)}」吗？`)) return;
+    try {
+      await deleteSession(session.id);
+      if (sessionId === session.id) setSessionId(null);
+      toast.success("会话已删除");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "删除失败");
+    }
+  }
 
   const content = (
     <div className="flex h-full w-full flex-col bg-white">
@@ -147,25 +180,51 @@ export function ChatWorkspaceSidebar({
               const active = sessionId === session.id;
 
               return (
-                <Button
+                <div
                   key={session.id}
-                  variant="ghost"
                   className={cn(
-                    "h-auto w-full justify-start gap-2 rounded-xl px-3 py-2 text-left text-sm font-normal",
+                    "group flex items-center rounded-xl",
                     active && "bg-muted font-medium text-foreground shadow-sm",
                   )}
-                  onClick={() => {
-                    setSessionId(session.id);
-                    onMobileOpenChange?.(false);
-                  }}
                 >
-                  <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0">
-                    <span className="block truncate">
+                  <button
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm"
+                    onClick={() => {
+                      setSessionId(session.id);
+                      onMobileOpenChange?.(false);
+                    }}
+                  >
+                    <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="block min-w-0 truncate">
                       {sessionTitle(session)}
                     </span>
-                  </span>
-                </Button>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mr-1 size-7 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleRenameSession(session)}>
+                        <Pencil className="size-4" />
+                        重命名
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => handleDeleteSession(session)}
+                      >
+                        <Trash2 className="size-4" />
+                        删除
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               );
             })}
           </div>

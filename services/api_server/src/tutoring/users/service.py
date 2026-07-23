@@ -23,8 +23,12 @@ AVATAR_EXT_MAP = {
 }
 
 
-async def list_students(db: AsyncSession) -> list[User]:
-    return await repos.list_users_by_role(db, "student")
+async def list_students(
+    db: AsyncSession, *, limit: int | None = None, offset: int = 0
+) -> list[User]:
+    if limit is None:
+        return await repos.list_users_by_role(db, "student")
+    return await repos.list_users_by_role_paginated(db, "student", limit=limit, offset=offset)
 
 
 async def list_teachers(db: AsyncSession) -> list[User]:
