@@ -1,7 +1,12 @@
 "use client";
 
 import "@/lightrag-webui/i18n";
-import GraphViewer from "@/lightrag-webui/features/GraphViewer";
+import dynamic from "next/dynamic";
+
+const GraphViewer = dynamic(
+  () => import("@/lightrag-webui/features/GraphViewer"),
+  { ssr: false },
+);
 
 export function KnowledgeGraphPanel() {
   return (

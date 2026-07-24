@@ -40,7 +40,7 @@ services:
       start_period: 30s
 
   lightrag:
-    image: ghcr.io/hkuds/lightrag:latest
+    image: ghcr.io/hkuds/lightrag:v1.4.10
     container_name: teaching-lightrag
     restart: unless-stopped
     environment:
