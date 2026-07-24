@@ -18,8 +18,9 @@ import {
 import { useQueryState } from "nuqs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSessions } from "./SessionProvider";
-import { AGENT_URL, ASSISTANT_ID } from "@/lib/constants";
+import { ASSISTANT_ID } from "@/lib/constants";
 import { toast } from "sonner";
+import { getAgentApiUrl } from "./client";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -67,9 +68,10 @@ export function StreamProvider({
   const { token } = useAuth();
   const { refreshSessions } = useSessions();
   const [threadId, setThreadId] = useQueryState("session");
+  const agentApiUrl = getAgentApiUrl();
 
   const streamValue = useTypedStream({
-    apiUrl: AGENT_URL,
+    apiUrl: agentApiUrl,
     assistantId: ASSISTANT_ID,
     defaultHeaders: token
       ? { Authorization: `Bearer ${token}` }
@@ -96,10 +98,10 @@ export function StreamProvider({
 
   useEffect(() => {
     if (token) {
-      checkGraphStatus(AGENT_URL, token).then((ok) => {
+        checkGraphStatus(agentApiUrl, token).then((ok) => {
         if (!ok) {
           toast.error("无法连接到 Agent 服务器", {
-            description: `请确保 Agent Server 运行在 ${AGENT_URL}`,
+            description: `请确保 Agent Server 运行在 ${agentApiUrl}`,
             duration: 10000,
             richColors: true,
             closeButton: true,
@@ -107,7 +109,7 @@ export function StreamProvider({
         }
       });
     }
-  }, [token]);
+  }, [agentApiUrl, token]);
 
   return (
     <StreamContext.Provider value={streamValue}>
