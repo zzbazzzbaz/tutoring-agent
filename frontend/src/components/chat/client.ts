@@ -6,8 +6,13 @@ export function createClient(authToken: string | undefined) {
   if (authToken) {
     defaultHeaders["Authorization"] = `Bearer ${authToken}`;
   }
+
+  const apiUrl = AGENT_URL.startsWith("/")
+    ? new URL(AGENT_URL, window.location.origin).toString()
+    : AGENT_URL;
+
   return new Client({
-    apiUrl: AGENT_URL,
+    apiUrl,
     ...(Object.keys(defaultHeaders).length ? { defaultHeaders } : {}),
   });
 }
