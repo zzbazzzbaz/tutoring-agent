@@ -1,0 +1,87 @@
+name: Teaching Agent Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: git.gqt.plus
+  REGISTRY_USERNAME: gqt
+
+jobs:
+  api-server:
+    name: Build and push API server image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API server image
+        run: |
+          docker build \
+            -t $REGISTRY/gqt/tutoring-api-server:${{ gitea.sha }} \
+            -t $REGISTRY/gqt/tutoring-api-server:latest \
+            services/api_server
+
+      - name: Login to Gitea Container Registry
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login $REGISTRY -u "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Push API server image
+        run: |
+          docker push $REGISTRY/gqt/tutoring-api-server:${{ gitea.sha }}
+          docker push $REGISTRY/gqt/tutoring-api-server:latest
+
+  agent-server:
+    name: Build and push Agent server image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Agent server image
+        run: |
+          docker build \
+            -t $REGISTRY/gqt/tutoring-agent-server:${{ gitea.sha }} \
+            -t $REGISTRY/gqt/tutoring-agent-server:latest \
+            services/agent_server
+
+      - name: Login to Gitea Container Registry
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login $REGISTRY -u "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Push Agent server image
+        run: |
+          docker push $REGISTRY/gqt/tutoring-agent-server:${{ gitea.sha }}
+          docker push $REGISTRY/gqt/tutoring-agent-server:latest
+
+  frontend:
+    name: Build and push frontend image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -t $REGISTRY/gqt/tutoring-frontend:${{ gitea.sha }} \
+            -t $REGISTRY/gqt/tutoring-frontend:latest \
+            frontend
+
+      - name: Login to Gitea Container Registry
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login $REGISTRY -u "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Push frontend image
+        run: |
+          docker push $REGISTRY/gqt/tutoring-frontend:${{ gitea.sha }}
+          docker push $REGISTRY/gqt/tutoring-frontend:latest

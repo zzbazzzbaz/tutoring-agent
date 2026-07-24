@@ -231,7 +231,6 @@ const WorkerLayoutControl = ({ layoutName }: { layoutName: WorkerLayoutName }) =
     // auto-run it (start() spins up the worker supervisor and flips `running`).
     // This is the "synchronize with an external system" case the rule exempts,
     // not an accidental render cascade.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     start()
     return () => {
       clearTimer()

@@ -120,14 +120,12 @@ export function AsyncSearch<T>({
   // after the async call resolves, so the rule fires on the synchronous loading flag.
   useEffect(() => {
     if (preload) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOptions(debouncedSearchTerm)
   }, [preload, debouncedSearchTerm, fetchOptions])
 
   // Load initial value
   useEffect(() => {
     if (!value) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOptions(value)
   }, [value, fetchOptions])
 
