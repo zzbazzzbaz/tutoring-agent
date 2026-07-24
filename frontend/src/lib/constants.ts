@@ -9,9 +9,9 @@ export const COOKIE_KEYS = {
 } as const;
 
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_URL ?? "/api";
 export const AGENT_URL =
-  process.env.NEXT_PUBLIC_AGENT_URL ?? "http://127.0.0.1:2024";
+  process.env.NEXT_PUBLIC_AGENT_URL ?? "/agent";
 export const ASSISTANT_ID =
   process.env.NEXT_PUBLIC_ASSISTANT_ID ?? "tutor";
 
