@@ -375,6 +375,7 @@ export function Thread({
                               </Label>
                             </div>
                           </div>
+                          {/* 上传 PDF 或图片功能 - 本期暂不需要，后续版本恢复
                           <Label
                             htmlFor="file-input"
                             className="flex cursor-pointer items-center gap-2"
@@ -392,6 +393,7 @@ export function Thread({
                             accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                             className="hidden"
                           />
+                          */}
                           {stream.isLoading ? (
                             <Button
                               key="stop"
