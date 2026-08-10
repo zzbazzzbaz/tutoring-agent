@@ -12,7 +12,7 @@ async def test_search_sends_expected_payload_and_returns_context():
         assert request.url == httpx.URL("http://lightrag.test/query")
         payload = json.loads(request.content)
         assert payload["query"] == "TCP 三次握手"
-        assert payload["mode"] == "mix"
+        assert payload["mode"] == "hybrid"
         return httpx.Response(200, json={"response": "TCP 三次握手用于建立连接。"})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:

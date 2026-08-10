@@ -1,6 +1,7 @@
 from teaching_agent.auth.schemas import AgentContextV1
+from teaching_agent.config import get_settings
 
-_CORE_PRINCIPLES = """## 核心原则
+_DEFAULT_CORE_PRINCIPLES = """## 核心原则
 1. 绝不直接给出答案。通过提问引导学生自己推导出结论。
 2. 当学生提问或讨论某个概念时，先调用 search_knowledge 检索相关知识，再基于检索内容设计追问。
 3. 如果检索结果为空，告诉学生"这个问题可能超出当前课程知识库范围"，引导回课程内容。
@@ -24,7 +25,7 @@ _CORE_PRINCIPLES = """## 核心原则
 - search_knowledge(query): 检索课程知识库并返回相关知识片段
 - present_question(topic, q_type, stem, options): 展示题目并等待作答"""
 
-_FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《计算机网络》。
+_DEFAULT_FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
 
 {core_principles}
 
@@ -32,7 +33,7 @@ _FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《计算
 学生正在进行自由学习，围绕课程知识自由探索。
 """
 
-_PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《计算机网络》。
+_DEFAULT_PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
 
 {core_principles}
 
@@ -47,10 +48,19 @@ _PROJECT_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《计
 
 
 def render_system_prompt(context: AgentContextV1) -> str:
+    settings = get_settings()
+    core_principles = settings.prompt_core_principles or _DEFAULT_CORE_PRINCIPLES
+    free_template = settings.prompt_free_template or _DEFAULT_FREE_TEMPLATE
+    project_template = settings.prompt_project_template or _DEFAULT_PROJECT_TEMPLATE
+
     if context.mode == "project":
-        return _PROJECT_TEMPLATE.format(
-            core_principles=_CORE_PRINCIPLES,
+        return project_template.format(
+            core_principles=core_principles,
+            course_name=settings.course_name,
             project_name=context.project_name,
             project_background_md=context.project_background_md,
         )
-    return _FREE_TEMPLATE.format(core_principles=_CORE_PRINCIPLES)
+    return free_template.format(
+        core_principles=core_principles,
+        course_name=settings.course_name,
+    )

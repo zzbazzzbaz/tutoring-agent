@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     agent_server_secret: SecretStr
     lightrag_query_url: str
 
+    # === Prompts ===
+    course_name: str = "计算机网络"
+    prompt_core_principles: str = ""
+    prompt_free_template: str = ""
+    prompt_project_template: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

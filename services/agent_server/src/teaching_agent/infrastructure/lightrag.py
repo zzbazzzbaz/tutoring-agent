@@ -11,7 +11,7 @@ from teaching_agent.config import get_settings
 logger = logging.getLogger(__name__)
 
 _QUERY_OPTIONS = {
-    "mode": "mix",
+    "mode": "hybrid",
     "only_need_context": True,
     "top_k": 15,
     "chunk_top_k": 10,
