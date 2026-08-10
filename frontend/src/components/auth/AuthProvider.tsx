@@ -57,18 +57,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
 
     if (!storedToken || !storedUser) {
+      clearCookie(COOKIE_KEYS.AUTH);
+      clearCookie(COOKIE_KEYS.ROLE);
       setLoading(false);
       return;
     }
 
     setToken(storedToken);
-    setUser(JSON.parse(storedUser));
+    const parsedUser = JSON.parse(storedUser) as User;
+    setUser(parsedUser);
+    setCookie(COOKIE_KEYS.AUTH, "1");
+    setCookie(COOKIE_KEYS.ROLE, parsedUser.role);
 
     authApi
       .me()
       .then((freshUser) => {
         setUser(freshUser);
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(freshUser));
+        setCookie(COOKIE_KEYS.ROLE, freshUser.role);
       })
       .catch(() => {
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
