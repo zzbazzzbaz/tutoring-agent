@@ -5,7 +5,7 @@ from teaching_agent.auth.schemas import AgentContextV1
 def test_free_prompt_uses_server_course_configuration():
     prompt = render_system_prompt(AgentContextV1(mode="free"))
 
-    assert "《计算机网络》" in prompt
+    assert "《普通心理学》" in prompt
     assert "自由学习" in prompt
     assert "当前项目" not in prompt
 

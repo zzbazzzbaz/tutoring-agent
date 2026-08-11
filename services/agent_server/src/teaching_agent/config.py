@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     lightrag_query_url: str
 
     # === Prompts ===
-    course_name: str = "计算机网络"
+    course_name: str = "普通心理学"
     prompt_core_principles: str = ""
     prompt_free_template: str = ""
     prompt_project_template: str = ""
