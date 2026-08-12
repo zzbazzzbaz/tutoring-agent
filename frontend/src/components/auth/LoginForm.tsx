@@ -31,7 +31,7 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
       <div className="w-full max-w-sm rounded-lg border bg-background p-8 shadow-lg">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">教学 Agent</h1>
+          <h1 className="text-2xl font-bold tracking-tight">心理学教学Agent</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             请登录以继续使用
           </p>

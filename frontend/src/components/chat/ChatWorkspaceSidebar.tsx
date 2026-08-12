@@ -107,7 +107,7 @@ export function ChatWorkspaceSidebar({
               <GraduationCap className="size-4" />
             </span>
             <span className="truncate text-sm font-semibold">
-              教学 Agent
+              心理学教学Agent
             </span>
           </button>
 

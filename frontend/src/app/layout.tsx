@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "教学 Agent",
+  title: "心理学教学Agent",
   description: "智能教学助手平台",
 };
 
