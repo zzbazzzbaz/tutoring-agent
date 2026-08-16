@@ -106,7 +106,6 @@ export function KnowledgeDocumentTable({
               <tr>
                 <th className="px-4 py-2 text-left font-medium">文件</th>
                 <th className="px-4 py-2 text-left font-medium">状态</th>
-                <th className="px-4 py-2 text-left font-medium">Chunks</th>
                 <th className="px-4 py-2 text-left font-medium">更新时间</th>
                 <th className="px-4 py-2 text-left font-medium">操作</th>
               </tr>
@@ -124,9 +123,6 @@ export function KnowledgeDocumentTable({
                     <Badge variant={doc.status.toLowerCase() === "failed" ? "destructive" : "secondary"}>
                       {statusLabel(doc.status)}
                     </Badge>
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {doc.chunks_count ?? 0}
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {doc.updated_at ? new Date(doc.updated_at).toLocaleString("zh-CN") : "-"}
