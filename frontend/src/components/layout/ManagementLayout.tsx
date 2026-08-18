@@ -33,6 +33,9 @@ export function ManagementLayout({
             href: "/teacher/manage/students",
             icon: Users,
           },
+          { label: "班级",
+            href: "/teacher/manage/classes", 
+            icon: Users },
           {
             label: "知识库",
             href: "/teacher/manage/knowledge",

@@ -140,3 +140,58 @@ export interface LightRAGGraphResponse {
   nodes: LightRAGGraphNode[];
   edges: LightRAGGraphEdge[];
 }
+// === 班级管理Class ===
+
+export type ClassStatus = "active" | "archived";
+
+export interface ClassInfo {
+  id: string;
+  grade: string;
+  classname: string;
+  teacher_id: string;
+  status: ClassStatus;
+  created_at: string;
+  updated_at: string;
+  student_count: number;
+  teacher_name: string | null;
+}
+
+export interface ClassCreate {
+  grade: string;
+  classname: string;
+}
+
+export interface ClassUpdate {
+  grade?: string;
+  classname?: string;
+  status?: ClassStatus;
+}
+
+export interface ClassStudent {
+  user_id: string;
+  username: string;
+  name: string;
+  joined_at: string;
+}
+
+export interface ClassSession {
+  id: string;
+  user_id: string;
+  user_name: string | null;
+  title: string | null;
+  mode: string;
+  project_id: string | null;
+  project_name: string | null;
+  last_active_at: string;
+  created_at: string;
+}
+
+export interface ClassStats {
+  total_students: number;
+  total_sessions: number;
+  active_today: number;
+}
+
+export interface AddStudentsRequest {
+  user_ids: string[];
+}
