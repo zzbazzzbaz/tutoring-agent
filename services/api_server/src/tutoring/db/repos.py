@@ -286,7 +286,10 @@ async def list_classes(
     limit: int = 20,
     offset: int = 0,
 ) -> list[Class]:
-    stmt = select(Class).options(selectinload(Class.teacher)).where(
+    stmt = select(Class).options(
+        selectinload(Class.teacher),
+        selectinload(Class.students),
+    ).where(
         Class.deleted_at.is_(None)
     )
     if teacher_id is not None:
