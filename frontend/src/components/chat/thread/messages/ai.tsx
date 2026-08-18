@@ -119,7 +119,7 @@ export function AssistantMessage({
   const contentString = getContentString(content);
   const [hideToolCalls] = useQueryState(
     "hideToolCalls",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(true),
   );
 
   const thread = useStreamContext();
@@ -156,9 +156,7 @@ export function AssistantMessage({
     ? parseQuizToolResult(message?.content)
     : null;
   const quizOptions = quizToolCall
-    ? coerceQuizOptions(
-        quizToolCall.args?.options,
-      )
+    ? coerceQuizOptions(quizToolCall.args?.options)
     : null;
   const showAnsweredQuiz = !!(quizToolCall && quizResult);
 

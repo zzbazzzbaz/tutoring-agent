@@ -86,9 +86,10 @@ export function Thread({
   const [threadId, _setThreadId] = useQueryState("session");
   const [hideToolCalls, setHideToolCalls] = useQueryState(
     "hideToolCalls",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(true),
   );
   const [input, setInput] = useState("");
+  const renderToolCallsToggle = false; // 隐藏工具调用开关已注释；恢复时改为 true 或删除条件包裹
   const {
     contentBlocks,
     setContentBlocks,
@@ -361,19 +362,22 @@ export function Thread({
 
                         <div className="flex items-center gap-6 p-2 pt-4">
                           <div>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                id="render-tool-calls"
-                                checked={hideToolCalls ?? false}
-                                onCheckedChange={setHideToolCalls}
-                              />
-                              <Label
-                                htmlFor="render-tool-calls"
-                                className="text-sm text-gray-600"
-                              >
-                                隐藏工具调用
-                              </Label>
-                            </div>
+                            {/* 隐藏工具调用开关已注释；恢复时删除条件包裹即可 */}
+                            {renderToolCallsToggle && (
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id="render-tool-calls"
+                                  checked={hideToolCalls ?? true}
+                                  onCheckedChange={setHideToolCalls}
+                                />
+                                <Label
+                                  htmlFor="render-tool-calls"
+                                  className="text-sm text-gray-600"
+                                >
+                                  隐藏工具调用
+                                </Label>
+                              </div>
+                            )}
                           </div>
                           {/* 上传 PDF 或图片功能 - 本期暂不需要，后续版本恢复
                           <Label
