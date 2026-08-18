@@ -8,6 +8,13 @@ import { MarkdownText } from "../markdown-text";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
+import { AnsweredQuizCard } from "./answered-quiz-card";
+import {
+  coerceQuizOptions,
+  findPresentQuestionToolCall,
+  parseQuizToolResult,
+  type QuizType,
+} from "@/lib/quiz";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
@@ -141,8 +148,21 @@ export function AssistantMessage({
     );
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
+  const quizToolCall =
+    isToolResult && message.name === "present_question"
+      ? findPresentQuestionToolCall(thread.messages, message.tool_call_id)
+      : undefined;
+  const quizResult = quizToolCall
+    ? parseQuizToolResult(message?.content)
+    : null;
+  const quizOptions = quizToolCall
+    ? coerceQuizOptions(
+        quizToolCall.args?.options,
+      )
+    : null;
+  const showAnsweredQuiz = !!(quizToolCall && quizResult);
 
-  if (isToolResult && hideToolCalls) {
+  if (isToolResult && hideToolCalls && !showAnsweredQuiz) {
     return null;
   }
 
@@ -151,7 +171,18 @@ export function AssistantMessage({
       <div className="flex w-full flex-col gap-2">
         {isToolResult ? (
           <>
-            <ToolResult message={message} />
+            {showAnsweredQuiz ? (
+              <AnsweredQuizCard
+                topic={String(quizToolCall?.args?.topic ?? "")}
+                qType={(quizToolCall?.args?.q_type as QuizType) ?? "single"}
+                stem={String(quizToolCall?.args?.stem ?? "")}
+                options={quizOptions}
+                studentAnswer={quizResult?.studentAnswer ?? null}
+                skipped={!!quizResult?.skipped}
+              />
+            ) : (
+              <ToolResult message={message} />
+            )}
             <Interrupt
               interrupt={threadInterrupt}
               isLastMessage={isLastMessage}

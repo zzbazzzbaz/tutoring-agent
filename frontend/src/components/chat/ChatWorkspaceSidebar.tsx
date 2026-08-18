@@ -93,21 +93,21 @@ export function ChatWorkspaceSidebar({
   }
 
   const content = (
-    <div className="flex h-full w-full flex-col bg-white">
-      <div className="px-4 pb-3 pt-4">
+    <div className="flex h-full w-full flex-col bg-gray-100">
+      <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between gap-3">
           <button
-            className="flex min-w-0 items-center gap-2 rounded-lg text-left transition-colors hover:text-primary"
+            className="hover:text-primary flex min-w-0 items-center gap-2 rounded-lg text-left transition-colors"
             onClick={() => {
               setSessionId(null);
               onMobileOpenChange?.(false);
             }}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-xl shadow-sm">
               <GraduationCap className="size-4" />
             </span>
             <span className="truncate text-sm font-semibold">
-              心理学教学Agent
+              基础心理学教学Agent
             </span>
           </button>
 
@@ -115,7 +115,7 @@ export function ChatWorkspaceSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground size-8 rounded-lg"
               onClick={() => {
                 onCollapse?.();
                 onMobileOpenChange?.(false);
@@ -129,32 +129,34 @@ export function ChatWorkspaceSidebar({
 
         <div className="mt-5 space-y-1">
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            className="text-foreground flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-gray-300"
             onClick={onNewSession}
           >
-            <MessageCircle className="size-4 text-muted-foreground" />
+            <MessageCircle className="text-muted-foreground size-4" />
             新建对话
           </button>
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            className="text-foreground flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-gray-300"
             onClick={() => setProfileOpen(true)}
           >
-            <UserCircle className="size-4 text-muted-foreground" />
+            <UserCircle className="text-muted-foreground size-4" />
             个人中心
           </button>
           <Button
             asChild
             variant="ghost"
-            className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal"
+            className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal hover:bg-gray-300"
           >
             <Link
-              href={sessionId ? `${manageHref}?session=${sessionId}` : manageHref}
+              href={
+                sessionId ? `${manageHref}?session=${sessionId}` : manageHref
+              }
               onClick={() => onMobileOpenChange?.(false)}
             >
               {role === "teacher" ? (
-                <Settings className="size-4 text-muted-foreground" />
+                <Settings className="text-muted-foreground size-4" />
               ) : (
-                <FolderOpen className="size-4 text-muted-foreground" />
+                <FolderOpen className="text-muted-foreground size-4" />
               )}
               {manageLabel}
             </Link>
@@ -163,17 +165,20 @@ export function ChatWorkspaceSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        <p className="px-3 pb-2 pt-3 text-xs font-medium text-muted-foreground">
+        <p className="text-muted-foreground px-3 pt-3 pb-2 text-xs font-medium">
           历史对话
         </p>
         {sessionsLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="h-10 w-full rounded-xl" />
+              <Skeleton
+                key={index}
+                className="h-10 w-full rounded-xl"
+              />
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <p className="p-3 text-sm text-muted-foreground">暂无历史对话</p>
+          <p className="text-muted-foreground p-3 text-sm">暂无历史对话</p>
         ) : (
           <div className="space-y-1">
             {sessions.map((session) => {
@@ -183,8 +188,9 @@ export function ChatWorkspaceSidebar({
                 <div
                   key={session.id}
                   className={cn(
-                    "group flex items-center rounded-xl",
-                    active && "bg-muted font-medium text-foreground shadow-sm",
+                    "group flex items-center rounded-xl hover:bg-gray-200",
+                    active &&
+                      "text-foreground bg-white font-medium shadow-sm",
                   )}
                 >
                   <button
@@ -194,7 +200,7 @@ export function ChatWorkspaceSidebar({
                       onMobileOpenChange?.(false);
                     }}
                   >
-                    <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
+                    <MessageCircle className="text-muted-foreground size-4 shrink-0" />
                     <span className="block min-w-0 truncate">
                       {sessionTitle(session)}
                     </span>
@@ -211,7 +217,9 @@ export function ChatWorkspaceSidebar({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleRenameSession(session)}>
+                      <DropdownMenuItem
+                        onClick={() => handleRenameSession(session)}
+                      >
                         <Pencil className="size-4" />
                         重命名
                       </DropdownMenuItem>
@@ -233,11 +241,14 @@ export function ChatWorkspaceSidebar({
       <div className="border-t px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <button
-            className="flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors hover:text-primary"
+            className="hover:text-primary flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors"
             onClick={() => setProfileOpen(true)}
           >
             <Avatar className="size-8">
-              <AvatarImage src={avatarUrl(user?.avatar_url)} alt={user?.name} />
+              <AvatarImage
+                src={avatarUrl(user?.avatar_url)}
+                alt={user?.name}
+              />
               <AvatarFallback className="text-xs">
                 {user?.name?.charAt(0)}
               </AvatarFallback>
@@ -246,7 +257,7 @@ export function ChatWorkspaceSidebar({
               <span className="block truncate text-sm font-medium">
                 {user?.name}
               </span>
-              <span className="block truncate text-xs text-muted-foreground">
+              <span className="text-muted-foreground block truncate text-xs">
                 {user?.username}
               </span>
             </span>
@@ -255,7 +266,7 @@ export function ChatWorkspaceSidebar({
             variant="ghost"
             size="icon"
             onClick={logout}
-            className="size-8 shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive size-8 shrink-0 rounded-lg"
             title="退出登录"
           >
             <LogOut className="size-4" />

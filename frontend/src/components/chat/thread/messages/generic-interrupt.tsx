@@ -97,14 +97,14 @@ function QuizInterruptView({ interrupt }: { interrupt: QuizInterrupt }) {
             disabled={thread.isLoading}
             onClick={() => resume("skip")}
           >
-            Skip
+            跳过
           </Button>
           <Button
             type="button"
             disabled={!answer || thread.isLoading}
             onClick={() => resume("answer")}
           >
-            Submit answer
+            提交答案
           </Button>
         </div>
       </div>
