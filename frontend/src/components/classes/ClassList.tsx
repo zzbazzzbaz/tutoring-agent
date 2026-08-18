@@ -100,7 +100,7 @@ export function ClassList() {
               <tr>
                 <th className="px-4 py-2 text-left font-medium">年级</th>
                 <th className="px-4 py-2 text-left font-medium">班级名称</th>
-                <th className="px-4 py-2 text-left font-medium">班主任</th>
+                <th className="px-4 py-2 text-left font-medium">授课教师</th>
                 <th className="px-4 py-2 text-left font-medium">学生数</th>
                 <th className="px-4 py-2 text-left font-medium">状态</th>
                 <th className="px-4 py-2 text-left font-medium">创建时间</th>

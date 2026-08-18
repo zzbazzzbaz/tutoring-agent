@@ -80,7 +80,7 @@ export function ClassFormDialog({ open, onOpenChange, classData, onSaved }: Prop
           <div>
             <label className="mb-1 block text-sm font-medium">年级</label>
             <Input
-              placeholder="如: 2024级"
+              placeholder="如: 2026级"
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
             />
