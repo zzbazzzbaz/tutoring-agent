@@ -16,6 +16,7 @@ from tutoring.lightrag import router as lightrag_router
 from tutoring.projects import router as projects_router
 from tutoring.sessions import router as sessions_router
 from tutoring.users import router as users_router
+from tutoring.classes import router as classes_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -53,3 +54,4 @@ app.include_router(health_router.router)
 app.include_router(projects_router.router)
 app.include_router(sessions_router.router)
 app.include_router(lightrag_router.router)
+app.include_router(classes_router.router)
