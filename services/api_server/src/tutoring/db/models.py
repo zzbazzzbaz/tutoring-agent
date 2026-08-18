@@ -28,6 +28,74 @@ class User(SQLModel, table=True):
     sessions: list["Session"] = Relationship(back_populates="user", cascade_delete=True)
     tokens: list["AuthToken"] = Relationship(back_populates="user", cascade_delete=True)
 
+class Class(SQLModel, table=True):
+    """班级表"""
+
+    __tablename__ = "class"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        sa_column=Column(PG_UUID, primary_key=True),
+    )
+    #年级
+    grade: str = Field(max_length=50,index=True)
+    #班级名称
+    classname: str = Field(max_length=20,index=True)
+    #关联教师id
+    teacher_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID,
+            ForeignKey("user.id", ondelete="RESTRICT"),
+            index=True,
+        ),
+    )
+    #状态(active正常/archived归档)
+    status: str = Field(default="active",max_length=20,index=True)
+    #创建时间
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
+    #修改时间
+    updated_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
+    #删除时间(软删除)
+    deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
+
+    teacher: User | None = Relationship(
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
+    students: list["ClassStudent"] = Relationship(back_populates="class_", cascade_delete=True)
+
+class ClassStudent(SQLModel, table=True):
+    """班级学生关联表"""
+    __tablename__ = "class_student"
+    #关联class表
+    class_id:uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("class.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
+    #关联user表
+    user_id:uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("user.id", ondelete="CASCADE"),
+            primary_key=True,
+            index=True,
+        )
+    )
+    #学生加入时间
+    joined_at:datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
+    class_: "Class" = Relationship(back_populates="students")
+    user: User | None = Relationship(
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
+
 
 class AuthToken(SQLModel, table=True):
     """登录 token。无过期，登出 = 删除行。"""
