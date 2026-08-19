@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/components/chat/StreamProvider";
+import { useSessions } from "@/components/chat/SessionProvider";
 import { useState, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
@@ -25,6 +26,15 @@ import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { projectsApi } from "@/lib/api/projects";
+import type { Project } from "@/lib/types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -89,6 +99,27 @@ export function Thread({
     parseAsBoolean.withDefault(true),
   );
   const [input, setInput] = useState("");
+  // 无会话时首次发送：先创建会话，threadId 就绪后再提交消息
+  const [pendingSubmit, setPendingSubmit] = useState<{
+    message: Message;
+    context?: Record<string, unknown>;
+  } | null>(null);
+  // 新建对话时的会话类型（自由学习 / 项目模式）与所选项目
+  const [sessionMode, setSessionMode] = useState<"free" | "project">("free");
+  const [selectedProject, setSelectedProject] = useState<string>("");
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  const { createSession } = useSessions();
+
+  // 切到项目模式时拉取已发布项目
+  useEffect(() => {
+    if (sessionMode === "project" && projects.length === 0) {
+      projectsApi
+        .list("published", 1, 100)
+        .then((data) => setProjects(data.items))
+        .catch(console.error);
+    }
+  }, [sessionMode, projects.length]);
   const renderToolCallsToggle = false; // 隐藏工具调用开关已注释；恢复时改为 true 或删除条件包裹
   const {
     contentBlocks,
@@ -159,25 +190,11 @@ export function Thread({
     prevMessageLength.current = messages.length;
   }, [messages]);
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
-      return;
-    setFirstTokenReceived(false);
-
-    const newHumanMessage: Message = {
-      id: uuidv4(),
-      type: "human",
-      content: [
-        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
-        ...contentBlocks,
-      ] as Message["content"],
-    };
-
+  const performSubmit = (
+    newHumanMessage: Message,
+    context?: Record<string, unknown>,
+  ) => {
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
-
-    const context =
-      Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
@@ -196,10 +213,62 @@ export function Thread({
         }),
       },
     );
+  };
 
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
+      return;
+    setFirstTokenReceived(false);
+
+    const newHumanMessage: Message = {
+      id: uuidv4(),
+      type: "human",
+      content: [
+        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
+        ...contentBlocks,
+      ] as Message["content"],
+    };
+
+    const context =
+      Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
+
+    if (!threadId) {
+      // 保持现状：新建对话弹窗仍然可用；但直接输入并发送时按所选类型创建会话
+      if (sessionMode === "project" && !selectedProject) {
+        toast.error("请先选择一个项目");
+        return;
+      }
+      try {
+        const session = await createSession(
+          sessionMode,
+          sessionMode === "project" ? selectedProject : undefined,
+        );
+        setInput("");
+        setContentBlocks([]);
+        setThreadId(session.id);
+        setPendingSubmit({ message: newHumanMessage, context });
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "创建会话失败，请重试",
+        );
+      }
+      return;
+    }
+
+    performSubmit(newHumanMessage, context);
     setInput("");
     setContentBlocks([]);
   };
+
+  // 无会话场景：等待 threadId（URL 参数）就绪后再提交消息，确保发往新创建会话
+  useEffect(() => {
+    if (pendingSubmit && threadId) {
+      performSubmit(pendingSubmit.message, pendingSubmit.context);
+      setPendingSubmit(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, pendingSubmit]);
 
   const handleRegenerate = (
     parentCheckpoint: Checkpoint | null | undefined,
@@ -312,74 +381,140 @@ export function Thread({
               footer={
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
-                    <div className="mb-8 flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                       <h1 className="text-2xl font-semibold tracking-tight">
                         有什么我能帮你的吗？
                       </h1>
                     </div>
                   )}
 
+                  {!chatStarted && (
+                    <div className="flex flex-col items-center gap-4">
+                      {/* 新建对话类型切换：滑动切换（仿 deepseek） */}
+                      <div className="relative flex items-center gap-1 rounded-full bg-gray-200/70 p-1 text-sm font-medium">
+                        {(["free", "project"] as const).map((mode) => {
+                          const active = sessionMode === mode;
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setSessionMode(mode)}
+                              className={cn(
+                                "relative rounded-full px-5 py-1.5 transition-colors",
+                                active
+                                  ? "text-foreground"
+                                  : "text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              {active && (
+                                <motion.span
+                                  layoutId="chat-mode-tab"
+                                  className="absolute inset-0 rounded-full bg-white shadow-sm"
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 30,
+                                  }}
+                                />
+                              )}
+                              <span className="relative z-10">
+                                {mode === "free" ? "自由学习" : "项目模式"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* 项目模式下选择项目 */}
+                      {sessionMode === "project" && (
+                        <Select
+                          value={selectedProject}
+                          onValueChange={setSelectedProject}
+                        >
+                          <SelectTrigger className="w-[320px]">
+                            <SelectValue placeholder="请选择项目" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.length === 0 ? (
+                              <div className="text-muted-foreground px-3 py-2 text-sm">
+                                暂无已发布项目
+                              </div>
+                            ) : (
+                              projects.map((p) => (
+                                <SelectItem
+                                  key={p.id}
+                                  value={p.id}
+                                >
+                                  {p.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  )}
+
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                  {!threadId ? null : (
-                    <div
-                      ref={dropRef}
-                      className={cn(
-                        "bg-muted relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-xs transition-all",
-                        dragOver
-                          ? "border-primary border-2 border-dotted"
-                          : "border border-solid",
-                      )}
+                  <div
+                    ref={dropRef}
+                    className={cn(
+                      "bg-muted relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-xs transition-all",
+                      dragOver
+                        ? "border-primary border-2 border-dotted"
+                        : "border border-solid",
+                    )}
+                  >
+                    <form
+                      onSubmit={handleSubmit}
+                      className="mx-auto grid max-w-4xl grid-rows-[1fr_auto] gap-2"
                     >
-                      <form
-                        onSubmit={handleSubmit}
-                        className="mx-auto grid max-w-4xl grid-rows-[1fr_auto] gap-2"
-                      >
-                        <ContentBlocksPreview
-                          blocks={contentBlocks}
-                          onRemove={removeBlock}
-                        />
-                        <textarea
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onPaste={handlePaste}
-                          onKeyDown={(e) => {
-                            if (
-                              e.key === "Enter" &&
-                              !e.shiftKey &&
-                              !e.metaKey &&
-                              !e.nativeEvent.isComposing
-                            ) {
-                              e.preventDefault();
-                              const el = e.target as HTMLElement | undefined;
-                              const form = el?.closest("form");
-                              form?.requestSubmit();
-                            }
-                          }}
-                          placeholder="输入消息..."
-                          className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
-                        />
+                      <ContentBlocksPreview
+                        blocks={contentBlocks}
+                        onRemove={removeBlock}
+                      />
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onPaste={handlePaste}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Enter" &&
+                            !e.shiftKey &&
+                            !e.metaKey &&
+                            !e.nativeEvent.isComposing
+                          ) {
+                            e.preventDefault();
+                            const el = e.target as HTMLElement | undefined;
+                            const form = el?.closest("form");
+                            form?.requestSubmit();
+                          }
+                        }}
+                        placeholder="输入消息..."
+                        className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                      />
 
-                        <div className="flex items-center gap-6 p-2 pt-4">
-                          <div>
-                            {/* 隐藏工具调用开关已注释；恢复时删除条件包裹即可 */}
-                            {renderToolCallsToggle && (
-                              <div className="flex items-center space-x-2">
-                                <Switch
-                                  id="render-tool-calls"
-                                  checked={hideToolCalls ?? true}
-                                  onCheckedChange={setHideToolCalls}
-                                />
-                                <Label
-                                  htmlFor="render-tool-calls"
-                                  className="text-sm text-gray-600"
-                                >
-                                  隐藏工具调用
-                                </Label>
-                              </div>
-                            )}
-                          </div>
-                          {/* 上传 PDF 或图片功能 - 本期暂不需要，后续版本恢复
+                      <div className="flex items-center gap-6 p-2 pt-4">
+                        <div>
+                          {/* 隐藏工具调用开关已注释；恢复时删除条件包裹即可 */}
+                          {renderToolCallsToggle && (
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="render-tool-calls"
+                                checked={hideToolCalls ?? true}
+                                onCheckedChange={setHideToolCalls}
+                              />
+                              <Label
+                                htmlFor="render-tool-calls"
+                                className="text-sm text-gray-600"
+                              >
+                                隐藏工具调用
+                              </Label>
+                            </div>
+                          )}
+                        </div>
+                        {/* 上传 PDF 或图片功能 - 本期暂不需要，后续版本恢复
                           <Label
                             htmlFor="file-input"
                             className="flex cursor-pointer items-center gap-2"
@@ -398,31 +533,30 @@ export function Thread({
                             className="hidden"
                           />
                           */}
-                          {stream.isLoading ? (
-                            <Button
-                              key="stop"
-                              onClick={() => stream.stop()}
-                              className="ml-auto"
-                            >
-                              <LoaderCircle className="h-4 w-4 animate-spin" />
-                              取消
-                            </Button>
-                          ) : (
-                            <Button
-                              type="submit"
-                              className="ml-auto shadow-md transition-all"
-                              disabled={
-                                isLoading ||
-                                (!input.trim() && contentBlocks.length === 0)
-                              }
-                            >
-                              发送
-                            </Button>
-                          )}
-                        </div>
-                      </form>
-                    </div>
-                  )}
+                        {stream.isLoading ? (
+                          <Button
+                            key="stop"
+                            onClick={() => stream.stop()}
+                            className="ml-auto"
+                          >
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                            取消
+                          </Button>
+                        ) : (
+                          <Button
+                            type="submit"
+                            className="ml-auto shadow-md transition-all"
+                            disabled={
+                              isLoading ||
+                              (!input.trim() && contentBlocks.length === 0)
+                            }
+                          >
+                            发送
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
                 </div>
               }
             />
