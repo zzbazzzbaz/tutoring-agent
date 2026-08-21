@@ -684,3 +684,108 @@ async def get_class_comparison(
         })
 
     return comparison
+
+# === 统计分析--学生分析 Student Analysis ===
+
+async def get_student_learning_data(
+    session: AsyncSession,
+    user_id: UUID,
+    class_ids: list[UUID] | None = None,
+) -> dict:
+    """
+    获取学生的基本学习数据：总对话数、总活跃天数、最后活跃时间。
+    如果指定 class_ids 则只统计该班级范围内的数据。
+    """
+    # 总对话数
+    sessions_stmt = (
+        select(func.count())
+        .select_from(Session)
+        .where(Session.user_id == user_id, Session.deleted_at.is_(None))
+    )
+    if class_ids:
+        sessions_stmt = sessions_stmt.join(
+            ClassStudent, ClassStudent.user_id == Session.user_id
+        ).where(ClassStudent.class_id.in_(class_ids))
+    total_sessions = int((await session.execute(sessions_stmt)).scalar_one())
+
+    # 最后活跃时间
+    last_active_stmt = (
+        select(func.max(Session.last_active_at))
+        .select_from(Session)
+        .where(Session.user_id == user_id, Session.deleted_at.is_(None))
+    )
+    last_active = (await session.execute(last_active_stmt)).scalar_one_or_none()
+
+    # 活跃天数（有对话记录的不同日期数）
+    active_days_stmt = (
+        select(func.count(func.distinct(func.date(Session.last_active_at))))
+        .select_from(Session)
+        .where(Session.user_id == user_id, Session.deleted_at.is_(None))
+    )
+    if class_ids:
+        active_days_stmt = active_days_stmt.join(
+            ClassStudent, ClassStudent.user_id == Session.user_id
+        ).where(ClassStudent.class_id.in_(class_ids))
+    active_days = int((await session.execute(active_days_stmt)).scalar_one())
+
+    return {
+        "total_sessions": total_sessions,
+        "last_active_at": last_active,
+        "active_days": active_days,
+    }
+
+async def get_student_daily_activity(
+    session: AsyncSession,
+    user_id: UUID,
+    days: int = 30,
+) -> list[dict]:
+    """获取学生最近N天每天的对话数。"""
+    today = datetime.now(UTC).date()
+    activity = []
+
+    for i in range(days - 1, -1, -1):
+        target_date = today - timedelta(days=i)
+        next_date = target_date + timedelta(days=1)
+
+        stmt = (
+            select(func.count())
+            .select_from(Session)
+            .where(
+                Session.user_id == user_id,
+                Session.deleted_at.is_(None),
+                func.date(Session.last_active_at) >= target_date,
+                func.date(Session.last_active_at) < next_date,
+            )
+        )
+        count = int((await session.execute(stmt)).scalar_one())
+        activity.append({
+            "date": target_date.strftime("%Y-%m-%d"),
+            "session_count": count,
+        })
+
+    return activity
+
+async def get_student_classes(
+    session: AsyncSession,
+    user_id: UUID,
+) -> list[dict]:
+    """获取学生所属的所有班级。"""
+    stmt = (
+        select(ClassStudent, Class)
+        .join(Class, Class.id == ClassStudent.class_id)
+        .where(
+            ClassStudent.user_id == user_id,
+            Class.deleted_at.is_(None),
+        )
+    )
+    result = await session.execute(stmt)
+    rows = result.all()
+
+    return [
+        {
+            "class_id": cls.id,
+            "class_name": f"{cls.grade} {cls.classname}",
+            "joined_at": cs.joined_at,
+        }
+        for cs, cls in rows
+    ]

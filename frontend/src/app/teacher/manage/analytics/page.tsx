@@ -11,6 +11,7 @@ import {
   Clock,
   TrendingUp,
   GraduationCap,
+  RefreshCw,
 } from "lucide-react";
 import {
   LineChart,
@@ -33,33 +34,59 @@ import type {
 
 export default function TeacherManageAnalyticsPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyStudent[]>([]);
   const [trend, setTrend] = useState<LearningTrendPoint[]>([]);
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const data = await analyticsApi.getDashboard();
-        setOverview(data.overview);
-        setAnomalies(data.anomalies);
-        setTrend(data.trend);
-        setClassComparison(data.class_comparison);
-      } catch (err) {
-        console.error("加载 Dashboard 失败:", err);
-      } finally {
-        setLoading(false);
-      }
+  async function load() {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await analyticsApi.getDashboard();
+      console.log("Dashboard data loaded:", data);
+      setOverview(data.overview);
+      setAnomalies(data.anomalies || []);
+      setTrend(data.trend || []);
+      setClassComparison(data.class_comparison || []);
+    } catch (err: any) {
+      console.error("加载 Dashboard 失败:", err);
+      setError(err?.message || "加载失败，请重试");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     load();
   }, []);
 
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        加载中...
+        <div className="flex items-center gap-2">
+          <RefreshCw className="size-4 animate-spin" />
+          加载中...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
+        <div className="text-red-500 text-center">
+          <p className="font-medium">加载失败</p>
+          <p className="text-sm text-muted-foreground mt-1">{error}</p>
+        </div>
+        <button
+          onClick={load}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <RefreshCw className="size-4" />
+          重新加载
+        </button>
       </div>
     );
   }
@@ -116,33 +143,42 @@ export default function TeacherManageAnalyticsPage() {
           <h3 className="font-medium">最近30天学习趋势</h3>
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} interval={4} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="session_count"
-                name="对话数"
-                stroke="#6366f1"
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="active_student_count"
-                name="活跃学生"
-                stroke="#22c55e"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {trend.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} interval={4} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="session_count"
+                  name="对话数"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="active_student_count"
+                  name="活跃学生"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              暂无趋势数据
+            </div>
+          )}
         </div>
       </div>
 
       {/* 待关注 + 班级对比 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* 异常预警列表 */}
         <div className="rounded-lg border bg-card p-4">
           <div className="mb-3 flex items-center gap-2">
             <AlertTriangle className="size-4 text-red-500" />
@@ -153,7 +189,7 @@ export default function TeacherManageAnalyticsPage() {
               所有学生状态良好 👍
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-80 overflow-y-auto">
               {anomalies.map((s) => (
                 <AnomalyRow key={s.user_id} student={s} />
               ))}
@@ -161,6 +197,7 @@ export default function TeacherManageAnalyticsPage() {
           )}
         </div>
 
+        {/* 班级活跃率对比 */}
         <div className="rounded-lg border bg-card p-4">
           <div className="mb-3 flex items-center gap-2">
             <BarChart3 className="size-4 text-muted-foreground" />

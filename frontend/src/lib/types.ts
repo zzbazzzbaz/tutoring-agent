@@ -196,7 +196,7 @@ export interface AddStudentsRequest {
   user_ids: string[];
 }
 
-// === 统计分析 Analytics ===
+// === 统计分析-->学情总览 Analytics ===
 
 export interface DashboardOverview {
   total_students: number;
@@ -238,4 +238,33 @@ export interface DashboardResponse {
   anomalies: AnomalyStudent[];
   trend: LearningTrendPoint[];
   class_comparison: ClassComparison[];
+}
+
+// ===统计分析--> 学生分析 Student Analysis ===
+
+export interface StudentClassInfo {
+  class_id: string;
+  class_name: string;
+  joined_at: string;
+}
+
+export interface StudentOverview {
+  user_id: string;
+  name: string;
+  username: string;
+  total_sessions: number;
+  active_days: number;
+  last_active_at: string | null;
+  inactive_days: number;
+  classes: StudentClassInfo[];
+}
+
+export interface StudentDailyActivity {
+  date: string;
+  session_count: number;
+}
+
+export interface StudentAnalysisResponse {
+  overview: StudentOverview;
+  daily_activity: StudentDailyActivity[];
 }

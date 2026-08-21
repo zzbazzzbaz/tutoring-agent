@@ -11,9 +11,14 @@ from tutoring.analytics.schemas import (
     DashboardOverview,
     DashboardResponse,
     LearningTrendPoint,
+    StudentAnalysisResponse,
+    StudentClassInfo,
+    StudentDailyActivity,
+    StudentOverview,
 )
 from tutoring.db import repos
 from tutoring.db.models import Class
+from tutoring.core.errors import AppError
 
 
 async def get_dashboard(
@@ -95,4 +100,69 @@ def _empty_dashboard() -> DashboardResponse:
             for i in range(29, -1, -1)
         ],
         class_comparison=[],
+    )
+
+# === 学生分析 ===
+
+async def get_student_analysis(
+    db: AsyncSession,
+    teacher_id: UUID,
+    user_id: UUID,
+) -> StudentAnalysisResponse:
+    """
+    获取学生分析数据。
+    需要验证教师权限（教师只能查看自己班级下的学生）。
+    """
+    # 1. 获取教师的所有班级
+    teacher_classes = await repos.list_classes_by_teacher(db, teacher_id)
+    if not teacher_classes:
+        raise AppError(404, "NO_CLASS", "教师没有班级")
+
+    class_ids = [c.id for c in teacher_classes]
+
+    # 2. 验证学生是否在教师的班级中
+    is_member = False
+    for class_id in class_ids:
+        if await repos.check_class_member(db, class_id, user_id):
+            is_member = True
+            break
+
+    if not is_member:
+        raise AppError(403, "NOT_CLASS_STUDENT", "该学生不在您的班级中")
+
+    # 3. 获取学生基本信息
+    user = await repos.get_user_by_id(db, user_id)
+    if not user or user.role != "student":
+        raise AppError(404, "STUDENT_NOT_FOUND", "学生不存在")
+
+    # 4. 获取学生学习数据
+    learning_data = await repos.get_student_learning_data(db, user_id, class_ids)
+
+    # 5. 获取学生所属班级
+    student_classes_raw = await repos.get_student_classes(db, user_id)
+    student_classes = [StudentClassInfo(**c) for c in student_classes_raw]
+
+    # 6. 计算未活跃天数
+    last_active = learning_data["last_active_at"]
+    if last_active is None:
+        inactive_days = 999
+    else:
+        inactive_days = (datetime.now(UTC) - last_active).days
+
+    # 7. 获取每日活动趋势
+    daily_activity_raw = await repos.get_student_daily_activity(db, user_id, days=30)
+    daily_activity = [StudentDailyActivity(**a) for a in daily_activity_raw]
+
+    return StudentAnalysisResponse(
+        overview=StudentOverview(
+            user_id=user.id,
+            name=user.name,
+            username=user.username,
+            total_sessions=learning_data["total_sessions"],
+            active_days=learning_data["active_days"],
+            last_active_at=last_active,
+            inactive_days=inactive_days,
+            classes=student_classes,
+        ),
+        daily_activity=daily_activity,
     )
