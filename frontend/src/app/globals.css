@@ -148,4 +148,49 @@
   .shadow-inner-left {
     box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
+
+  /* Login page entrance animations */
+  @keyframes login-fade-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes login-brand-entrance {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .login-form-animate {
+    animation: login-fade-slide-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .login-brand-animate {
+    animation: login-brand-entrance 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+
+  /* Stagger form elements */
+  .login-form-animate > *:nth-child(1) {
+    animation: login-fade-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+  .login-form-animate > *:nth-child(2) {
+    animation: login-fade-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+  }
+  .login-form-animate > *:nth-child(3) {
+    animation: login-fade-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+  }
+  .login-form-animate > *:nth-child(4) {
+    animation: login-fade-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+  }
 }
