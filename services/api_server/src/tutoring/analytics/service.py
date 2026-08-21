@@ -1,0 +1,98 @@
+# 统计分析--业务逻辑
+# analytics/service.py
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from tutoring.analytics.schemas import (
+    AnomalyStudent,
+    ClassComparison,
+    DashboardOverview,
+    DashboardResponse,
+    LearningTrendPoint,
+)
+from tutoring.db import repos
+from tutoring.db.models import Class
+
+
+async def get_dashboard(
+    db: AsyncSession,
+    teacher_id: UUID,
+    class_id: UUID | None = None,
+) -> DashboardResponse:
+    """
+    获取教师 Dashboard 数据。
+    如果指定 class_id 则只返回该班级数据，否则返回该教师所有班级聚合。
+    """
+    # 1. 获取教师的班级列表
+    if class_id:
+        single = await db.get(Class, class_id)
+        if not single or single.teacher_id != teacher_id or single.deleted_at is not None:
+            return _empty_dashboard()
+        classes = [single]
+    else:
+        classes = await repos.list_classes_by_teacher(db, teacher_id)
+
+    if not classes:
+        return _empty_dashboard()
+
+    class_ids = [c.id for c in classes]
+    today = datetime.now(UTC).date()
+    seven_days_ago = today - timedelta(days=6)
+
+    # 2. 概览指标
+    total_students = await repos.count_class_students(db, class_ids)
+    active_today = await repos.count_active_students_in_classes(db, class_ids, today)
+    total_sessions = await repos.count_class_sessions(db, class_ids)
+    weekly_total = await repos.count_class_sessions(db, class_ids, since=seven_days_ago)
+    weekly_avg = round(weekly_total / 7.0, 1)
+
+    # 3. 异常学生列表
+    anomalies_raw = await repos.list_anomaly_students(db, class_ids, inactive_threshold_days=7)
+    anomalies = [AnomalyStudent(**a) for a in anomalies_raw]
+
+    # 4. 学习趋势(最近30天)
+    trend_raw = await repos.get_daily_trend(db, class_ids, days=30)
+    trend = [LearningTrendPoint(**t) for t in trend_raw]
+
+    # 5. 班级对比
+    comparison_raw = await repos.get_class_comparison(db, classes)
+    class_comparison = [ClassComparison(**c) for c in comparison_raw]
+
+    return DashboardResponse(
+        overview=DashboardOverview(
+            total_students=total_students,
+            active_today=active_today,
+            total_sessions=total_sessions,
+            weekly_avg_sessions=weekly_avg,
+            pending_alert_count=len(anomalies),
+        ),
+        anomalies=anomalies,
+        trend=trend,
+        class_comparison=class_comparison,
+    )
+
+
+def _empty_dashboard() -> DashboardResponse:
+    """空数据兜底"""
+    today = datetime.now(UTC).date()
+    return DashboardResponse(
+        overview=DashboardOverview(
+            total_students=0,
+            active_today=0,
+            total_sessions=0,
+            weekly_avg_sessions=0.0,
+            pending_alert_count=0,
+        ),
+        anomalies=[],
+        trend=[
+            LearningTrendPoint(
+                date=(today - timedelta(days=i)).strftime("%Y-%m-%d"),
+                session_count=0,
+                active_student_count=0,
+            )
+            for i in range(29, -1, -1)
+        ],
+        class_comparison=[],
+    )

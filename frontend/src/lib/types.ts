@@ -195,3 +195,47 @@ export interface ClassStats {
 export interface AddStudentsRequest {
   user_ids: string[];
 }
+
+// === 统计分析 Analytics ===
+
+export interface DashboardOverview {
+  total_students: number;
+  active_today: number;
+  total_sessions: number;
+  weekly_avg_sessions: number;
+  pending_alert_count: number;
+}
+
+export type AlertType = "inactive";
+
+export interface AnomalyStudent {
+  user_id: string;
+  name: string;
+  username: string;
+  last_active_at: string | null;
+  inactive_days: number;
+  alert_type: AlertType;
+  class_id: string;
+  class_name: string;
+}
+
+export interface LearningTrendPoint {
+  date: string;
+  session_count: number;
+  active_student_count: number;
+}
+
+export interface ClassComparison {
+  class_id: string;
+  class_name: string;
+  total_students: number;
+  active_today: number;
+  active_rate: number;
+}
+
+export interface DashboardResponse {
+  overview: DashboardOverview;
+  anomalies: AnomalyStudent[];
+  trend: LearningTrendPoint[];
+  class_comparison: ClassComparison[];
+}

@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime,date, timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -415,12 +415,14 @@ async def list_class_students(
 # 统计班级学生数量
 async def count_class_students(
     session: AsyncSession,
-    class_id: UUID,
+    class_id: UUID| list[UUID],
     *,
     keyword: str | None = None,
 ) -> int:
+    # 统一转为列表处理
+    class_ids = class_id if isinstance(class_id, list) else [class_id]
     base = select(func.count()).select_from(ClassStudent).where(
-        ClassStudent.class_id == class_id
+        ClassStudent.class_id.in_(class_ids)
     )
     if keyword:
         base = base.join(User).where(
@@ -440,28 +442,32 @@ async def check_class_member(
     result = await session.execute(stmt)
     return int(result.scalar_one()) > 0
 
-# 学生会话统计
+# 班级会话统计(支持单班级或多班级,支持日期过滤)
 async def count_class_sessions(
     session: AsyncSession,
-    class_id: UUID,
+    class_id: UUID| list[UUID],
     *,
     mode: str | None = None,
+    since: date | None = None,
 ) -> int:
+    class_ids = class_id if isinstance(class_id, list) else [class_id]
     base = (
         select(func.count())
         .select_from(Session)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
         .where(
-            ClassStudent.class_id == class_id,
+            ClassStudent.class_id.in_(class_ids),
             Session.deleted_at.is_(None),
         )
     )
     if mode:
         base = base.where(Session.mode == mode)
+    if since:
+        base = base.where(func.date(Session.last_active_at) >= since)
     result = await session.execute(base)
     return int(result.scalar_one())
 
-# 班级统计
+# 班级统计（支持单/多班级）
 async def get_class_stats(
     session: AsyncSession,
     class_id: UUID,
@@ -492,3 +498,189 @@ async def get_class_stats(
     }
 
 # 班级项目关联(班级是否关联项目进行查询.待定,如果展示则class表要添加project_id字段,在新增对应函数)
+
+# === 统计分析--学情总览 Analytics (Dashboard) ===
+
+async def list_classes_by_teacher(
+    session: AsyncSession,
+    teacher_id: UUID,
+) -> list[Class]:
+    """获取某教师的所有活跃班级。"""
+    stmt = (
+        select(Class)
+        .where(
+            Class.teacher_id == teacher_id,
+            Class.deleted_at.is_(None),
+        )
+        .order_by(Class.created_at.desc())
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+async def count_active_students_in_classes(
+    session: AsyncSession,
+    class_ids: list[UUID],
+    target_date: date,
+) -> int:
+    """统计指定日期有会话活动的学生数（去重）。"""
+    stmt = (
+        select(func.count(func.distinct(Session.user_id)))
+        .select_from(Session)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+            func.date(Session.last_active_at) == target_date,
+        )
+    )
+    result = await session.execute(stmt)
+    return int(result.scalar_one())
+
+async def list_anomaly_students(
+    session: AsyncSession,
+    class_ids: list[UUID],
+    inactive_threshold_days: int = 7,
+) -> list[dict]:
+    """
+    列出未活跃超过阈值天数的学生。
+    """
+    threshold_dt = datetime.now(UTC) - timedelta(days=inactive_threshold_days)
+
+    # 查询所有班级学生及其最后活跃时间
+    students_stmt = (
+        select(ClassStudent, User, Class)
+        .join(User, User.id == ClassStudent.user_id)
+        .join(Class, Class.id == ClassStudent.class_id)
+        .where(ClassStudent.class_id.in_(class_ids))
+    )
+    result = await session.execute(students_stmt)
+    all_rows = result.all()
+
+    anomalies = []
+    for cs, user, cls in all_rows:
+        # 获取该学生最近一次会话活动时间
+        last_active_stmt = (
+            select(func.max(Session.last_active_at))
+            .select_from(Session)
+            .where(
+                Session.user_id == user.id,
+                Session.deleted_at.is_(None),
+            )
+        )
+        last_active = (await session.execute(last_active_stmt)).scalar_one_or_none()
+
+        if last_active is None:
+            # 从未有过会话记录
+            inactive_days = 999
+            last_active_display = None
+        else:
+            delta = datetime.now(UTC) - last_active
+            inactive_days = delta.days
+            last_active_display = last_active
+
+        if inactive_days >= inactive_threshold_days:
+            anomalies.append({
+                "user_id": user.id,
+                "name": user.name,
+                "username": user.username,
+                "last_active_at": last_active_display,
+                "inactive_days": inactive_days,
+                "class_id": cls.id,
+                "class_name": f"{cls.grade} {cls.classname}",
+            })
+    # 按未活跃天数降序排列
+    anomalies.sort(key=lambda x: x["inactive_days"], reverse=True)
+    return anomalies
+
+
+async def get_daily_trend(
+    session: AsyncSession,
+    class_ids: list[UUID],
+    days: int = 30,
+) -> list[dict]:
+    """
+    获取最近 N 天每天的对话数和活跃学生数。
+    """
+    today = datetime.now(UTC).date()
+    trend = []
+
+    for i in range(days - 1, -1, -1):
+        target_date = today - timedelta(days=i)
+        next_date = target_date + timedelta(days=1)
+        # 当日对话数
+        session_stmt = (
+            select(func.count())
+            .select_from(Session)
+            .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+            .where(
+                ClassStudent.class_id.in_(class_ids),
+                Session.deleted_at.is_(None),
+                func.date(Session.last_active_at) >= target_date,
+                func.date(Session.last_active_at) < next_date,
+            )
+        )
+        session_count = int((await session.execute(session_stmt)).scalar_one())
+        # 当日活跃学生数
+        active_stmt = (
+            select(func.count(func.distinct(Session.user_id)))
+            .select_from(Session)
+            .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+            .where(
+                ClassStudent.class_id.in_(class_ids),
+                Session.deleted_at.is_(None),
+                func.date(Session.last_active_at) >= target_date,
+                func.date(Session.last_active_at) < next_date,
+            )
+        )
+        active_count = int((await session.execute(active_stmt)).scalar_one())
+
+        trend.append({
+            "date": target_date.strftime("%Y-%m-%d"),
+            "session_count": session_count,
+            "active_student_count": active_count,
+        })
+
+    return trend
+
+
+async def get_class_comparison(
+    session: AsyncSession,
+    classes: list[Class],
+) -> list[dict]:
+    """
+    班级间活跃率对比。
+    """
+    today = datetime.now(UTC).date()
+    comparison = []
+
+    for cls in classes:
+        # 该班级学生总数
+        total_stmt = (
+            select(func.count())
+            .select_from(ClassStudent)
+            .where(ClassStudent.class_id == cls.id)
+        )
+        total = int((await session.execute(total_stmt)).scalar_one())
+        # 该班级今日活跃学生数
+        active_stmt = (
+            select(func.count(func.distinct(Session.user_id)))
+            .select_from(Session)
+            .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+            .where(
+                ClassStudent.class_id == cls.id,
+                Session.deleted_at.is_(None),
+                func.date(Session.last_active_at) == today,
+            )
+        )
+        active = int((await session.execute(active_stmt)).scalar_one())
+        rate = round(active / total, 2) if total > 0 else 0.0
+
+        comparison.append({
+            "class_id": cls.id,
+            "class_name": f"{cls.grade} {cls.classname}",
+            "total_students": total,
+            "active_today": active,
+            "active_rate": rate,
+        })
+
+    return comparison

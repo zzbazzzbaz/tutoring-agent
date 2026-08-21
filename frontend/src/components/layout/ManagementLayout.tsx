@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ArrowLeft, Database, FolderOpen, Users } from "lucide-react";
+import { ArrowLeft, Database, FolderOpen, Users,BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
@@ -23,6 +23,11 @@ export function ManagementLayout({
   const items =
     role === "teacher"
       ? [
+          {
+            label: "统计分析",
+            href: "/teacher/manage/analytics",
+            icon: BarChart3,
+          },
           {
             label: "项目",
             href: "/teacher/manage/projects",
