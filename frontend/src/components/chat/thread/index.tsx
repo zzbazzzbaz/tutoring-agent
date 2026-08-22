@@ -293,7 +293,7 @@ export function Thread({
     <div className="flex h-screen w-full overflow-hidden bg-[#efece3]">
       <div
         className={cn(
-          "grid w-full grid-cols-[1fr_0fr] transition-all duration-500",
+          "grid w-full grid-cols-[1fr_0fr] transition-[grid-template-columns] duration-500",
           artifactOpen && "grid-cols-[3fr_2fr]",
         )}
       >
@@ -460,7 +460,7 @@ export function Thread({
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(6,39,31,0.06),0_8px_24px_-8px_rgba(6,39,31,0.12)] transition-all bg-[#fbf9f3] border border-ink/8",
+                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(6,39,31,0.06),0_8px_24px_-8px_rgba(6,39,31,0.12)] transition-[border-color] bg-[#fbf9f3] border border-ink/8",
                       dragOver
                         ? "border-brand/40 border-2 border-dotted"
                         : "",
@@ -545,7 +545,7 @@ export function Thread({
                         ) : (
                           <Button
                             type="submit"
-                            className="ml-auto bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 hover:from-[#0a362b] hover:to-[#054333] shadow-lg shadow-emerald-900/20 transition-all rounded-xl px-5 font-medium"
+                            className="ml-auto bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 hover:from-[#0a362b] hover:to-[#054333] shadow-lg shadow-emerald-900/20 rounded-xl px-5 font-medium"
                             disabled={
                               isLoading ||
                               (!input.trim() && contentBlocks.length === 0)

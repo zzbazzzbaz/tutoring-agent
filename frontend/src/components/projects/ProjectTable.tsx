@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { SkeletonTable } from "@/components/ui/skeleton-loaders";
 import type { Project } from "@/lib/types";
 
 export function ProjectTable() {
@@ -53,7 +54,10 @@ export function ProjectTable() {
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">项目管理</h1>
-        <Button asChild>
+        <Button
+          asChild
+          className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] !text-emerald-50 hover:from-[#0b3d31] hover:to-[#064e3b]"
+        >
           <Link href="/teacher/manage/projects/new">
             <Plus className="mr-2 size-4" />
             新建项目
@@ -61,11 +65,11 @@ export function ProjectTable() {
         </Button>
       </div>
       {loading ? (
-        <p>加载中...</p>
+        <SkeletonTable rows={5} columns={["2fr", "1fr", "1fr", "1fr"]} />
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-md border border-ink/25 bg-[#fbf9f3]">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-paper">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">
                   项目名称

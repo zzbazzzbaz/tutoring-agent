@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { ArrowLeft, Database, FolderOpen, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -76,7 +77,7 @@ export function ManagementLayout({
                 variant={active ? "secondary" : "ghost"}
                 size="sm"
                 className={cn(
-                  "gap-2 transition-colors",
+                  "gap-2 transition-[opacity,transform] duration-150 hover:opacity-80 active:scale-[0.97]",
                   active
                     ? "bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 shadow-sm hover:from-[#0b3d31] hover:to-[#064e3b]"
                     : "text-ink/70 hover:bg-ink/10 hover:text-ink",
@@ -91,7 +92,16 @@ export function ManagementLayout({
           })}
         </nav>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto bg-[#efece3]">{children}</main>
+      <main className="min-h-0 flex-1 overflow-y-auto bg-[#efece3]">
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
+      </main>
     </div>
   );
 }

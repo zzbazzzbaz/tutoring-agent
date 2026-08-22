@@ -213,10 +213,10 @@ export function GenericInterruptView({
         </div>
       </div>
       <motion.div
-        className="min-w-full bg-gray-100"
+        className="min-w-full overflow-hidden bg-gray-100"
         initial={false}
         animate={{ height: "auto" }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       >
         <div className="p-3">
           <AnimatePresence
@@ -260,7 +260,7 @@ export function GenericInterruptView({
           (Array.isArray(interrupt) && interrupt.length > 5)) && (
           <motion.button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
+            className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-ink/10 py-2 text-ink/50 transition-[background-color,color] duration-200 ease-in-out hover:bg-paper/80 hover:text-ink/80"
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { StudentImportDialog } from "./StudentImportDialog";
 import { toast } from "sonner";
+import { SkeletonTable } from "@/components/ui/skeleton-loaders";
 import type { Student } from "@/lib/types";
 
 export function StudentTable() {
@@ -110,14 +111,14 @@ export function StudentTable() {
         placeholder="搜索学生姓名或学号..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 max-w-sm"
+        className="mb-4 max-w-sm !border-ink/25"
       />
       {loading ? (
-        <p>加载中...</p>
+        <SkeletonTable rows={5} columns={["2fr", "1fr", "1fr", "1fr"]} />
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-md border border-ink/25 bg-[#fbf9f3]">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-paper">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">学号</th>
                 <th className="px-4 py-2 text-left font-medium">姓名</th>

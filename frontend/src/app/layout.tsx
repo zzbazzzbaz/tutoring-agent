@@ -1,18 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
 import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Providers } from "@/components/providers/Providers";
 
-const inter = Inter({
-  subsets: ["latin"],
-  preload: true,
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "心理学教学Agent",
+  title: "基础心理学教学Agent",
   description: "智能教学助手平台",
 };
 
@@ -23,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body>
         <NuqsAdapter>
           <Providers>{children}</Providers>
         </NuqsAdapter>

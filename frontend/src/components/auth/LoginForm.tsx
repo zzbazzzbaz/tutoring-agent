@@ -205,7 +205,7 @@ function FocusableInput({
       aria-invalid={!!error && show}
       aria-describedby={error && show ? `${props.id}-error` : undefined}
       className={cn(
-        "flex h-11 w-full rounded-lg border bg-paper/50 px-3.5 py-2.5 text-base text-ink shadow-sm transition-all duration-200 ease-out file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-ink/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "flex h-11 w-full rounded-lg border bg-paper/50 px-3.5 py-2.5 text-base text-ink shadow-sm transition-[background-color,border-color,box-shadow] duration-200 ease-out file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-ink/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         focused
           ? "border-emerald-600/30 bg-white ring-[3px] ring-emerald-600/10"
           : error && show
@@ -240,7 +240,7 @@ function FocusablePasswordInput({
       aria-invalid={!!error && show}
       aria-describedby={error && show ? `${props.id}-error` : undefined}
       className={cn(
-        "h-11 bg-paper/50 text-ink transition-all duration-200 ease-out",
+        "h-11 bg-paper/50 text-ink transition-[background-color,border-color,box-shadow] duration-200 ease-out",
         focused
           ? "border-emerald-600/30 bg-white !ring-[3px] !ring-emerald-600/10"
           : error && show
@@ -489,7 +489,7 @@ function SubmitButton({ loading }: { loading: boolean }) {
         disabled={loading}
         size="lg"
         variant="brand"
-        className="login-button group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-[15px] font-medium text-emerald-50 shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:shadow-[0_8px_28px_-8px_rgba(6,78,59,0.5)]"
+        className="login-button group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-[15px] font-medium text-emerald-50 shadow-lg shadow-emerald-900/20 transition-[box-shadow] duration-200 hover:shadow-[0_8px_28px_-8px_rgba(6,78,59,0.5)]"
         asChild
       >
         <motion.button

@@ -33,7 +33,7 @@ export function KnowledgePipelineStatus({ refreshKey }: { refreshKey: number }) 
   }, [refreshKey]);
 
   return (
-    <div className="rounded-xl border bg-background p-4 shadow-sm">
+    <div className="rounded-xl border border-ink/25 bg-[#fbf9f3] p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium">状态</h2>
         <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>

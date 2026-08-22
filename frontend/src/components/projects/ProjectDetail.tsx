@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
 import type { Project } from "@/lib/types";
+import { SkeletonCard } from "@/components/ui/skeleton-loaders";
 
 export function ProjectDetail({
   id,
@@ -30,7 +31,7 @@ export function ProjectDetail({
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="p-4">加载中...</div>;
+  if (loading) return <SkeletonCard lines={5} className="m-4" />;
   if (!project) return <div className="p-4">项目不存在</div>;
 
   return (
