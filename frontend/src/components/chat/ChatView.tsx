@@ -50,7 +50,7 @@ function ChatShell({
   }, [projectParam, setProjectParam]);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[#efece3]">
       {!readOnly && !sidebarCollapsed && (
         <ChatWorkspaceSidebar
           role={role}
@@ -67,7 +67,7 @@ function ChatShell({
         <Button
           variant="ghost"
           size="icon"
-          className="fixed left-3 top-3 z-30 hidden size-9 rounded-xl bg-background/90 shadow-sm backdrop-blur lg:inline-flex"
+          className="fixed left-3 top-3 z-30 hidden size-9 rounded-xl bg-[#fbf9f3]/90 shadow-sm backdrop-blur-sm border border-ink/8 hover:bg-paper lg:inline-flex"
           onClick={() => setSidebarCollapsed(false)}
           title="展开侧边栏"
         >

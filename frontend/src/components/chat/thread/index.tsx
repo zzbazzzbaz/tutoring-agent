@@ -290,7 +290,7 @@ export function Thread({
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden bg-[#efece3]">
       <div
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-all duration-500",
@@ -314,11 +314,11 @@ export function Thread({
             <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
               <div>
                 <Button
-                  className="hover:bg-gray-100 lg:hidden"
+                  className="hover:bg-paper/80 lg:hidden"
                   variant="ghost"
                   onClick={onOpenSessions}
                 >
-                  <PanelRightClose className="size-5" />
+                  <PanelRightClose className="size-5 text-ink/50" />
                 </Button>
               </div>
             </div>
@@ -326,11 +326,11 @@ export function Thread({
           {chatStarted && (
             <div className="relative z-10 flex items-center p-2">
               <Button
-                className="hover:bg-gray-100 lg:hidden"
+                className="hover:bg-paper/80 lg:hidden"
                 variant="ghost"
                 onClick={onOpenSessions}
               >
-                <PanelRightClose className="size-5" />
+                <PanelRightClose className="size-5 text-ink/50" />
               </Button>
             </div>
           )}
@@ -338,7 +338,7 @@ export function Thread({
           <StickToBottom className="relative flex-1 overflow-hidden">
             <StickyToBottomContent
               className={cn(
-                "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
+                "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ink/15 [&::-webkit-scrollbar-track]:bg-transparent",
                 !chatStarted && "mt-[25vh] flex flex-col items-stretch",
                 chatStarted && "grid grid-rows-[1fr_auto]",
               )}
@@ -379,10 +379,10 @@ export function Thread({
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-[#efece3] via-[#efece3]/95 to-[#efece3]/0 backdrop-blur-sm">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <h1 className="text-2xl font-semibold tracking-tight">
+                      <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-2xl font-semibold tracking-[0.04em] text-ink">
                         有什么我能帮你的吗？
                       </h1>
                     </div>
@@ -391,7 +391,7 @@ export function Thread({
                   {!chatStarted && (
                     <div className="flex flex-col items-center gap-4">
                       {/* 新建对话类型切换：滑动切换（仿 deepseek） */}
-                      <div className="relative flex items-center gap-1 rounded-full bg-gray-200/70 p-1 text-sm font-medium">
+                      <div className="relative flex items-center gap-1 rounded-full bg-ink/[0.06] p-1 text-sm font-medium backdrop-blur-sm">
                         {(["free", "project"] as const).map((mode) => {
                           const active = sessionMode === mode;
                           return (
@@ -402,14 +402,14 @@ export function Thread({
                               className={cn(
                                 "relative rounded-full px-5 py-1.5 transition-colors",
                                 active
-                                  ? "text-foreground"
-                                  : "text-muted-foreground hover:text-foreground",
+                                  ? "text-ink"
+                                  : "text-ink/40 hover:text-ink/60",
                               )}
                             >
                               {active && (
                                 <motion.span
                                   layoutId="chat-mode-tab"
-                                  className="absolute inset-0 rounded-full bg-white shadow-sm"
+                                  className="absolute inset-0 rounded-full bg-[#fbf9f3] shadow-sm ring-1 ring-ink/8"
                                   transition={{
                                     type: "spring",
                                     stiffness: 300,
@@ -460,10 +460,10 @@ export function Thread({
                   <div
                     ref={dropRef}
                     className={cn(
-                      "bg-muted relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-xs transition-all",
+                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(6,39,31,0.06),0_8px_24px_-8px_rgba(6,39,31,0.12)] transition-all bg-[#fbf9f3] border border-ink/8",
                       dragOver
-                        ? "border-primary border-2 border-dotted"
-                        : "border border-solid",
+                        ? "border-brand/40 border-2 border-dotted"
+                        : "",
                     )}
                   >
                     <form
@@ -537,7 +537,7 @@ export function Thread({
                           <Button
                             key="stop"
                             onClick={() => stream.stop()}
-                            className="ml-auto"
+                            className="ml-auto bg-[#fbf9f3] border border-ink/10 text-ink/60 hover:bg-paper hover:text-ink/80 shadow-sm"
                           >
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             取消
@@ -545,7 +545,7 @@ export function Thread({
                         ) : (
                           <Button
                             type="submit"
-                            className="ml-auto shadow-md transition-all"
+                            className="ml-auto bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 hover:from-[#0a362b] hover:to-[#054333] shadow-lg shadow-emerald-900/20 transition-all rounded-xl px-5 font-medium"
                             disabled={
                               isLoading ||
                               (!input.trim() && contentBlocks.length === 0)
@@ -562,9 +562,9 @@ export function Thread({
             />
           </StickToBottom>
         </motion.div>
-        <div className="relative flex flex-col border-l">
+        <div className="relative flex flex-col border-l border-ink/8 bg-[#fbf9f3]/60 backdrop-blur-sm">
           <div className="absolute inset-0 flex min-w-[30vw] flex-col">
-            <div className="grid grid-cols-[1fr_auto] border-b p-4">
+            <div className="grid grid-cols-[1fr_auto] border-b border-ink/8 p-4">
               <ArtifactTitle className="truncate overflow-hidden" />
               <button
                 onClick={closeArtifact}

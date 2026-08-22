@@ -48,16 +48,21 @@ export function ManagementLayout({
         ];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#efece3]">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 px-4">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-ink/70 hover:bg-ink/10 hover:text-ink"
+          >
             <Link href={chatHref}>
               <ArrowLeft className="mr-2 size-4" />
               返回对话
             </Link>
           </Button>
-          <h1 className="text-base font-semibold">
+          <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-base font-semibold tracking-[0.04em] text-ink">
             {role === "teacher" ? "管理中心" : "项目中心"}
           </h1>
         </div>
@@ -70,6 +75,12 @@ export function ManagementLayout({
                 asChild
                 variant={active ? "secondary" : "ghost"}
                 size="sm"
+                className={cn(
+                  "gap-2 transition-colors",
+                  active
+                    ? "bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 shadow-sm hover:from-[#0b3d31] hover:to-[#064e3b]"
+                    : "text-ink/70 hover:bg-ink/10 hover:text-ink",
+                )}
               >
                 <Link href={item.href} className={cn("gap-2")}>
                   <item.icon className="size-4" />
@@ -80,7 +91,7 @@ export function ManagementLayout({
           })}
         </nav>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="min-h-0 flex-1 overflow-y-auto bg-[#efece3]">{children}</main>
     </div>
   );
 }

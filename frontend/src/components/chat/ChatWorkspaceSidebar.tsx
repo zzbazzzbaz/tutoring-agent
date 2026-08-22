@@ -105,7 +105,7 @@ export function ChatWorkspaceSidebar({
   };
 
   const content = (
-    <div className="flex h-full w-full flex-col bg-gray-100">
+    <div className="flex h-full w-full flex-col bg-gradient-to-b from-[#f7f4ec] to-[#f0ede4]">
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between gap-3">
           <button
@@ -115,10 +115,10 @@ export function ChatWorkspaceSidebar({
               onMobileOpenChange?.(false);
             }}
           >
-            <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-xl shadow-sm">
+            <span className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] text-emerald-50 flex size-8 shrink-0 items-center justify-center rounded-xl shadow-sm shadow-emerald-900/20">
               <GraduationCap className="size-4" />
             </span>
-            <span className="truncate text-sm font-semibold">
+            <span className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] truncate text-sm font-semibold text-ink">
               基础心理学教学Agent
             </span>
           </button>
@@ -141,23 +141,23 @@ export function ChatWorkspaceSidebar({
 
         <div className="mt-5 space-y-1">
           <button
-            className="text-foreground flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-gray-300"
+            className="text-ink flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-ink/[0.05]"
             onClick={handleNewSession}
           >
-            <MessageCircle className="text-muted-foreground size-4" />
+            <MessageCircle className="text-ink/35 size-4" />
             新建对话
           </button>
           <button
-            className="text-foreground flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-gray-300"
+            className="text-ink flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-ink/[0.05]"
             onClick={() => setProfileOpen(true)}
           >
-            <UserCircle className="text-muted-foreground size-4" />
+            <UserCircle className="text-ink/35 size-4" />
             个人中心
           </button>
           <Button
             asChild
             variant="ghost"
-            className="flex h-auto w-full cursor-pointer justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal hover:bg-gray-300"
+            className="flex h-auto w-full cursor-pointer justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal text-ink hover:bg-ink/[0.05]"
           >
             <Link
               href={
@@ -166,9 +166,9 @@ export function ChatWorkspaceSidebar({
               onClick={() => onMobileOpenChange?.(false)}
             >
               {role === "teacher" ? (
-                <Settings className="text-muted-foreground size-4" />
+                <Settings className="text-ink/35 size-4" />
               ) : (
-                <FolderOpen className="text-muted-foreground size-4" />
+                <FolderOpen className="text-ink/35 size-4" />
               )}
               {manageLabel}
             </Link>
@@ -177,7 +177,7 @@ export function ChatWorkspaceSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        <p className="text-muted-foreground px-3 pt-3 pb-2 text-xs font-medium">
+        <p className="text-ink/35 px-3 pt-3 pb-2 text-xs font-medium">
           历史对话
         </p>
         {sessionsLoading ? (
@@ -200,8 +200,8 @@ export function ChatWorkspaceSidebar({
                 <div
                   key={session.id}
                   className={cn(
-                    "group flex items-center rounded-xl hover:bg-gray-200",
-                    active && "text-foreground bg-white font-medium shadow-sm",
+                    "group flex items-center rounded-xl hover:bg-ink/[0.04]",
+                    active && "text-ink bg-[#fbf9f3] font-medium shadow-sm ring-1 ring-ink/8",
                   )}
                 >
                   <button
@@ -211,7 +211,7 @@ export function ChatWorkspaceSidebar({
                       onMobileOpenChange?.(false);
                     }}
                   >
-                    <MessageCircle className="text-muted-foreground size-4 shrink-0" />
+                    <MessageCircle className="text-ink/25 size-4 shrink-0" />
                     <span className="block min-w-0 truncate">
                       {sessionTitle(session)}
                     </span>
@@ -249,7 +249,7 @@ export function ChatWorkspaceSidebar({
           </div>
         )}
       </div>
-      <div className="border-t px-3 py-3">
+      <div className="border-t border-ink/8 px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <button
             className="hover:text-primary flex min-w-0 cursor-pointer items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors"
@@ -265,10 +265,10 @@ export function ChatWorkspaceSidebar({
               </AvatarFallback>
             </Avatar>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-medium">
+              <span className="block truncate text-sm font-medium text-ink">
                 {user?.name}
               </span>
-              <span className="text-muted-foreground block truncate text-xs">
+              <span className="text-ink/40 block truncate text-xs">
                 {user?.username}
               </span>
             </span>
@@ -289,7 +289,7 @@ export function ChatWorkspaceSidebar({
 
   return (
     <>
-      <aside className="bg-background hidden h-screen w-[280px] shrink-0 border-r lg:block">
+      <aside className="bg-[#fbf9f3]/80 backdrop-blur-sm hidden h-screen w-[280px] shrink-0 border-r border-ink/8 lg:block">
         {content}
       </aside>
       <Sheet

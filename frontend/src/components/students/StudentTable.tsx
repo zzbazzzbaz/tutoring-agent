@@ -96,7 +96,12 @@ export function StudentTable() {
             <Download className="mr-2 size-4" />
             下载模板
           </Button>
-          <Button onClick={() => setImportOpen(true)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 shadow-sm hover:from-[#0b3d31] hover:to-[#064e3b]"
+            onClick={() => setImportOpen(true)}
+          >
             导入学生
           </Button>
         </div>
