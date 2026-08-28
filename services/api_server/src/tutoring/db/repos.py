@@ -253,7 +253,7 @@ async def delete_project(session: AsyncSession, project_id: UUID) -> None:
 
 # === Class ===
 
-
+# 创建班级
 async def create_class(
     session: AsyncSession,
     *,
@@ -267,12 +267,12 @@ async def create_class(
     await session.refresh(obj)
     return obj
 
-
+# 查询班级信息
 async def get_class(session: AsyncSession, class_id: UUID) -> Class | None:
     stmt = select(Class).options(
         selectinload(Class.teacher),
         selectinload(Class.students).selectinload(ClassStudent.user),
-    ).where(Class.id == class_id)
+    ).where(Class.id == class_id, Class.deleted_at.is_(None))
     result = await session.execute(stmt)
     return result.scalars().first()
 
@@ -302,7 +302,7 @@ async def list_classes(
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
-# 统计班级总数量(前端没想好咋设计,先写上,用不上在删了)
+# 统计班级总数量
 async def count_classes(
     session: AsyncSession,
     *,
@@ -585,6 +585,7 @@ async def list_anomaly_students(
                 "username": user.username,
                 "last_active_at": last_active_display,
                 "inactive_days": inactive_days,
+                "alert_type": "inactive",
                 "class_id": cls.id,
                 "class_name": f"{cls.grade} {cls.classname}",
             })
