@@ -175,17 +175,19 @@ async def delete_class(
 
 # ============ 班级学生管理 ============
 # 导入班级学生
-@router.post("/students/import", response_model=ImportResult)
+@router.post("/{class_id}/students/import", response_model=ImportResult)
 async def import_students(
+    class_id: UUID,
     file: UploadFile = File(...),
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> ImportResult:
     _require_teacher(user)
+    await class_service.ensure_class_teacher(db_session, class_id, user.id)
     if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
         raise AppError(422, "INVALID_FILE", "请上传 .xlsx 或 .xls 文件")
     content = await file.read()
-    return await class_service.import_students(db_session, content)
+    return await class_service.import_students(db_session, class_id, content)
 # 下载班级学生导入模板
 @router.get("/students/template")
 async def download_template(
@@ -195,9 +197,9 @@ async def download_template(
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.append(["学号", "姓名", "密码"])
-    ws.append(["2023001", "张三", "zs123"])
-    ws.append(["2023002", "李四", "ls123"])
+    ws.append(["学号", "姓名"])
+    ws.append(["202300123", "张三"])
+    ws.append(["202300124", "李四"])
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)

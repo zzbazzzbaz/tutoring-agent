@@ -200,6 +200,7 @@ export default function ClassStudentsPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onImported={refresh}
+        classId={classId}
       />
     </div>
   );

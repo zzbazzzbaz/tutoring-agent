@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { usersApi } from "@/lib/api/users";
+import { classesApi } from "@/lib/api/classes";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet } from "lucide-react";
 import type { ImportResult } from "@/lib/types";
@@ -18,10 +18,12 @@ export function StudentImportDialog({
   open,
   onClose,
   onImported,
+  classId,
 }: {
   open: boolean;
   onClose: () => void;
   onImported: () => void;
+  classId: string;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ export function StudentImportDialog({
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await usersApi.import(formData);
+      const res = await classesApi.importStudents(classId, formData);
       setResult(res);
       onImported();
     } catch (err) {

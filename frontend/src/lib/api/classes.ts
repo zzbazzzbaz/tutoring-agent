@@ -9,6 +9,7 @@ import type {
   ClassStats,
   ClassStudent,
   Student,
+  ImportResult,
   Page,
 } from "@/lib/types";
 
@@ -82,4 +83,7 @@ export const classesApi = {
     if (keyword) params.set("keyword", keyword);
     return api.get<Page<Student>>(`/classes/students/unassigned?${params.toString()}`);
   },
+
+  importStudents: (classId: string, formData: FormData) =>
+    api.postForm<ImportResult>(`/classes/${classId}/students/import`, formData),
 };
