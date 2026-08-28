@@ -1,3 +1,8 @@
+/*
+ * 学生管理已并入班级管理，全局学生会话表格组件废弃
+ * 原内容已注释，保留文件便于历史追溯
+ */
+/*
 "use client";
 
 import { useState, useEffect } from "react";
@@ -135,3 +140,5 @@ export function StudentSessionTable({
     </div>
   );
 }
+
+ */
