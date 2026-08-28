@@ -86,4 +86,6 @@ export const classesApi = {
 
   importStudents: (classId: string, formData: FormData) =>
     api.postForm<ImportResult>(`/classes/${classId}/students/import`, formData),
+
+  downloadTemplate: () => api.getBlob("/classes/students/template"),
 };

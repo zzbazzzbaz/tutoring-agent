@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { classesApi } from "@/lib/api/classes";
-import { usersApi } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/common/Pagination";
@@ -80,7 +79,7 @@ export default function ClassStudentsPage() {
   }
     async function handleDownloadTemplate() {
     try {
-      const blob = await usersApi.downloadTemplate();
+      const blob = await classesApi.downloadTemplate();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
