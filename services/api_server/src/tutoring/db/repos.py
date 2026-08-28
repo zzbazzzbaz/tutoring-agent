@@ -42,13 +42,13 @@ async def list_users_by_role(session: AsyncSession, role: str) -> list[User]:
     return list(result.scalars().all())
 
 
-async def count_users_by_role(session: AsyncSession, role: str) -> int:
+""" async def count_users_by_role(session: AsyncSession, role: str) -> int:
     stmt = select(func.count()).select_from(User).where(User.role == role)
     result = await session.execute(stmt)
-    return int(result.scalar_one())
+    return int(result.scalar_one()) """
 
 
-async def list_users_by_role_paginated(
+""" async def list_users_by_role_paginated(
     session: AsyncSession, role: str, *, limit: int, offset: int
 ) -> list[User]:
     stmt = (
@@ -59,16 +59,16 @@ async def list_users_by_role_paginated(
         .offset(offset)
     )
     result = await session.execute(stmt)
-    return list(result.scalars().all())
+    return list(result.scalars().all()) """
 
 
-async def delete_user(session: AsyncSession, user_id: UUID) -> bool:
+""" async def delete_user(session: AsyncSession, user_id: UUID) -> bool:
     obj = await session.get(User, user_id)
     if obj:
         await session.delete(obj)
         await session.commit()
         return True
-    return False
+    return False """
 
 
 async def update_password(session: AsyncSession, user_id: UUID, password_hash: str) -> None:
@@ -339,7 +339,9 @@ async def delete_class(session: AsyncSession, class_id: UUID) -> None:
     )
     await session.commit()
 
-# 新增班级学生
+# === Student ===
+
+# 手动新增班级学生
 async def add_students_to_class(
     session: AsyncSession, class_id: UUID, user_ids: list[UUID]
 ) -> int:

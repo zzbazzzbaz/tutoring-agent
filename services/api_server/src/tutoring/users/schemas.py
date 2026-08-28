@@ -15,8 +15,8 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
-class ImportResult(BaseModel):
+""" class ImportResult(BaseModel):
     total: int
     created: int
     skipped: int
-    errors: list[str]
+    errors: list[str] """

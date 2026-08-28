@@ -1,7 +1,9 @@
 # 班级路由
+import io
+import openpyxl
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status,File,UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.classes import service as class_service
@@ -14,12 +16,15 @@ from tutoring.classes.schemas import (
     ClassStudentOut,
     ClassUpdate,
     RemoveStudentsRequest,
+    ImportResult,
 )
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.core.schemas import Page
 from tutoring.db import repos
-from tutoring.db.models import ClassStudent
+from fastapi.responses import StreamingResponse
+    
+
 
 router = APIRouter(prefix="/classes", tags=["classes"])
 
@@ -168,6 +173,39 @@ async def delete_class(
 
 
 # ============ 班级学生管理 ============
+# 导入班级学生
+@router.post("/students/import", response_model=ImportResult)
+async def import_students(
+    file: UploadFile = File(...),
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> ImportResult:
+    _require_teacher(user)
+    if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
+        raise AppError(422, "INVALID_FILE", "请上传 .xlsx 或 .xls 文件")
+    content = await file.read()
+    return await class_service.import_students(db_session, content)
+# 下载班级学生导入模板
+@router.get("/students/template")
+async def download_template(
+    user: CurrentUser = Depends(get_current_user),
+) -> StreamingResponse:
+    _require_teacher(user)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["学号", "姓名", "密码"])
+    ws.append(["2023001", "张三", "zs123"])
+    ws.append(["2023002", "李四", "ls123"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=students_template.xlsx"},
+    )
+
 
 # 批量添加班级学生
 @router.post("/{class_id}/students", status_code=status.HTTP_201_CREATED)
@@ -238,7 +276,16 @@ async def list_class_students(
         page=page,
         page_size=page_size,
     )
-
+# 重置班级学生密码
+@router.post("/students/{user_id}/reset-password")
+async def reset_password(
+    user_id: UUID,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> dict:
+    _require_teacher(user)
+    await class_service.reset_password(db_session, user_id)
+    return {"message": "密码已重置为 123456"}
 
 # ============ 班级对话查看 ============
 

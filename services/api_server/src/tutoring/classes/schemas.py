@@ -30,6 +30,14 @@ class ClassOut(BaseModel):
     student_count: int = 0
     teacher_name: str | None = None
 
+# 导入班级学生结果
+class ImportResult(BaseModel):
+    total: int
+    created: int
+    skipped: int
+    errors: list[str]
+
+
 # 查询班级学生信息
 class ClassStudentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

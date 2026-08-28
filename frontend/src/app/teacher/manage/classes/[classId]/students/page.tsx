@@ -14,9 +14,12 @@ import {
   UserPlus,
   Trash2,
   Search,
+  KeyRound,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ClassStudent, Student } from "@/lib/types";
+import { StudentImportDialog } from "@/components/students/StudentImportDialog";
 
 export default function ClassStudentsPage() {
   const params = useParams();
@@ -27,6 +30,7 @@ export default function ClassStudentsPage() {
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   function refresh() {
     setLoading(true);
@@ -62,6 +66,31 @@ export default function ClassStudentsPage() {
       toast.error(err instanceof Error ? err.message : "操作失败");
     }
   }
+  async function handleResetPassword(userId: string, name: string) {
+    if (!confirm(`确定重置「${name}」的密码为 123456 吗？`))
+      return;
+    try {
+      await usersApi.resetPassword(userId);
+      toast.success(`已重置 ${name} 的密码为 123456`);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "重置失败",
+      );
+    }
+  }
+    async function handleDownloadTemplate() {
+    try {
+      const blob = await usersApi.downloadTemplate();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "学生导入模板.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("下载模板失败");
+    }
+  }
 
   function handleAdded() {
     setShowAddDialog(false);
@@ -79,10 +108,19 @@ export default function ClassStudentsPage() {
           </Button>
           <h1 className="text-xl font-bold">班级学生管理</h1>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <UserPlus className="mr-2 size-4" />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownloadTemplate}>
+            <Download className="mr-2 size-4" />
+            下载模板
+          </Button>
+          <Button onClick={() => setImportOpen(true)}>
+            导入学生
+          </Button>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <UserPlus className="mr-2 size-4" />
           添加学生
-        </Button>
+          </Button>
+        </div>
       </div>
 
       <div className="mb-4 flex items-center gap-2">
@@ -104,7 +142,6 @@ export default function ClassStudentsPage() {
               <tr>
                 <th className="px-4 py-2 text-left font-medium">学号</th>
                 <th className="px-4 py-2 text-left font-medium">姓名</th>
-                <th className="px-4 py-2 text-left font-medium">加入时间</th>
                 <th className="px-4 py-2 text-left font-medium">操作</th>
               </tr>
             </thead>
@@ -113,10 +150,14 @@ export default function ClassStudentsPage() {
                 <tr key={s.user_id} className="border-t">
                   <td className="px-4 py-2">{s.username}</td>
                   <td className="px-4 py-2 font-medium">{s.name}</td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {new Date(s.joined_at).toLocaleDateString("zh-CN")}
-                  </td>
                   <td className="px-4 py-2">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleResetPassword(s.user_id, s.name)}
+                      >
+                        <KeyRound className="size-4" />
+                      </Button>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -155,6 +196,11 @@ export default function ClassStudentsPage() {
           onAdded={handleAdded}
         />
       )}
+      <StudentImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={refresh}
+      />
     </div>
   );
 }

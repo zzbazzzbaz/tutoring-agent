@@ -33,11 +33,11 @@ export function ManagementLayout({
             href: "/teacher/manage/projects",
             icon: FolderOpen,
           },
-          {
+          /* {
             label: "学生",
             href: "/teacher/manage/students",
             icon: Users,
-          },
+          }, */
           { label: "班级",
             href: "/teacher/manage/classes", 
             icon: Users },

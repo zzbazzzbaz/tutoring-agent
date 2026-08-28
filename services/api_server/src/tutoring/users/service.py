@@ -23,35 +23,35 @@ AVATAR_EXT_MAP = {
 }
 
 
-async def list_students(
+""" async def list_students(
     db: AsyncSession, *, limit: int | None = None, offset: int = 0
 ) -> list[User]:
     if limit is None:
         return await repos.list_users_by_role(db, "student")
-    return await repos.list_users_by_role_paginated(db, "student", limit=limit, offset=offset)
+    return await repos.list_users_by_role_paginated(db, "student", limit=limit, offset=offset) """
 
 
 async def list_teachers(db: AsyncSession) -> list[User]:
     return await repos.list_users_by_role(db, "teacher")
 
 
-async def delete_student(db: AsyncSession, user_id) -> None:
+""" async def delete_student(db: AsyncSession, user_id) -> None:
     user = await repos.get_user_by_id(db, user_id)
     if not user:
         raise AppError(404, "USER_NOT_FOUND", f"User {user_id} not found")
     if user.role != "student":
         raise AppError(403, "CAN_ONLY_DELETE_STUDENT", "只能删除学生账号")
-    await repos.delete_user(db, user_id)
+    await repos.delete_user(db, user_id) """
 
 
-async def reset_password(db: AsyncSession, user_id) -> None:
+""" async def reset_password(db: AsyncSession, user_id) -> None:
     user = await repos.get_user_by_id(db, user_id)
     if not user:
         raise AppError(404, "USER_NOT_FOUND", f"User {user_id} not found")
-    await repos.update_password(db, user_id, hash_password(DEFAULT_PASSWORD))
+    await repos.update_password(db, user_id, hash_password(DEFAULT_PASSWORD)) """
 
 
-async def import_students(db: AsyncSession, file_bytes: bytes) -> ImportResult:
+""" async def import_students(db: AsyncSession, file_bytes: bytes) -> ImportResult:
     wb = load_workbook(io.BytesIO(file_bytes), read_only=True)
     ws = wb.active
     rows = list(ws.iter_rows(min_row=2, values_only=True))
@@ -90,7 +90,7 @@ async def import_students(db: AsyncSession, file_bytes: bytes) -> ImportResult:
         )
         created += 1
 
-    return ImportResult(total=total, created=created, skipped=skipped, errors=errors)
+    return ImportResult(total=total, created=created, skipped=skipped, errors=errors) """
 
 
 async def upload_avatar(db: AsyncSession, user_id, file_content: bytes, content_type: str) -> str:

@@ -21,7 +21,7 @@ def _require_teacher(user: CurrentUser) -> None:
         raise AppError(403, "TEACHER_ONLY", "仅教师可执行此操作")
 
 
-@router.get("/students", response_model=Page[UserOut])
+""" @router.get("/students", response_model=Page[UserOut])
 async def list_students(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -37,7 +37,7 @@ async def list_students(
         total=total,
         page=page,
         page_size=page_size,
-    )
+    ) """
 
 
 @router.get("/teachers", response_model=list[UserOut])
@@ -49,7 +49,7 @@ async def list_teachers(
     teachers = await user_service.list_teachers(db_session)
     return [UserOut.model_validate(t) for t in teachers]
 
-
+""" 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: UUID,
@@ -57,10 +57,10 @@ async def delete_user(
     db_session: AsyncSession = Depends(get_db),
 ) -> None:
     _require_teacher(user)
-    await user_service.delete_student(db_session, user_id)
+    await user_service.delete_student(db_session, user_id) """
 
 
-@router.post("/{user_id}/reset-password")
+""" @router.post("/{user_id}/reset-password")
 async def reset_password(
     user_id: UUID,
     user: CurrentUser = Depends(get_current_user),
@@ -68,9 +68,9 @@ async def reset_password(
 ) -> dict:
     _require_teacher(user)
     await user_service.reset_password(db_session, user_id)
-    return {"message": "密码已重置为 123456"}
+    return {"message": "密码已重置为 123456"} """
 
-
+""" 
 @router.get("/{user_id}/sessions", response_model=Page[SessionOut])
 async def list_user_sessions(
     user_id: UUID,
@@ -95,10 +95,10 @@ async def list_user_sessions(
         total=total,
         page=page,
         page_size=page_size,
-    )
+    ) """
 
 
-@router.post("/students/import", response_model=ImportResult)
+""" @router.post("/students/import", response_model=ImportResult)
 async def import_students(
     file: UploadFile = File(...),
     user: CurrentUser = Depends(get_current_user),
@@ -108,7 +108,7 @@ async def import_students(
     if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
         raise AppError(422, "INVALID_FILE", "请上传 .xlsx 或 .xls 文件")
     content = await file.read()
-    return await user_service.import_students(db_session, content)
+    return await user_service.import_students(db_session, content) """
 
 
 @router.get("/students/template")
