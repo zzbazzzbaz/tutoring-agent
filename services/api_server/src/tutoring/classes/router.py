@@ -113,7 +113,8 @@ async def get_class(
     db_session: AsyncSession = Depends(get_db),
 ) -> ClassOut:
     _require_teacher(user)
-    obj = await class_service.get_class_or_404(db_session, class_id)
+    
+    obj = await class_service.ensure_class_teacher(db_session, class_id, user.id)
     return ClassOut(
         id=obj.id,
         grade=obj.grade,
@@ -217,6 +218,7 @@ async def list_class_students(
     db_session: AsyncSession = Depends(get_db),
 ) -> Page[ClassStudentOut]:
     _require_teacher(user)
+    await class_service.ensure_class_teacher(db_session, class_id, user.id)
     offset = (page - 1) * page_size
     items = await repos.list_class_students(
         db_session, class_id, keyword=keyword, limit=page_size, offset=offset
@@ -250,8 +252,9 @@ async def list_class_sessions(
     db_session: AsyncSession = Depends(get_db),
 ) -> Page[ClassSessionOut]:
     _require_teacher(user)
+    await class_service.ensure_class_teacher(db_session, class_id, user.id)
     offset = (page - 1) * page_size
-    sessions = await repos.list_class_sessions(
+    sessions = await repos.count_class_sessions(
         db_session, class_id, mode=mode, limit=page_size, offset=offset
     )
     total = await repos.count_class_sessions(db_session, class_id, mode=mode)
@@ -285,6 +288,6 @@ async def get_class_stats(
     db_session: AsyncSession = Depends(get_db),
 ) -> ClassStats:
     _require_teacher(user)
-    await class_service.get_class_or_404(db_session, class_id)
+    await class_service.ensure_class_teacher(db_session, class_id, user.id)
     stats = await repos.get_class_stats(db_session, class_id)
     return ClassStats(**stats)
