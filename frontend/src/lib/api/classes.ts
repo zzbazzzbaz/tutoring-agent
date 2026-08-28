@@ -88,4 +88,10 @@ export const classesApi = {
     api.postForm<ImportResult>(`/classes/${classId}/students/import`, formData),
 
   downloadTemplate: () => api.getBlob("/classes/students/template"),
+
+  bulkDeleteStudents: (userIds: string[], reason: string) =>
+    api.post<{ deleted: number }>("/classes/students/bulk-delete", {
+      user_ids: userIds,
+      reason,
+    }),
 };
