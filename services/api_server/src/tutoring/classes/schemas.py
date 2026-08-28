@@ -74,3 +74,8 @@ class AddStudentsRequest(BaseModel):
 # 批量移除班级学生
 class RemoveStudentsRequest(BaseModel):
     user_ids: list[UUID] = Field(min_length=1)
+
+# 批量软删除学生账号
+class SoftDeleteRequest(BaseModel):
+    user_ids: list[UUID] = Field(min_length=1)
+    reason: str = Field(min_length=1, max_length=500)

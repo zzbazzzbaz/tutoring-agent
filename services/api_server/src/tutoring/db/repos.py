@@ -42,9 +42,6 @@ async def list_users_by_role(session: AsyncSession, role: str) -> list[User]:
     return list(result.scalars().all())
 
 
-
-
-
 """ async def delete_user(session: AsyncSession, user_id: UUID) -> bool:
     obj = await session.get(User, user_id)
     if obj:
@@ -66,6 +63,23 @@ async def update_avatar_url(session: AsyncSession, user_id: UUID, avatar_url: st
         update(User).where(User.id == user_id).values(avatar_url=avatar_url)
     )
     await session.commit()
+
+# 软删除用户
+async def soft_delete_users(
+    session: AsyncSession, user_ids: list[UUID], *, reason: str, deleted_by: UUID
+) -> int:
+    stmt = (
+        update(User)
+        .where(User.id.in_(user_ids), User.deleted_at.is_(None))
+        .values(
+            deleted_at=datetime.now(UTC),
+            deleted_reason=reason,
+            deleted_by=deleted_by,
+        )
+    )
+    result = await session.execute(stmt)
+    await session.commit()
+    return result.rowcount
 
 
 # === AuthToken ===

@@ -16,6 +16,7 @@ from tutoring.classes.schemas import (
     ClassStudentOut,
     ClassUpdate,
     RemoveStudentsRequest,
+    SoftDeleteRequest,
     ImportResult,
 )
 from tutoring.users.schemas import UserOut
@@ -311,6 +312,19 @@ async def list_unassigned_students(
         page=page,
         page_size=page_size,
     )
+
+# 批量软删除学生账号
+@router.post("/students/bulk-delete")
+async def bulk_delete_students(
+    body: SoftDeleteRequest,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> dict:
+    _require_teacher(user)
+    count = await repos.soft_delete_users(
+        db_session, body.user_ids, reason=body.reason, deleted_by=user.id
+    )
+    return {"deleted": count}
 
 # ============ 班级对话查看 ============
 
