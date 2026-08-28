@@ -16,7 +16,9 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 async def login(db: AsyncSession, username: str, password: str) -> str:
     user = await repos.get_user_by_username(db, username)
-    if not user or not verify_password(password, user.password_hash):
+    if not user or user.deleted_at is not None:
+        raise AppError(401, "INVALID_CREDENTIALS", "用户名或密码错误")
+    if not verify_password(password, user.password_hash):
         raise AppError(401, "INVALID_CREDENTIALS", "用户名或密码错误")
     token = await repos.create_token(db, user.id)
     return token.token
@@ -29,6 +31,8 @@ async def logout(db: AsyncSession, token: str) -> None:
 async def verify_token(db: AsyncSession, token: str) -> User:
     auth_token = await repos.get_token_with_user(db, token)
     if not auth_token or not auth_token.user:
+        raise AppError(401, "INVALID_TOKEN", "无效或已过期的 token")
+    if auth_token.user.deleted_at is not None:
         raise AppError(401, "INVALID_TOKEN", "无效或已过期的 token")
     return auth_token.user
 

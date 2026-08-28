@@ -24,8 +24,11 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )
+    # 删除时间(软删除)
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
+    # 删除原因
     deleted_reason: str | None = Field(default=None, max_length=500)
+    # 删除人id
     deleted_by: uuid.UUID | None = Field(default=None, sa_column=Column(PG_UUID(as_uuid=True)))
 
     sessions: list["Session"] = Relationship(back_populates="user", cascade_delete=True)
