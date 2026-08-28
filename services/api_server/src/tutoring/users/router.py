@@ -111,7 +111,8 @@ async def import_students(
     return await user_service.import_students(db_session, content) """
 
 
-@router.get("/students/template")
+# 学生管理已并入班级管理，模板下载由 classes 模块提供，此处废弃
+""" @router.get("/students/template")
 async def download_template(
     user: CurrentUser = Depends(get_current_user),
 ) -> StreamingResponse:
@@ -132,7 +133,7 @@ async def download_template(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=students_template.xlsx"},
-    )
+    ) """
 
 
 @router.post("/me/avatar")
