@@ -282,7 +282,7 @@ function AnomalyRow({ student }: { student: AnomalyStudent }) {
     <div className="flex items-center justify-between rounded border bg-red-50/50 px-3 py-2 dark:bg-red-950/20">
       <div className="flex items-center gap-3">
         <Link
-          href={`/teacher/manage/classes/${student.class_id}/students/${student.user_id}`}
+          href={`/teacher/manage/analytics/students/${student.user_id}`}
           className="font-medium hover:underline"
         >
           {student.name}
