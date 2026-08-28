@@ -69,4 +69,7 @@ export const classesApi = {
   },
 
   getStats: (classId: string) => api.get<ClassStats>(`/classes/${classId}/stats`),
+
+  resetPassword: (userId: string) =>
+    api.post<void>(`/classes/students/${userId}/reset-password`),
 };

@@ -101,4 +101,5 @@ async def reset_password(db: AsyncSession, user_id) -> None:
     user = await repos.get_user_by_id(db, user_id)
     if not user:
         raise AppError(404, "USER_NOT_FOUND", f"User {user_id} not found")
-    await repos.update_password(db, user_id, hash_password(DEFAULT_PASSWORD))
+    new_password = user.username[-6:]
+    await repos.update_password(db, user_id, hash_password(new_password))

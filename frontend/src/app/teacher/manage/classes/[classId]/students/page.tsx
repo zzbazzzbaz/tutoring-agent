@@ -67,11 +67,11 @@ export default function ClassStudentsPage() {
     }
   }
   async function handleResetPassword(userId: string, name: string) {
-    if (!confirm(`确定重置「${name}」的密码为 123456 吗？`))
+    if (!confirm(`确定重置「${name}」的密码为学号后六位吗？`))
       return;
     try {
-      await usersApi.resetPassword(userId);
-      toast.success(`已重置 ${name} 的密码为 123456`);
+      await classesApi.resetPassword(userId);
+      toast.success(`已重置 ${name} 的密码为学号后六位`);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "重置失败",

@@ -285,7 +285,7 @@ async def reset_password(
 ) -> dict:
     _require_teacher(user)
     await class_service.reset_password(db_session, user_id)
-    return {"message": "密码已重置为 123456"}
+    return {"message": "密码已重置为学号后六位"}
 
 # ============ 班级对话查看 ============
 
