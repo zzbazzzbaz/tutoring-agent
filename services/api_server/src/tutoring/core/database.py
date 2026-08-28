@@ -32,3 +32,12 @@ async def init_db(engine: AsyncEngine) -> None:
         await conn.execute(
             text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)')
         )
+        await conn.execute(
+            text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ')
+        )
+        await conn.execute(
+            text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS deleted_reason VARCHAR(500)')
+        )
+        await conn.execute(
+            text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS deleted_by UUID')
+        )
