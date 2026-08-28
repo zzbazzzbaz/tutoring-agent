@@ -1,4 +1,4 @@
-// 班级管理-班级详细页面-班级详情
+// 班级管理-超链接:班级详细页面
 "use client";
 
 import { useState, useEffect } from "react";

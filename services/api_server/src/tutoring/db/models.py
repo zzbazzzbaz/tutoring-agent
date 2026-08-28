@@ -20,7 +20,7 @@ class User(SQLModel, table=True):
     password_hash: str = Field(sa_column=Column(Text))
     role: str = Field(max_length=20, index=True)  # student/teacher
     name: str = Field(max_length=100)
-    avatar_url: str | None = Field(default=None, max_length=500)
+    avatar_url: str | None = Field(default=None, max_length=500)#头像地址
     created_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )
@@ -127,7 +127,7 @@ class Project(SQLModel, table=True):
         sa_column=Column(PG_UUID(as_uuid=True), primary_key=True),
     )
     name: str = Field(max_length=200, unique=True, index=True)
-    background_md: str = Field(sa_column=Column(Text))
+    background_md: str = Field(sa_column=Column(Text))#背景信息
     status: str = Field(default="draft", max_length=20, index=True)  # draft/published
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
     created_at: datetime = Field(
@@ -156,7 +156,7 @@ class Session(SQLModel, table=True):
             index=True,
         ),
     )
-    mode: str = Field(max_length=20)  # free/project
+    mode: str = Field(max_length=20)  # 会话模式:自由学习free/项目project
     project_id: uuid.UUID | None = Field(
         default=None,
         sa_column=Column(
