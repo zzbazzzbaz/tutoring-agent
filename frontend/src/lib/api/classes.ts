@@ -8,6 +8,7 @@ import type {
   ClassSession,
   ClassStats,
   ClassStudent,
+  Student,
   Page,
 } from "@/lib/types";
 
@@ -72,4 +73,13 @@ export const classesApi = {
 
   resetPassword: (userId: string) =>
     api.post<void>(`/classes/students/${userId}/reset-password`),
+
+  listUnassignedStudents: (page = 1, pageSize = 100, keyword?: string) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+    if (keyword) params.set("keyword", keyword);
+    return api.get<Page<Student>>(`/classes/students/unassigned?${params.toString()}`);
+  },
 };

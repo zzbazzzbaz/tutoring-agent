@@ -42,24 +42,7 @@ async def list_users_by_role(session: AsyncSession, role: str) -> list[User]:
     return list(result.scalars().all())
 
 
-""" async def count_users_by_role(session: AsyncSession, role: str) -> int:
-    stmt = select(func.count()).select_from(User).where(User.role == role)
-    result = await session.execute(stmt)
-    return int(result.scalar_one()) """
 
-
-""" async def list_users_by_role_paginated(
-    session: AsyncSession, role: str, *, limit: int, offset: int
-) -> list[User]:
-    stmt = (
-        select(User)
-        .where(User.role == role)
-        .order_by(User.created_at.desc())
-        .limit(limit)
-        .offset(offset)
-    )
-    result = await session.execute(stmt)
-    return list(result.scalars().all()) """
 
 
 """ async def delete_user(session: AsyncSession, user_id: UUID) -> bool:
@@ -340,6 +323,37 @@ async def delete_class(session: AsyncSession, class_id: UUID) -> None:
     await session.commit()
 
 # === Student ===
+# 统计未分配班级的学生数量
+async def count_unassigned_students(session: AsyncSession, keyword: str | None = None) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(User)
+        .outerjoin(ClassStudent, ClassStudent.user_id == User.id)
+        .where(User.role == "student", ClassStudent.user_id.is_(None))
+    )
+    if keyword:
+        stmt = stmt.where(
+            (User.name.ilike(f"%{keyword}%")) | (User.username.ilike(f"%{keyword}%"))
+        )
+    result = await session.execute(stmt)
+    return int(result.scalar_one())
+
+# 查询未分配班级的学生列表（分页）
+async def list_unassigned_students(
+    session: AsyncSession, *, limit: int, offset: int, keyword: str | None = None
+) -> list[User]:
+    stmt = (
+        select(User)
+        .outerjoin(ClassStudent, ClassStudent.user_id == User.id)
+        .where(User.role == "student", ClassStudent.user_id.is_(None))
+    )
+    if keyword:
+        stmt = stmt.where(
+            (User.name.ilike(f"%{keyword}%")) | (User.username.ilike(f"%{keyword}%"))
+        )
+    stmt = stmt.order_by(User.created_at.desc()).limit(limit).offset(offset)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
 
 # 手动新增班级学生
 async def add_students_to_class(

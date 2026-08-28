@@ -18,6 +18,7 @@ from tutoring.classes.schemas import (
     RemoveStudentsRequest,
     ImportResult,
 )
+from tutoring.users.schemas import UserOut
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.core.schemas import Page
@@ -286,6 +287,28 @@ async def reset_password(
     _require_teacher(user)
     await class_service.reset_password(db_session, user_id)
     return {"message": "密码已重置为学号后六位"}
+
+# 获取未分配班级的学生列表
+@router.get("/students/unassigned", response_model=Page[UserOut])
+async def list_unassigned_students(
+    keyword: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db),
+) -> Page[UserOut]:
+    _require_teacher(user)
+    offset = (page - 1) * page_size
+    items = await repos.list_unassigned_students(
+        db_session, limit=page_size, offset=offset, keyword=keyword
+    )
+    total = await repos.count_unassigned_students(db_session, keyword=keyword)
+    return Page(
+        items=[UserOut.model_validate(u) for u in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 # ============ 班级对话查看 ============
 

@@ -220,7 +220,7 @@ function AddStudentsDialog({ open, onOpenChange, classId, onAdded }: AddStudents
 
   useEffect(() => {
     if (open) {
-      usersApi.listStudents(1, 100).then((data) => {
+      classesApi.listUnassignedStudents(1, 100).then((data) => {
         setAllStudents(data.items);
       }).catch(console.error);
     }

@@ -65,15 +65,6 @@ export interface ProjectUpdate {
   status?: ProjectStatus;
 }
 
-export interface Student {
-  id: string;
-  username: string;
-  role: string;
-  name: string;
-  avatar_url?: string | null;
-  created_at: string;
-}
-
 export interface ImportResult {
   total: number;
   created: number;
@@ -194,6 +185,15 @@ export interface ClassStats {
 
 export interface AddStudentsRequest {
   user_ids: string[];
+}
+
+export interface Student {
+  id: string;
+  username: string;
+  role: string;
+  name: string;
+  avatar_url?: string | null;
+  created_at: string;
 }
 
 // === 统计分析-->学情总览 Analytics ===
