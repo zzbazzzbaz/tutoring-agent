@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Loader2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Moon, Sun, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useTheme } from "next-themes";
 import { usersApi } from "@/lib/api/users";
 import { avatarUrl } from "@/lib/utils";
 import type { User } from "@/lib/types";
@@ -26,6 +29,12 @@ export function ProfileDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { user, updateUser } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const isDark = mounted && theme === "dark";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -123,6 +132,29 @@ export function ProfileDialog({
             </p>
           )}
         </div>
+
+        {mounted && (
+          <div className="flex items-center justify-between border-t border-ink/8 px-1 pt-4">
+            <Label
+              htmlFor="theme-switch"
+              className="flex cursor-pointer items-center gap-2 text-sm text-ink/70"
+            >
+              {isDark ? (
+                <Moon className="size-4" />
+              ) : (
+                <Sun className="size-4" />
+              )}
+              深色模式
+            </Label>
+            <Switch
+              id="theme-switch"
+              checked={isDark}
+              onCheckedChange={(checked) =>
+                setTheme(checked ? "dark" : "light")
+              }
+            />
+          </div>
+        )}
 
         <DialogFooter>
           <Button

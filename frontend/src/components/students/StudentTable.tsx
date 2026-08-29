@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { StudentImportDialog } from "./StudentImportDialog";
 import { toast } from "sonner";
+import { SkeletonTable } from "@/components/ui/skeleton-loaders";
 import type { Student } from "@/lib/types";
 
 export function StudentTable() {
@@ -101,7 +102,12 @@ export function StudentTable() {
             <Download className="mr-2 size-4" />
             下载模板
           </Button>
-          <Button onClick={() => setImportOpen(true)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 shadow-sm hover:from-[#0b3d31] hover:to-[#064e3b]"
+            onClick={() => setImportOpen(true)}
+          >
             导入学生
           </Button>
         </div>
@@ -110,14 +116,14 @@ export function StudentTable() {
         placeholder="搜索学生姓名或学号..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 max-w-sm"
+        className="mb-4 max-w-sm !border-ink/25"
       />
       {loading ? (
-        <p>加载中...</p>
+        <SkeletonTable rows={5} columns={["2fr", "1fr", "1fr", "1fr"]} />
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-md border border-ink/25 bg-paper-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-paper">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">学号</th>
                 <th className="px-4 py-2 text-left font-medium">姓名</th>

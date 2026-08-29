@@ -145,6 +145,8 @@ Next.js App Router 应用，按角色区分路由（`/student/*` · `/teacher/*`
 
 ## 启动命令
 
+### macOS
+
 cd "/Volumes/ExternalStorageA/project/2026.7/教学Agent/deploy"
 docker compose -f docker-compose.yml up -d
 
@@ -156,6 +158,33 @@ uv run langgraph dev --host 127.0.0.1 --port 2024
 
 cd "/Volumes/ExternalStorageA/project/2026.7/教学Agent/frontend"
 npm run dev
+
+### Windows
+
+以项目位于 `D:\参考代码\tutoring-agent` 为例，在 PowerShell 或 CMD 中**分四个终端**依次执行（每个命令都要新开一个终端）：
+
+# 1. 启动基础设施 (PostgreSQL / Neo4j / LightRAG)
+cd D:\参考代码\tutoring-agent\deploy
+docker compose -f docker-compose.yml up -d
+
+# 2. 启动 API Server (端口 8000)
+cd D:\参考代码\tutoring-agent\services\api_server
+uv run uvicorn tutoring.app:app --host 127.0.0.1 --port 8000 --reload
+
+# 3. 启动 Agent Server (端口 2024)
+cd D:\参考代码\tutoring-agent\services\agent_server
+uv run langgraph dev --host 127.0.0.1 --port 2024
+
+# 4. 启动前端 (Next.js)
+cd D:\参考代码\tutoring-agent\frontend
+npm run dev
+
+#### 注意事项
+
+- 环境变量文件已就绪（`services/api_server/.env`、`services/agent_server/.env`、`frontend/.env.local`），无需手动配置。
+- 启动完成后访问 http://localhost:3000 登录。
+- **不要在多个终端/IDE 里同时启动前端**：多个 `next dev` 共用同一个 `.next` 目录会互相污染，导致页面能打开但 CSS/JS 资源 404、登录失效。若遇到此问题，请结束所有前端进程并删除 `frontend\.next` 目录后重新启动。
+- 若本机配置了 `uv`，直接使用 `uv run`；否则先 `pip install uv` 或改用 `python -m uvicorn ...`。
 
 ## TODO
 

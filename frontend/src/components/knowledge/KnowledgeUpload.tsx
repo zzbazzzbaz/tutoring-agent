@@ -33,11 +33,18 @@ export function KnowledgeUpload({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="rounded-xl border bg-background p-4 shadow-sm">
+    <div className="bg-paper-card rounded-xl border border-ink/25 p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-medium">上传文件</h2>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Input ref={inputRef} type="file" />
-        <Button onClick={handleUpload} disabled={loading}>
+        <Input
+          ref={inputRef}
+          type="file"
+        />
+        <Button
+          onClick={handleUpload}
+          disabled={loading}
+          className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] !text-emerald-50 hover:from-[#0b3d31] hover:to-[#064e3b]"
+        >
           <Upload className="mr-2 size-4" />
           {loading ? "上传中..." : "上传文件"}
         </Button>

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Session, Student } from "@/lib/types";
+import { SkeletonTable } from "@/components/ui/skeleton-loaders";
 
 export function StudentSessionTable({
   studentId,
@@ -42,7 +43,12 @@ export function StudentSessionTable({
       .finally(() => setLoading(false));
   }, [studentId, page]);
 
-  if (loading) return <div className="p-4">加载中...</div>;
+  if (loading)
+    return (
+      <div className="p-4">
+        <SkeletonTable rows={4} columns={["2fr", "1fr", "1fr"]} />
+      </div>
+    );
 
   return (
     <div className="p-4">
@@ -64,9 +70,9 @@ export function StudentSessionTable({
       {sessions.length === 0 ? (
         <p className="text-muted-foreground">暂无会话记录</p>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-md border border-ink/25 bg-paper-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-paper">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">
                   会话标题
@@ -87,7 +93,7 @@ export function StudentSessionTable({
             </thead>
             <tbody>
               {sessions.map((session) => (
-                <tr key={session.id} className="border-t">
+                <tr key={session.id} className="border-t transition-[background-color] duration-150 hover:bg-ink/[0.03]">
                   <td className="px-4 py-2 font-medium">
                     {session.title ||
                       (session.mode === "free"

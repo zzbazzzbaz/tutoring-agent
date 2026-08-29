@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   FolderOpen,
   GraduationCap,
+  Loader2,
   LogOut,
   MoreHorizontal,
   MessageCircle,
@@ -17,6 +18,14 @@ import {
 import { useQueryState } from "nuqs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,15 +44,13 @@ import { toast } from "sonner";
 function sessionTitle(session: Session) {
   return (
     session.title ||
-    (session.mode === "free"
-      ? "自由学习"
-      : session.project_name || "项目模式")
+    (session.mode === "free" ? "自由学习" : session.project_name || "项目模式")
   );
 }
 
 export function ChatWorkspaceSidebar({
   role,
-  onNewSession,
+  onNewSession: _onNewSession,
   onCollapse,
   mobileOpen = false,
   onMobileOpenChange,
@@ -55,10 +62,17 @@ export function ChatWorkspaceSidebar({
   onMobileOpenChange?: (open: boolean) => void;
 }) {
   const { user, logout } = useAuth();
-  const { sessions, sessionsLoading, refreshSessions, updateSession, deleteSession } =
-    useSessions();
+  const {
+    sessions,
+    sessionsLoading,
+    refreshSessions,
+    updateSession,
+    deleteSession,
+  } = useSessions();
   const [sessionId, setSessionId] = useQueryState("session");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState<Session | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     refreshSessions();
@@ -81,33 +95,46 @@ export function ChatWorkspaceSidebar({
     }
   }
 
-  async function handleDeleteSession(session: Session) {
-    if (!confirm(`确定删除会话「${sessionTitle(session)}」吗？`)) return;
+  async function handleDeleteSession() {
+    if (!confirmDeleteSession) return;
+    setDeleting(true);
     try {
-      await deleteSession(session.id);
-      if (sessionId === session.id) setSessionId(null);
+      await deleteSession(confirmDeleteSession.id);
+      if (sessionId === confirmDeleteSession.id) setSessionId(null);
       toast.success("会话已删除");
+      setConfirmDeleteSession(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "删除失败");
+    } finally {
+      setDeleting(false);
     }
   }
 
+  // 原“新建对话”功能：弹出 NewSessionModal 让用户选择会话类型（由父组件 onNewSession 触发）。
+  // 现已被注释（下方 handleNewSession 不再调用 _onNewSession），保留 prop 以便后续恢复：
+  //   onClick={() => _onNewSession()}
+  // 当前改为与顶部“基础心理学教学 Agent”按钮行为一致：清空 session 参数，回到空白起始页 /chat。
+  const handleNewSession = () => {
+    setSessionId(null);
+    onMobileOpenChange?.(false);
+  };
+
   const content = (
-    <div className="flex h-full w-full flex-col bg-white">
-      <div className="px-4 pb-3 pt-4">
+    <div className="flex h-full w-full flex-col bg-gradient-to-b from-[#f7f4ec] to-[#f0ede4] dark:from-[#0a1812] dark:to-[#0e2118]">
+      <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between gap-3">
           <button
-            className="flex min-w-0 items-center gap-2 rounded-lg text-left transition-colors hover:text-primary"
+            className="hover:text-primary flex min-w-0 cursor-pointer items-center gap-2 rounded-lg text-left transition-colors"
             onClick={() => {
               setSessionId(null);
               onMobileOpenChange?.(false);
             }}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <span className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] text-emerald-50 flex size-8 shrink-0 items-center justify-center rounded-xl shadow-sm shadow-emerald-900/20">
               <GraduationCap className="size-4" />
             </span>
-            <span className="truncate text-sm font-semibold">
-              心理学教学Agent
+            <span className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] truncate text-sm font-semibold text-ink">
+              基础心理学教学Agent
             </span>
           </button>
 
@@ -115,7 +142,7 @@ export function ChatWorkspaceSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground size-8 cursor-pointer rounded-lg"
               onClick={() => {
                 onCollapse?.();
                 onMobileOpenChange?.(false);
@@ -129,32 +156,34 @@ export function ChatWorkspaceSidebar({
 
         <div className="mt-5 space-y-1">
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
-            onClick={onNewSession}
+            className="text-ink flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-ink/[0.05]"
+            onClick={handleNewSession}
           >
-            <MessageCircle className="size-4 text-muted-foreground" />
+            <MessageCircle className="text-ink/35 size-4" />
             新建对话
           </button>
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            className="text-ink flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-ink/[0.05]"
             onClick={() => setProfileOpen(true)}
           >
-            <UserCircle className="size-4 text-muted-foreground" />
+            <UserCircle className="text-ink/35 size-4" />
             个人中心
           </button>
           <Button
             asChild
             variant="ghost"
-            className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal"
+            className="flex h-auto w-full cursor-pointer justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal text-ink hover:bg-ink/[0.05]"
           >
             <Link
-              href={sessionId ? `${manageHref}?session=${sessionId}` : manageHref}
+              href={
+                sessionId ? `${manageHref}?session=${sessionId}` : manageHref
+              }
               onClick={() => onMobileOpenChange?.(false)}
             >
               {role === "teacher" ? (
-                <Settings className="size-4 text-muted-foreground" />
+                <Settings className="text-ink/35 size-4" />
               ) : (
-                <FolderOpen className="size-4 text-muted-foreground" />
+                <FolderOpen className="text-ink/35 size-4" />
               )}
               {manageLabel}
             </Link>
@@ -163,17 +192,20 @@ export function ChatWorkspaceSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        <p className="px-3 pb-2 pt-3 text-xs font-medium text-muted-foreground">
+        <p className="text-ink/35 px-3 pt-3 pb-2 text-xs font-medium">
           历史对话
         </p>
         {sessionsLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="h-10 w-full rounded-xl" />
+              <Skeleton
+                key={index}
+                className="h-10 w-full rounded-xl"
+              />
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <p className="p-3 text-sm text-muted-foreground">暂无历史对话</p>
+          <p className="text-muted-foreground p-3 text-sm">暂无历史对话</p>
         ) : (
           <div className="space-y-1">
             {sessions.map((session) => {
@@ -183,18 +215,18 @@ export function ChatWorkspaceSidebar({
                 <div
                   key={session.id}
                   className={cn(
-                    "group flex items-center rounded-xl",
-                    active && "bg-muted font-medium text-foreground shadow-sm",
+                    "group flex items-center rounded-xl hover:bg-ink/[0.04]",
+                    active && "text-ink bg-paper-card font-medium shadow-sm ring-1 ring-ink/8",
                   )}
                 >
                   <button
-                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm"
+                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-sm"
                     onClick={() => {
                       setSessionId(session.id);
                       onMobileOpenChange?.(false);
                     }}
                   >
-                    <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
+                    <MessageCircle className="text-ink/25 size-4 shrink-0" />
                     <span className="block min-w-0 truncate">
                       {sessionTitle(session)}
                     </span>
@@ -204,20 +236,22 @@ export function ChatWorkspaceSidebar({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="mr-1 size-7 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
+                        className="mr-1 size-7 shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleRenameSession(session)}>
+                      <DropdownMenuItem
+                        onClick={() => handleRenameSession(session)}
+                      >
                         <Pencil className="size-4" />
                         重命名
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => handleDeleteSession(session)}
+                        onClick={() => setConfirmDeleteSession(session)}
                       >
                         <Trash2 className="size-4" />
                         删除
@@ -230,23 +264,26 @@ export function ChatWorkspaceSidebar({
           </div>
         )}
       </div>
-      <div className="border-t px-3 py-3">
+      <div className="border-t border-ink/8 px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <button
-            className="flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors hover:text-primary"
+            className="hover:text-primary flex min-w-0 cursor-pointer items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors"
             onClick={() => setProfileOpen(true)}
           >
             <Avatar className="size-8">
-              <AvatarImage src={avatarUrl(user?.avatar_url)} alt={user?.name} />
+              <AvatarImage
+                src={avatarUrl(user?.avatar_url)}
+                alt={user?.name}
+              />
               <AvatarFallback className="text-xs">
                 {user?.name?.charAt(0)}
               </AvatarFallback>
             </Avatar>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-medium">
+              <span className="block truncate text-sm font-medium text-ink">
                 {user?.name}
               </span>
-              <span className="block truncate text-xs text-muted-foreground">
+              <span className="text-ink/40 block truncate text-xs">
                 {user?.username}
               </span>
             </span>
@@ -255,7 +292,7 @@ export function ChatWorkspaceSidebar({
             variant="ghost"
             size="icon"
             onClick={logout}
-            className="size-8 shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive size-8 shrink-0 cursor-pointer rounded-lg"
             title="退出登录"
           >
             <LogOut className="size-4" />
@@ -267,15 +304,62 @@ export function ChatWorkspaceSidebar({
 
   return (
     <>
-      <aside className="hidden h-screen w-[280px] shrink-0 border-r bg-background lg:block">
+      <aside className="bg-paper-card/80 backdrop-blur-sm hidden h-screen w-[280px] shrink-0 border-r border-ink/8 lg:block">
         {content}
       </aside>
-      <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="left" className="w-[280px] p-0 lg:hidden">
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={onMobileOpenChange}
+      >
+        <SheetContent
+          side="left"
+          className="w-[280px] p-0 lg:hidden"
+        >
           {content}
         </SheetContent>
       </Sheet>
-      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+      <ProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+      />
+      <Dialog
+        open={confirmDeleteSession !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setConfirmDeleteSession(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>删除会话</DialogTitle>
+            <DialogDescription>
+              确定删除「{confirmDeleteSession ? sessionTitle(confirmDeleteSession) : ""}」吗？删除后不可恢复。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDeleteSession(null)}
+              disabled={deleting}
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSession}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  删除中...
+                </>
+              ) : (
+                "删除"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

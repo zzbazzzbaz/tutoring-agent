@@ -11,6 +11,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SkeletonCard } from "@/components/ui/skeleton-loaders";
 import type { Project } from "@/lib/types";
 
 export function ProjectList({
@@ -37,7 +38,12 @@ export function ProjectList({
       .finally(() => setLoading(false));
   }, [publishedOnly, page]);
 
-  if (loading) return <div className="p-4">加载中...</div>;
+  if (loading)
+    return (
+      <div className="p-4">
+        <SkeletonCard lines={3} />
+      </div>
+    );
 
   if (projects.length === 0) {
     return (

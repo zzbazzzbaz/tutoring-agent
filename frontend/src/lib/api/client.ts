@@ -21,7 +21,9 @@ function clearAuth() {
   localStorage.removeItem(STORAGE_KEYS.USER);
   document.cookie = `${COOKIE_KEYS.AUTH}=; path=/; max-age=0`;
   document.cookie = `${COOKIE_KEYS.ROLE}=; path=/; max-age=0`;
-  window.location.href = "/login";
+  // [调试模式] 路由拦截已临时禁用，见 docs/route-guard-debug.md
+  // 恢复方法：取消下行注释
+  // window.location.href = "/login";
 }
 
 export async function apiFetch<T>(
@@ -64,6 +66,10 @@ export async function apiFetch<T>(
       // response body is not JSON
     }
     throw new ApiError(code, message, res.status);
+  }
+
+  if (res.status === 204 || res.status === 205) {
+    return undefined as T;
   }
 
   if (res.headers.get("content-type")?.includes("application/json")) {

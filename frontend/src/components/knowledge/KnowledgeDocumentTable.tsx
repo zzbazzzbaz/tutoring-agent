@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/common/Pagination";
 import { lightragApi } from "@/lib/api/lightrag";
+import { SkeletonTable } from "@/components/ui/skeleton-loaders";
 import type { LightRAGDocument, LightRAGDocumentStatus } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -76,7 +77,7 @@ export function KnowledgeDocumentTable({
   }
 
   return (
-    <div className="rounded-md border bg-white p-4">
+    <div className="rounded-md border border-ink/25 bg-paper-card p-4">
       <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <h2 className="text-base font-semibold">文件列表</h2>
         <select
@@ -96,13 +97,13 @@ export function KnowledgeDocumentTable({
         </select>
       </div>
       {loading ? (
-        <p className="text-sm text-muted-foreground">加载中...</p>
+        <SkeletonTable rows={3} columns={["2fr", "1fr", "1fr"]} />
       ) : documents.length === 0 ? (
         <p className="text-sm text-muted-foreground">暂无文件</p>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-md">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-paper">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">文件</th>
                 <th className="px-4 py-2 text-left font-medium">状态</th>
@@ -112,7 +113,7 @@ export function KnowledgeDocumentTable({
             </thead>
             <tbody>
               {documents.map((doc) => (
-                <tr key={doc.id} className="border-t">
+                <tr key={doc.id} className="border-t transition-[background-color] duration-150 hover:bg-ink/[0.03]">
                   <td className="px-4 py-2">
                     <div className="font-medium">{fileName(doc)}</div>
                     {doc.error_msg && (

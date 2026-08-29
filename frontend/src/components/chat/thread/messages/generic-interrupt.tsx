@@ -58,10 +58,10 @@ function QuizInterruptView({ interrupt }: { interrupt: QuizInterrupt }) {
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <p className="text-xs font-medium text-gray-500">{interrupt.topic}</p>
-        <h3 className="mt-1 font-medium text-gray-900">{interrupt.stem}</h3>
+    <div className="overflow-hidden rounded-lg border border-ink/10 bg-paper-card">
+      <div className="border-b border-ink/10 bg-paper px-4 py-3">
+        <p className="text-xs font-medium text-muted-foreground">{interrupt.topic}</p>
+        <h3 className="mt-1 font-medium text-ink">{interrupt.stem}</h3>
       </div>
       <div className="space-y-3 p-4">
         {interrupt.q_type === "short" ? (
@@ -80,8 +80,8 @@ function QuizInterruptView({ interrupt }: { interrupt: QuizInterrupt }) {
                 className={cn(
                   "rounded-md border px-3 py-2 text-left text-sm transition-colors",
                   selected.includes(option)
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-200 hover:bg-gray-50",
+                    ? "border-[#0b3d31] bg-[#0b3d31] text-emerald-50"
+                    : "border-ink/10 hover:bg-paper",
                 )}
                 onClick={() => chooseOption(option)}
               >
@@ -97,14 +97,14 @@ function QuizInterruptView({ interrupt }: { interrupt: QuizInterrupt }) {
             disabled={thread.isLoading}
             onClick={() => resume("skip")}
           >
-            Skip
+            跳过
           </Button>
           <Button
             type="button"
             disabled={!answer || thread.isLoading}
             onClick={() => resume("answer")}
           >
-            Submit answer
+            提交答案
           </Button>
         </div>
       </div>
@@ -129,7 +129,7 @@ function isUrl(value: any): boolean {
 function renderInterruptStateItem(value: any): React.ReactNode {
   if (isComplexValue(value)) {
     return (
-      <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
+      <code className="rounded bg-paper px-2 py-1 font-mono text-sm">
         {JSON.stringify(value, null, 2)}
       </code>
     );
@@ -139,7 +139,7 @@ function renderInterruptStateItem(value: any): React.ReactNode {
         href={value}
         target="_blank"
         rel="noopener noreferrer"
-        className="break-all text-blue-600 underline hover:text-blue-800"
+        className="break-all text-brand underline hover:text-brand-dark"
       >
         {value}
       </a>
@@ -206,17 +206,17 @@ export function GenericInterruptView({
   const displayEntries = processEntries();
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+    <div className="overflow-hidden rounded-lg border border-ink/10">
+      <div className="border-b border-ink/10 bg-paper px-4 py-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium text-gray-900">Human Interrupt</h3>
+          <h3 className="font-medium text-ink">Human Interrupt</h3>
         </div>
       </div>
       <motion.div
-        className="min-w-full bg-gray-100"
+        className="min-w-full overflow-hidden bg-paper"
         initial={false}
         animate={{ height: "auto" }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       >
         <div className="p-3">
           <AnimatePresence
@@ -242,10 +242,10 @@ export function GenericInterruptView({
                       : (item as [string, any]);
                     return (
                       <tr key={argIdx}>
-                        <td className="px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-900">
+                        <td className="px-4 py-2 text-sm font-medium whitespace-nowrap text-ink">
                           {key}
                         </td>
-                        <td className="px-4 py-2 text-sm text-gray-500">
+                        <td className="px-4 py-2 text-sm text-muted-foreground">
                           {renderInterruptStateItem(value)}
                         </td>
                       </tr>
@@ -260,7 +260,7 @@ export function GenericInterruptView({
           (Array.isArray(interrupt) && interrupt.length > 5)) && (
           <motion.button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
+            className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-ink/10 py-2 text-ink/50 transition-[background-color,color] duration-200 ease-in-out hover:bg-paper/80 hover:text-ink/80"
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

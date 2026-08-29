@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { SkeletonCard } from "@/components/ui/skeleton-loaders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,7 +64,7 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
     }
   }
 
-  if (loading) return <div className="p-4">加载中...</div>;
+  if (loading) return <SkeletonCard lines={6} className="m-4" />;
 
   return (
     <div className="h-full overflow-y-auto p-4">
