@@ -77,7 +77,7 @@ export function KnowledgeDocumentTable({
   }
 
   return (
-    <div className="rounded-md border border-ink/25 bg-[#fbf9f3] p-4">
+    <div className="rounded-md border border-ink/25 bg-paper-card p-4">
       <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <h2 className="text-base font-semibold">文件列表</h2>
         <select

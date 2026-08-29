@@ -16,8 +16,8 @@ export function KnowledgeBasePage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#efece3]">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 bg-[#fbf9f3] px-4">
+    <div className="flex h-full flex-col overflow-hidden bg-[#efece3] dark:bg-[#091611]">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 bg-paper-card px-4">
         <h1 className="text-base font-semibold">知识库</h1>
         <div className="flex rounded-lg bg-paper p-1">
           {[
@@ -29,7 +29,7 @@ export function KnowledgeBasePage() {
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm transition-colors",
                 tab === value
-                  ? "bg-[#fbf9f3] font-medium shadow-sm"
+                  ? "bg-paper-card font-medium shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
               onClick={() => setTab(value as "documents" | "graph")}

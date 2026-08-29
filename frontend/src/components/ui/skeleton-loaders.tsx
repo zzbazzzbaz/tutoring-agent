@@ -15,7 +15,7 @@ export function SkeletonTable({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-md border border-ink/10 bg-[#fbf9f3] ${className ?? ""}`}
+      className={`overflow-hidden rounded-md border border-ink/10 bg-paper-card ${className ?? ""}`}
     >
       <table className="w-full text-sm">
         <thead className="bg-paper">
@@ -63,7 +63,7 @@ export function SkeletonCard({
 }) {
   return (
     <div
-      className={`rounded-xl border border-ink/10 bg-[#fbf9f3] p-6 ${className ?? ""}`}
+      className={`rounded-xl border border-ink/10 bg-paper-card p-6 ${className ?? ""}`}
     >
       <Skeleton className="mb-4 h-6 w-32 bg-ink/5" />
       <div className="space-y-3">

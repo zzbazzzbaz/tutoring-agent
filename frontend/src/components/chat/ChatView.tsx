@@ -51,7 +51,7 @@ function ChatShell({
   }, [projectParam, setProjectParam]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#efece3]">
+    <div className="flex h-screen overflow-hidden bg-[#efece3] dark:bg-[#091611]">
       {/* 桌面端侧边栏：始终挂载，translateX 滑入滑出 */}
       {!readOnly && (
         <motion.aside
@@ -87,7 +87,7 @@ function ChatShell({
             <Button
               variant="ghost"
               size="icon"
-              className="size-9 rounded-xl bg-[#fbf9f3]/90 shadow-sm backdrop-blur-sm border border-ink/8 hover:bg-paper"
+              className="size-9 rounded-xl bg-paper-card/90 shadow-sm backdrop-blur-sm border border-ink/8 hover:bg-paper"
               onClick={() => setSidebarCollapsed(false)}
               title="展开侧边栏"
             >

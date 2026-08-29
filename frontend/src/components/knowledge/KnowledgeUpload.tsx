@@ -33,7 +33,7 @@ export function KnowledgeUpload({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="bg-[#fbf9f3] rounded-xl border border-ink/25 p-4 shadow-sm">
+    <div className="bg-paper-card rounded-xl border border-ink/25 p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-medium">上传文件</h2>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Input

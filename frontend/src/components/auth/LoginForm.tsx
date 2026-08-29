@@ -207,7 +207,7 @@ function FocusableInput({
       className={cn(
         "flex h-11 w-full rounded-lg border bg-paper/50 px-3.5 py-2.5 text-base text-ink shadow-sm transition-[background-color,border-color,box-shadow] duration-200 ease-out file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-ink/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         focused
-          ? "border-emerald-600/30 bg-white ring-[3px] ring-emerald-600/10"
+          ? "border-emerald-600/30 bg-white ring-[3px] ring-emerald-600/10 dark:bg-paper-card"
           : error && show
             ? "border-destructive/50 ring-[3px] ring-destructive/8"
             : "border-ink/10 hover:border-ink/20",
@@ -242,7 +242,7 @@ function FocusablePasswordInput({
       className={cn(
         "h-11 bg-paper/50 text-ink transition-[background-color,border-color,box-shadow] duration-200 ease-out",
         focused
-          ? "border-emerald-600/30 bg-white !ring-[3px] !ring-emerald-600/10"
+          ? "border-emerald-600/30 bg-white !ring-[3px] !ring-emerald-600/10 dark:bg-paper-card"
           : error && show
             ? "!border-destructive/50 !ring-[3px] !ring-destructive/8"
             : "border-ink/10 hover:border-ink/20",
@@ -650,7 +650,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-dvh overflow-x-clip bg-[#efece3]">
+    <div className="flex min-h-dvh overflow-x-clip bg-[#efece3] dark:bg-[#091611]">
       {/* ═══════ 左「墨卷」— 品牌与氛围 ═══════ */}
       <InkBrand />
 
@@ -688,7 +688,7 @@ export function LoginForm() {
           {/* ── 「素笺」信笺卡片 ── */}
           <motion.div
             variants={fadeUp}
-            className="relative rounded-2xl border border-ink/8 bg-[#fbf9f3] px-8 py-9 shadow-[0_2px_6px_rgba(6,39,31,0.06),0_18px_44px_-18px_rgba(6,39,31,0.28)]"
+            className="relative rounded-2xl border border-ink/8 bg-paper-card px-8 py-9 shadow-[0_2px_6px_rgba(6,39,31,0.06),0_18px_44px_-18px_rgba(6,39,31,0.28)]"
           >
             {/* 笺头细线 */}
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-700/30 to-transparent" />

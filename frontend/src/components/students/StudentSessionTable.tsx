@@ -65,7 +65,7 @@ export function StudentSessionTable({
       {sessions.length === 0 ? (
         <p className="text-muted-foreground">暂无会话记录</p>
       ) : (
-        <div className="overflow-hidden rounded-md border border-ink/25 bg-[#fbf9f3]">
+        <div className="overflow-hidden rounded-md border border-ink/25 bg-paper-card">
           <table className="w-full text-sm">
             <thead className="bg-paper">
               <tr>

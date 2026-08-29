@@ -105,7 +105,7 @@ export function ChatWorkspaceSidebar({
   };
 
   const content = (
-    <div className="flex h-full w-full flex-col bg-gradient-to-b from-[#f7f4ec] to-[#f0ede4]">
+    <div className="flex h-full w-full flex-col bg-gradient-to-b from-[#f7f4ec] to-[#f0ede4] dark:from-[#0a1812] dark:to-[#0e2118]">
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between gap-3">
           <button
@@ -201,7 +201,7 @@ export function ChatWorkspaceSidebar({
                   key={session.id}
                   className={cn(
                     "group flex items-center rounded-xl hover:bg-ink/[0.04]",
-                    active && "text-ink bg-[#fbf9f3] font-medium shadow-sm ring-1 ring-ink/8",
+                    active && "text-ink bg-paper-card font-medium shadow-sm ring-1 ring-ink/8",
                   )}
                 >
                   <button
@@ -289,7 +289,7 @@ export function ChatWorkspaceSidebar({
 
   return (
     <>
-      <aside className="bg-[#fbf9f3]/80 backdrop-blur-sm hidden h-screen w-[280px] shrink-0 border-r border-ink/8 lg:block">
+      <aside className="bg-paper-card/80 backdrop-blur-sm hidden h-screen w-[280px] shrink-0 border-r border-ink/8 lg:block">
         {content}
       </aside>
       <Sheet

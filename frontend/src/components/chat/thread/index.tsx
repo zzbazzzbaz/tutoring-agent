@@ -290,7 +290,7 @@ export function Thread({
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#efece3]">
+    <div className="flex h-screen w-full overflow-hidden bg-[#efece3] dark:bg-[#091611]">
       <div
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-[grid-template-columns] duration-500",
@@ -379,7 +379,7 @@ export function Thread({
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-[#efece3] via-[#efece3]/95 to-[#efece3]/0 backdrop-blur-sm">
+                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-[#efece3] via-[#efece3]/95 to-[#efece3]/0 backdrop-blur-sm dark:from-[#0a1410] dark:via-[#0a1410]/95 dark:to-[#0a1410]/0">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
                       <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-2xl font-semibold tracking-[0.04em] text-ink">
@@ -409,7 +409,7 @@ export function Thread({
                               {active && (
                                 <motion.span
                                   layoutId="chat-mode-tab"
-                                  className="absolute inset-0 rounded-full bg-[#fbf9f3] shadow-sm ring-1 ring-ink/8"
+                                  className="absolute inset-0 rounded-full bg-paper-card shadow-sm ring-1 ring-ink/8"
                                   transition={{
                                     type: "spring",
                                     stiffness: 300,
@@ -460,7 +460,7 @@ export function Thread({
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(6,39,31,0.06),0_8px_24px_-8px_rgba(6,39,31,0.12)] transition-[border-color] bg-[#fbf9f3] border border-ink/8",
+                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(6,39,31,0.06),0_8px_24px_-8px_rgba(6,39,31,0.12)] transition-[border-color] bg-paper-card border border-ink/8",
                       dragOver
                         ? "border-brand/40 border-2 border-dotted"
                         : "",
@@ -537,7 +537,7 @@ export function Thread({
                           <Button
                             key="stop"
                             onClick={() => stream.stop()}
-                            className="ml-auto bg-[#fbf9f3] border border-ink/10 text-ink/60 hover:bg-paper hover:text-ink/80 shadow-sm"
+                            className="ml-auto bg-paper-card border border-ink/10 text-ink/60 hover:bg-paper hover:text-ink/80 shadow-sm"
                           >
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             取消
@@ -562,7 +562,7 @@ export function Thread({
             />
           </StickToBottom>
         </motion.div>
-        <div className="relative flex flex-col border-l border-ink/8 bg-[#fbf9f3]/60 backdrop-blur-sm">
+        <div className="relative flex flex-col border-l border-ink/8 bg-paper-card/60 backdrop-blur-sm">
           <div className="absolute inset-0 flex min-w-[30vw] flex-col">
             <div className="grid grid-cols-[1fr_auto] border-b border-ink/8 p-4">
               <ArtifactTitle className="truncate overflow-hidden" />

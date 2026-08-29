@@ -116,7 +116,7 @@ export function StudentTable() {
       {loading ? (
         <SkeletonTable rows={5} columns={["2fr", "1fr", "1fr", "1fr"]} />
       ) : (
-        <div className="overflow-hidden rounded-md border border-ink/25 bg-[#fbf9f3]">
+        <div className="overflow-hidden rounded-md border border-ink/25 bg-paper-card">
           <table className="w-full text-sm">
             <thead className="bg-paper">
               <tr>

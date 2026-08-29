@@ -49,7 +49,7 @@ export function ManagementLayout({
         ];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#efece3]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#efece3] dark:bg-[#091611]">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 px-4">
         <div className="flex items-center gap-3">
           <Button
@@ -92,7 +92,7 @@ export function ManagementLayout({
           })}
         </nav>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto bg-[#efece3]">
+      <main className="min-h-0 flex-1 overflow-y-auto bg-[#efece3] dark:bg-[#091611]">
         <motion.div
           key={pathname}
           initial={{ opacity: 0 }}

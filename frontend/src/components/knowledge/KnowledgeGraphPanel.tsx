@@ -10,7 +10,7 @@ const GraphViewer = dynamic(
 
 export function KnowledgeGraphPanel() {
   return (
-    <div className="h-[calc(100vh-8.5rem)] min-h-[640px] overflow-hidden rounded-xl border border-ink/25 bg-[#fbf9f3]">
+    <div className="h-[calc(100vh-8.5rem)] min-h-[640px] overflow-hidden rounded-xl border border-ink/25 bg-paper-card">
       <GraphViewer />
     </div>
   );
