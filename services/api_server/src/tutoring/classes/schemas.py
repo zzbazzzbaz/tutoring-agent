@@ -54,6 +54,7 @@ class ClassSessionOut(BaseModel):
     id: UUID
     user_id: UUID
     user_name: str | None = None
+    username: str | None = None
     title: str | None = None
     mode: str
     project_id: UUID | None = None

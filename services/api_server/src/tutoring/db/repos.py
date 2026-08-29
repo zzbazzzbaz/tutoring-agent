@@ -478,6 +478,7 @@ async def list_class_sessions(
     class_id: UUID| list[UUID],
     *,
     mode: str | None = None,
+    keyword: str | None = None,
     limit: int = 20,
     offset: int = 0,
 )->list[Session]:
@@ -486,6 +487,7 @@ async def list_class_sessions(
         select(Session)
         .options(selectinload(Session.project),selectinload(Session.user))
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)
         .where(
             ClassStudent.class_id.in_(class_ids),
             Session.deleted_at.is_(None),
@@ -493,6 +495,10 @@ async def list_class_sessions(
     )
     if mode:
         stmt = stmt.where(Session.mode == mode)
+    if keyword:
+        stmt = stmt.where(
+            (User.name.ilike(f"%{keyword}%")) | (User.username.ilike(f"%{keyword}%"))
+        )
     stmt = stmt.order_by(Session.last_active_at.desc()).limit(limit).offset(offset)
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -504,6 +510,7 @@ async def count_class_sessions(
     *,
     mode: str | None = None,
     since: date | None = None,
+    keyword: str | None = None,
 ) -> int:
     class_ids = class_id if isinstance(class_id, list) else [class_id]
     base = (
@@ -519,6 +526,10 @@ async def count_class_sessions(
         base = base.where(Session.mode == mode)
     if since:
         base = base.where(func.date(Session.last_active_at) >= since)
+    if keyword:
+        base = base.join(User, User.id == Session.user_id).where(
+            (User.name.ilike(f"%{keyword}%")) | (User.username.ilike(f"%{keyword}%"))
+        )
     result = await session.execute(base)
     return int(result.scalar_one())
 

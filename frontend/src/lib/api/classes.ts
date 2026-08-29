@@ -61,12 +61,13 @@ export const classesApi = {
     return api.get<Page<ClassStudent>>(`/classes/${classId}/students?${params.toString()}`);
   },
 
-  listSessions: (classId: string, mode?: string, page = 1, pageSize = 20) => {
+  listSessions: (classId: string, mode?: string, keyword?: string, page = 1, pageSize = 20) => {
     const params = new URLSearchParams({
       page: String(page),
       page_size: String(pageSize),
     });
     if (mode) params.set("mode", mode);
+    if (keyword) params.set("keyword", keyword);
     return api.get<Page<ClassSession>>(`/classes/${classId}/sessions?${params.toString()}`);
   },
 

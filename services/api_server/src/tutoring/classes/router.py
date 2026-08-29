@@ -332,6 +332,7 @@ async def bulk_delete_students(
 async def list_class_sessions(
     class_id: UUID,
     mode: str | None = None,
+    keyword: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: CurrentUser = Depends(get_current_user),
@@ -341,15 +342,16 @@ async def list_class_sessions(
     await class_service.ensure_class_teacher(db_session, class_id, user.id)
     offset = (page - 1) * page_size
     sessions = await repos.list_class_sessions(
-        db_session, class_id, mode=mode, limit=page_size, offset=offset
+        db_session, class_id, mode=mode, keyword=keyword, limit=page_size, offset=offset
     )
-    total = await repos.count_class_sessions(db_session, class_id, mode=mode)
+    total = await repos.count_class_sessions(db_session, class_id, mode=mode, keyword=keyword)
     return Page(
         items=[
             ClassSessionOut(
                 id=s.id,
                 user_id=s.user_id,
                 user_name=s.user.name if s.user else None,
+                username=s.user.username if s.user else None,
                 title=s.title,
                 mode=s.mode,
                 project_id=s.project_id,

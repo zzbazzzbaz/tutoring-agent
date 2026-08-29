@@ -5,14 +5,18 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { classesApi } from "@/lib/api/classes";
-import { usersApi } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/common/Pagination";
+import { Input } from "@/components/ui/input";
 import {
-  ArrowLeft,
-  Eye,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Pagination } from "@/components/common/Pagination";
+import { ArrowLeft, Eye, Search } from "lucide-react";
 import type { ClassSession } from "@/lib/types";
 
 export default function ClassSessionsPage() {
@@ -21,20 +25,40 @@ export default function ClassSessionsPage() {
   const [sessions, setSessions] = useState<ClassSession[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState("");
+  const [mode, setMode] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!classId) return;
+  function refresh() {
     setLoading(true);
     classesApi
-      .listSessions(classId, undefined, page)
+      .listSessions(
+        classId,
+        mode === "all" ? undefined : mode,
+        keyword || undefined,
+        page,
+      )
       .then((data) => {
         setSessions(data.items);
         setTotal(data.total);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [classId, page]);
+  }
+
+  // 页码/模式变化时直接刷新
+  useEffect(() => {
+    if (classId) refresh();
+  }, [classId, page, mode]);
+
+  // 关键字输入 300ms 防抖后刷新，并重置回第 1 页
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPage(1);
+      refresh();
+    }, 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
 
   return (
     <div className="p-4">
@@ -47,6 +71,28 @@ export default function ClassSessionsPage() {
         <h1 className="text-xl font-bold">班级对话记录</h1>
       </div>
 
+      <div className="mb-4 flex items-center gap-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Input
+            placeholder="搜索学生姓名或学号..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="max-w-sm pl-8"
+          />
+        </div>
+        <Select value={mode} onValueChange={setMode}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="全部模式" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部模式</SelectItem>
+            <SelectItem value="project">项目模式</SelectItem>
+            <SelectItem value="free">自由模式</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {loading ? (
         <p>加载中...</p>
       ) : (
@@ -54,6 +100,7 @@ export default function ClassSessionsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted">
               <tr>
+                <th className="px-4 py-2 text-left font-medium">学号</th>
                 <th className="px-4 py-2 text-left font-medium">学生</th>
                 <th className="px-4 py-2 text-left font-medium">会话标题</th>
                 <th className="px-4 py-2 text-left font-medium">模式</th>
@@ -65,6 +112,9 @@ export default function ClassSessionsPage() {
             <tbody>
               {sessions.map((s) => (
                 <tr key={s.id} className="border-t">
+                  <td className="px-4 py-2 text-muted-foreground">
+                    {s.username || "-"}
+                  </td>
                   <td className="px-4 py-2">{s.user_name || s.user_id}</td>
                   <td className="px-4 py-2">{s.title || "（无标题）"}</td>
                   <td className="px-4 py-2">
@@ -90,7 +140,10 @@ export default function ClassSessionsPage() {
               ))}
               {sessions.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
                     暂无对话记录
                   </td>
                 </tr>

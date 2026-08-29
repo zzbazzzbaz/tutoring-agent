@@ -169,6 +169,7 @@ export interface ClassSession {
   id: string;
   user_id: string;
   user_name: string | null;
+  username: string | null;
   title: string | null;
   mode: string;
   project_id: string | null;
