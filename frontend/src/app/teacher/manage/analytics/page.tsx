@@ -451,9 +451,12 @@ function AnomalyRow({ student }: { student: AnomalyStudent }) {
         >
           {student.name}
         </Link>
-        <span className="text-xs text-muted-foreground">
+        <Link
+          href={`/teacher/manage/classes/${student.class_id}?back=/teacher/manage/analytics`}
+          className="text-xs text-blue-600 hover:underline"
+        >
           {student.class_name}
-        </span>
+        </Link>
       </div>
       <div className="text-right">
         <div className="text-sm font-medium text-red-600">
