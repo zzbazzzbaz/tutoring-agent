@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   FolderOpen,
   GraduationCap,
+  Loader2,
   LogOut,
   MoreHorizontal,
   MessageCircle,
@@ -17,6 +18,14 @@ import {
 import { useQueryState } from "nuqs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +71,8 @@ export function ChatWorkspaceSidebar({
   } = useSessions();
   const [sessionId, setSessionId] = useQueryState("session");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState<Session | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     refreshSessions();
@@ -84,14 +95,18 @@ export function ChatWorkspaceSidebar({
     }
   }
 
-  async function handleDeleteSession(session: Session) {
-    if (!confirm(`确定删除会话「${sessionTitle(session)}」吗？`)) return;
+  async function handleDeleteSession() {
+    if (!confirmDeleteSession) return;
+    setDeleting(true);
     try {
-      await deleteSession(session.id);
-      if (sessionId === session.id) setSessionId(null);
+      await deleteSession(confirmDeleteSession.id);
+      if (sessionId === confirmDeleteSession.id) setSessionId(null);
       toast.success("会话已删除");
+      setConfirmDeleteSession(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "删除失败");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -236,7 +251,7 @@ export function ChatWorkspaceSidebar({
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => handleDeleteSession(session)}
+                        onClick={() => setConfirmDeleteSession(session)}
                       >
                         <Trash2 className="size-4" />
                         删除
@@ -307,6 +322,44 @@ export function ChatWorkspaceSidebar({
         open={profileOpen}
         onOpenChange={setProfileOpen}
       />
+      <Dialog
+        open={confirmDeleteSession !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setConfirmDeleteSession(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>删除会话</DialogTitle>
+            <DialogDescription>
+              确定删除「{confirmDeleteSession ? sessionTitle(confirmDeleteSession) : ""}」吗？删除后不可恢复。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDeleteSession(null)}
+              disabled={deleting}
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSession}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  删除中...
+                </>
+              ) : (
+                "删除"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

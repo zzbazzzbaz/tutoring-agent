@@ -68,6 +68,10 @@ export async function apiFetch<T>(
     throw new ApiError(code, message, res.status);
   }
 
+  if (res.status === 204 || res.status === 205) {
+    return undefined as T;
+  }
+
   if (res.headers.get("content-type")?.includes("application/json")) {
     return res.json();
   }
