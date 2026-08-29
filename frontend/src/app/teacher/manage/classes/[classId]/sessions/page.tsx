@@ -28,9 +28,11 @@ export default function ClassSessionsPage() {
   const [keyword, setKeyword] = useState("");
   const [mode, setMode] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   function refresh() {
     setLoading(true);
+    setError(null);
     classesApi
       .listSessions(
         classId,
@@ -42,7 +44,11 @@ export default function ClassSessionsPage() {
         setSessions(data.items);
         setTotal(data.total);
       })
-      .catch(console.error)
+      .catch((err) => {
+        setSessions([]);
+        setTotal(0);
+        setError(err instanceof Error ? err.message : "加载失败");
+      })
       .finally(() => setLoading(false));
   }
 
@@ -95,6 +101,13 @@ export default function ClassSessionsPage() {
 
       {loading ? (
         <p>加载中...</p>
+      ) : error ? (
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-8 text-center">
+          <p className="text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={refresh} className="mt-3">
+            重试
+          </Button>
+        </div>
       ) : (
         <div className="overflow-hidden rounded-md border">
           <table className="w-full text-sm">
