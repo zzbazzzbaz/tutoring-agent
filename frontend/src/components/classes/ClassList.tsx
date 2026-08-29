@@ -114,7 +114,7 @@ export function ClassList() {
                   <td className="px-4 py-2">
                     <Link
                       href={`/teacher/manage/classes/${cls.id}`}
-                      className="font-medium text-primary hover:underline"
+                      className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700 hover:no-underline dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       {cls.classname}
                     </Link>
