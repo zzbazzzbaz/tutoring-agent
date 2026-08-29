@@ -65,6 +65,7 @@ class StudentOverview(BaseModel):
     active_days: int = Field(description="活跃天数")
     last_active_at: datetime | None = Field(default=None, description="最后活跃时间")
     inactive_days: int = Field(description="未活跃天数")
+    weekly_sessions: int = Field(description="最近7天对话数")
     classes: list[StudentClassInfo] = Field(description="所属班级列表")
 
 class StudentDailyActivity(BaseModel):

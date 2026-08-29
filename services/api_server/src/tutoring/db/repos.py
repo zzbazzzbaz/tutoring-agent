@@ -800,6 +800,26 @@ async def get_student_learning_data(
         "last_active_at": last_active,
         "active_days": active_days,
     }
+# 按学生查对话数
+async def count_student_sessions_since(
+    session: AsyncSession,
+    user_id: UUID,
+    since: date,
+) -> int:
+    """统计学生在指定日期之后(含)的对话数。
+        最近7天对话数（今天+前6天）
+    """
+    stmt = (
+        select(func.count())
+        .select_from(Session)
+        .where(
+            Session.user_id == user_id,
+            Session.deleted_at.is_(None),
+            func.date(Session.last_active_at) >= since,
+        )
+    )
+    result = await session.execute(stmt)
+    return int(result.scalar_one())
 
 async def get_student_daily_activity(
     session: AsyncSession,

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  Activity,
   Calendar,
   Clock,
   MessageSquare,
@@ -84,12 +85,20 @@ export default function StudentAnalysisPage() {
       </div>
 
       {/* 基本信息卡片 */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <InfoCard
           icon={<MessageSquare className="size-5 text-blue-600" />}
           label="累计对话"
           value={overview.total_sessions}
           suffix="次"
+        />
+        <InfoCard
+          icon={<Activity className={`size-5 ${overview.weekly_sessions < 2 ? "text-yellow-600" : "text-green-600"}`} />}
+          label="本周对话"
+          value={overview.weekly_sessions}
+          suffix="次"
+          highlight={overview.weekly_sessions < 2}
+          highlightColor="yellow"
         />
         <InfoCard
           icon={<Calendar className="size-5 text-green-600" />}
@@ -193,12 +202,14 @@ function InfoCard({
   value,
   suffix,
   highlight = false,
+  highlightColor = "red",
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   suffix?: string;
   highlight?: boolean;
+  highlightColor?: "red" | "yellow";
 }) {
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -208,7 +219,11 @@ function InfoCard({
       </div>
       <div
         className={`mt-2 text-2xl font-semibold ${
-          highlight ? "text-red-600" : ""
+          highlight
+            ? highlightColor === "yellow"
+              ? "text-yellow-600"
+              : "text-red-600"
+            : ""
         }`}
       >
         {value}

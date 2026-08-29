@@ -150,7 +150,11 @@ async def get_student_analysis(
     else:
         inactive_days = (datetime.now(UTC) - last_active).days
 
-    # 7. 获取每日活动趋势
+    # 7 最近7天对话数（今天+前6天）
+    seven_days_ago = datetime.now(UTC).date() - timedelta(days=6)
+    weekly_sessions = await repos.count_student_sessions_since(db, user_id, seven_days_ago)
+
+    # 8. 获取每日活动趋势
     daily_activity_raw = await repos.get_student_daily_activity(db, user_id, days=30)
     daily_activity = [StudentDailyActivity(**a) for a in daily_activity_raw]
 
@@ -163,6 +167,7 @@ async def get_student_analysis(
             active_days=learning_data["active_days"],
             last_active_at=last_active,
             inactive_days=inactive_days,
+            weekly_sessions=weekly_sessions,
             classes=student_classes,
         ),
         daily_activity=daily_activity,

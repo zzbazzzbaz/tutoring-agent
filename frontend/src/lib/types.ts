@@ -257,6 +257,7 @@ export interface StudentOverview {
   active_days: number;
   last_active_at: string | null;
   inactive_days: number;
+  weekly_sessions: number;
   classes: StudentClassInfo[];
 }
 
