@@ -11,11 +11,11 @@ import { MarkdownText } from "@/components/chat/thread/markdown-text";
 import type { Message } from "@langchain/langgraph-sdk";
 
 export function ReadOnlyChatView({
-  studentId,
   sessionId,
+  backHref,
 }: {
-  studentId: string;
   sessionId: string;
+  backHref: string;
 }) {
   const router = useRouter();
   const { token } = useAuth();
@@ -69,9 +69,7 @@ export function ReadOnlyChatView({
           <p className="text-destructive">{error}</p>
           <Button
             variant="outline"
-            onClick={() =>
-              router.push(`/teacher/manage/students/${studentId}`)
-            }
+            onClick={() => router.push(backHref)}
             className="mt-4"
           >
             返回
@@ -93,9 +91,7 @@ export function ReadOnlyChatView({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() =>
-            router.push(`/teacher/manage/students/${studentId}`)
-          }
+          onClick={() => router.push(backHref)}
         >
           <ArrowLeft className="mr-2 size-4" />
           返回

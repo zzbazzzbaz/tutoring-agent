@@ -165,7 +165,7 @@ export default function ClassSessionsPage() {
                     {new Date(s.last_active_at).toLocaleString("zh-CN")}
                   </td>
                   <td className="px-4 py-2">
-                    <Link href={`/teacher/manage/students/${s.user_id}`}>
+                    <Link href={`/teacher/manage/classes/${classId}/sessions/${s.id}`}>
                       <Button size="sm" variant="ghost">
                         <Eye className="mr-1 size-4" />
                         查看
