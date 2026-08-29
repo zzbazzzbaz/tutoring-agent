@@ -142,7 +142,14 @@ export default function ClassSessionsPage() {
                     {s.username || "-"}
                   </td>
                   <td className="px-4 py-2">{s.user_name || s.user_id}</td>
-                  <td className="px-4 py-2">{s.title || "（无标题）"}</td>
+                  <td className="px-4 py-2">
+                    <div
+                      className="max-w-[220px] truncate"
+                      title={s.title || undefined}
+                    >
+                      {s.title || "（无标题）"}
+                    </div>
+                  </td>
                   <td className="px-4 py-2">
                     <Badge variant={s.mode === "project" ? "default" : "secondary"}>
                       {s.mode === "project" ? "项目模式" : "自由模式"}
