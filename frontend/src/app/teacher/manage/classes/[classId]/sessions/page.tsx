@@ -118,6 +118,7 @@ export default function ClassSessionsPage() {
                 <th className="px-4 py-2 text-left font-medium">会话标题</th>
                 <th className="px-4 py-2 text-left font-medium">模式</th>
                 <th className="px-4 py-2 text-left font-medium">项目</th>
+                <th className="px-4 py-2 text-left font-medium">开始时间</th>
                 <th className="px-4 py-2 text-left font-medium">最后活跃</th>
                 <th className="px-4 py-2 text-left font-medium">操作</th>
               </tr>
@@ -139,6 +140,9 @@ export default function ClassSessionsPage() {
                     {s.project_name || "-"}
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">
+                    {new Date(s.created_at).toLocaleString("zh-CN")}
+                  </td>
+                  <td className="px-4 py-2 text-muted-foreground">
                     {new Date(s.last_active_at).toLocaleString("zh-CN")}
                   </td>
                   <td className="px-4 py-2">
@@ -154,7 +158,7 @@ export default function ClassSessionsPage() {
               {sessions.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     暂无对话记录
