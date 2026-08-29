@@ -12,6 +12,7 @@ import {
   TrendingUp,
   GraduationCap,
   RefreshCw,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 import {
   LineChart,
@@ -23,6 +24,9 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import {
   Select,
@@ -39,6 +43,7 @@ import type {
   ClassInfo,
   DashboardOverview,
   LearningTrendPoint,
+  ModeCount,
 } from "@/lib/types";
 
 export default function TeacherManageAnalyticsPage() {
@@ -49,6 +54,7 @@ export default function TeacherManageAnalyticsPage() {
   const [anomalies, setAnomalies] = useState<AnomalyStudent[]>([]);
   const [trend, setTrend] = useState<LearningTrendPoint[]>([]);
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
+  const [modeDistribution, setModeDistribution] = useState<ModeCount[]>([]);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("all");
   const [trendDays, setTrendDays] = useState(30);
@@ -61,6 +67,7 @@ export default function TeacherManageAnalyticsPage() {
       setAnomalies(data.anomalies || []);
       setTrend(data.trend || []);
       setClassComparison(data.class_comparison || []);
+      setModeDistribution(data.mode_distribution || []);
     } catch (err: any) {
       console.error("加载 Dashboard 失败:", err);
       setError(err?.message || "加载失败，请重试");
@@ -142,6 +149,7 @@ export default function TeacherManageAnalyticsPage() {
   }
 
   const currentClass = classes.find((c) => c.id === selectedClassId);
+  const modeTotal = modeDistribution.reduce((s, m) => s + m.count, 0);
 
   return (
     <div className="h-full space-y-6 overflow-y-auto p-6">
@@ -213,8 +221,10 @@ export default function TeacherManageAnalyticsPage() {
         />
       </div>
 
-      {/* 学习趋势 */}
-      <div className="rounded-lg border bg-card p-4">
+      {/* 学习趋势 + 对话模式占比 */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-8">
+        {/* 学习趋势 */}
+        <div className="rounded-lg border bg-card p-4 lg:col-span-6">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="size-4 text-muted-foreground" />
@@ -264,6 +274,66 @@ export default function TeacherManageAnalyticsPage() {
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               暂无趋势数据
+            </div>
+          )}
+        </div>
+        </div>
+
+        {/* 对话模式占比 */}
+        <div className="rounded-lg border bg-card p-4 lg:col-span-2">
+          <div className="mb-3 flex items-center gap-2">
+            <PieChartIcon className="size-4 text-muted-foreground" />
+            <h3 className="font-medium">对话模式占比</h3>
+          </div>
+          {modeTotal === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              暂无对话数据
+            </div>
+          ) : (
+            <div className="flex items-center gap-8">
+              <div className="relative h-55 w-50 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={modeDistribution}
+                      dataKey="count"
+                      nameKey="mode"
+                      innerRadius={40}
+                      outerRadius={62}
+                      paddingAngle={2}
+                    >
+                      <Cell fill="#6366f1" />
+                      <Cell fill="#22c55e" />
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number, name: string) => {
+                        const label = name === "project" ? "项目模式" : "自由模式";
+                        return [`${value} 次`, label];
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xl font-semibold">{modeTotal}</span>
+                  <span className="text-xs text-muted-foreground">总对话</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {modeDistribution.map((m) => {
+                  const pct = modeTotal > 0 ? Math.round((m.count / modeTotal) * 100) : 0;
+                  const label = m.mode === "project" ? "项目模式" : "自由模式";
+                  const color = m.mode === "project" ? "text-indigo-600" : "text-green-600";
+                  const dotColor = m.mode === "project" ? "bg-indigo-500" : "bg-green-500";
+                  return (
+                    <div key={m.mode} className="flex items-center gap-2">
+                      <span className={`size-3 rounded-full ${dotColor}`} />
+                      <span className="w-16 text-sm text-muted-foreground">{label}</span>
+                      <span className={`text-sm font-medium ${color}`}>{m.count} 次</span>
+                      <span className="text-sm text-muted-foreground">({pct}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -333,6 +403,7 @@ export default function TeacherManageAnalyticsPage() {
           )}
         </div>
       </div>
+
     </div>
   );
 }

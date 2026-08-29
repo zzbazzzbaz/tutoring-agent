@@ -34,9 +34,10 @@ async def get_dashboard(
 @router.get("/students/{user_id}", response_model=StudentAnalysisResponse)
 async def get_student_analysis(
     user_id: UUID,
+    days: int = Query(30, ge=7, le=30, description="活动趋势天数"),
     user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> StudentAnalysisResponse:
     """获取学生分析数据"""
     _require_teacher(user)
-    return await analytics_service.get_student_analysis(db, user.id, user_id)
+    return await analytics_service.get_student_analysis(db, user.id, user_id, days=days)

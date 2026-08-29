@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { classesApi } from "@/lib/api/classes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,10 @@ import type { ClassInfo, ClassStats } from "@/lib/types";
 
 export default function ClassDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const classId = params.classId as string;
+  // 支持通过 ?back= 指定返回地址（如从学生分析页进入时返回学生分析页）
+  const backHref = searchParams.get("back") || "/teacher/manage/classes";
   const [cls, setCls] = useState<ClassInfo | null>(null);
   const [stats, setStats] = useState<ClassStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +50,7 @@ export default function ClassDetailPage() {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
-            <Link href="/teacher/manage/classes">
+            <Link href={backHref}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>

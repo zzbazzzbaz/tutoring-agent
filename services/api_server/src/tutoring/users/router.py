@@ -70,8 +70,7 @@ async def reset_password(
     _require_teacher(user)
     await user_service.reset_password(db_session, user_id)
     return {"message": "密码已重置为 123456"} """
-
-""" 
+# 获取用户对话记录
 @router.get("/{user_id}/sessions", response_model=Page[SessionOut])
 async def list_user_sessions(
     user_id: UUID,
@@ -81,6 +80,7 @@ async def list_user_sessions(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> Page[SessionOut]:
+    """ 查看指定学生的会话记录 """
     _require_teacher(user)
     offset = (page - 1) * page_size
     sessions = await repos.list_sessions(
@@ -96,7 +96,7 @@ async def list_user_sessions(
         total=total,
         page=page,
         page_size=page_size,
-    ) """
+    )
 
 
 """ @router.post("/students/import", response_model=ImportResult)

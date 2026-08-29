@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Session, SessionCreate, SessionUpdate } from "@/lib/types";
+import type { Session, SessionCreate, SessionUpdate, Page } from "@/lib/types";
 
 export const sessionsApi = {
   list: () => api.get<Session[]>("/sessions"),
@@ -13,6 +13,11 @@ export const sessionsApi = {
 
   delete: (id: string) => api.delete<void>(`/sessions/${id}`),
 
-  listByUser: (userId: string) =>
-    api.get<Session[]>(`/users/${userId}/sessions`),
+  listByUser: (userId: string, page = 1, pageSize = 10) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+    return api.get<Page<Session>>(`/users/${userId}/sessions?${params.toString()}`);
+  },
 };

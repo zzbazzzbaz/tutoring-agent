@@ -12,7 +12,7 @@ export const analyticsApi = {
     return api.get<DashboardResponse>(`/analytics/dashboard${qs ? `?${qs}` : ""}`);
   },
   // 获取学生分析数据
-  getStudentAnalysis: (userId: string) => {
-    return api.get<StudentAnalysisResponse>(`/analytics/students/${userId}`);
+  getStudentAnalysis: (userId: string, days = 30) => {
+    return api.get<StudentAnalysisResponse>(`/analytics/students/${userId}?days=${days}`);
   },
 };

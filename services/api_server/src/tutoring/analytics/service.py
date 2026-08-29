@@ -66,6 +66,14 @@ async def get_dashboard(
     comparison_raw = await repos.get_class_comparison(db, classes)
     class_comparison = [ClassComparison(**c) for c in comparison_raw]
 
+    # 6. 对话模式分布(自由模式 vs 项目模式)
+    free_count = await repos.count_class_sessions(db, class_ids, mode="free")
+    project_count = await repos.count_class_sessions(db, class_ids, mode="project")
+    mode_distribution = [
+        {"mode": "project", "count": project_count},
+        {"mode": "free", "count": free_count},
+    ]
+
     return DashboardResponse(
         overview=DashboardOverview(
             total_students=total_students,
@@ -77,6 +85,7 @@ async def get_dashboard(
         anomalies=anomalies,
         trend=trend,
         class_comparison=class_comparison,
+        mode_distribution=mode_distribution,
     )
 
 
@@ -101,6 +110,7 @@ def _empty_dashboard(days: int = 30) -> DashboardResponse:
             for i in range(days - 1, -1, -1)
         ],
         class_comparison=[],
+        mode_distribution=[],
     )
 
 # === 学生分析 ===
@@ -109,6 +119,7 @@ async def get_student_analysis(
     db: AsyncSession,
     teacher_id: UUID,
     user_id: UUID,
+    days: int = 30,
 ) -> StudentAnalysisResponse:
     """
     获取学生分析数据。
@@ -155,7 +166,7 @@ async def get_student_analysis(
     weekly_sessions = await repos.count_student_sessions_since(db, user_id, seven_days_ago)
 
     # 8. 获取每日活动趋势
-    daily_activity_raw = await repos.get_student_daily_activity(db, user_id, days=30)
+    daily_activity_raw = await repos.get_student_daily_activity(db, user_id, days=days)
     daily_activity = [StudentDailyActivity(**a) for a in daily_activity_raw]
 
     return StudentAnalysisResponse(
