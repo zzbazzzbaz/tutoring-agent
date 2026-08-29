@@ -472,6 +472,31 @@ async def check_class_member(
     result = await session.execute(stmt)
     return int(result.scalar_one()) > 0
 
+# 查询班级下会话列表（分页）
+async def list_class_sessions(
+    session: AsyncSession,
+    class_id: UUID| list[UUID],
+    *,
+    mode: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+)->list[Session]:
+    class_ids = class_id if isinstance(class_id,list) else [class_id]
+    stmt = (
+        select(Session)
+        .options(selectinload(Session.project),selectinload(Session.user))
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+        )
+    )
+    if mode:
+        stmt = stmt.where(Session.mode == mode)
+    stmt = stmt.order_by(Session.last_active_at.desc()).limit(limit).offset(offset)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
 # 班级会话统计(支持单班级或多班级,支持日期过滤)
 async def count_class_sessions(
     session: AsyncSession,

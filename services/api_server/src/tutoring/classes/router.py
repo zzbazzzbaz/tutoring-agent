@@ -340,7 +340,7 @@ async def list_class_sessions(
     _require_teacher(user)
     await class_service.ensure_class_teacher(db_session, class_id, user.id)
     offset = (page - 1) * page_size
-    sessions = await repos.count_class_sessions(
+    sessions = await repos.list_class_sessions(
         db_session, class_id, mode=mode, limit=page_size, offset=offset
     )
     total = await repos.count_class_sessions(db_session, class_id, mode=mode)
@@ -365,7 +365,7 @@ async def list_class_sessions(
     )
 
 
-# ============ 班级统计 ============
+# ============ 某班级详细页面的统计 ============
 
 @router.get("/{class_id}/stats", response_model=ClassStats)
 async def get_class_stats(
