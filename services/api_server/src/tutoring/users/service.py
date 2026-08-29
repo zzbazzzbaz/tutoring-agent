@@ -9,7 +9,7 @@ from tutoring.core.config import settings
 from tutoring.core.errors import AppError
 from tutoring.db import repos
 from tutoring.db.models import User
-from tutoring.users.schemas import ImportResult
+# from tutoring.users.schemas import ImportResult  # 已注释：ImportResult schema 被注释掉，对应的 import_students 也废弃
 
 DEFAULT_PASSWORD = "123456"
 

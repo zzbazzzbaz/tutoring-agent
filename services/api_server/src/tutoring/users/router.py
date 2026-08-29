@@ -11,7 +11,8 @@ from tutoring.db import repos
 from tutoring.sessions import service as session_service
 from tutoring.sessions.schemas import SessionOut
 from tutoring.users import service as user_service
-from tutoring.users.schemas import ImportResult, UserOut
+from tutoring.users.schemas import UserOut
+# ImportResult 已废弃，对应的 import_students 路由也被注释掉了
 
 router = APIRouter(prefix="/users", tags=["users"])
 
