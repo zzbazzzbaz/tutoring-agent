@@ -234,11 +234,17 @@ export interface ClassComparison {
   active_rate: number;
 }
 
+export interface ModeCount {
+  mode: "free" | "project";
+  count: number;
+}
+
 export interface DashboardResponse {
   overview: DashboardOverview;
   anomalies: AnomalyStudent[];
   trend: LearningTrendPoint[];
   class_comparison: ClassComparison[];
+  mode_distribution: ModeCount[];
 }
 
 // ===统计分析--> 学生分析 Student Analysis ===

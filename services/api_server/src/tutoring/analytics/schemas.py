@@ -40,12 +40,18 @@ class ClassComparison(BaseModel):
     active_today: int
     active_rate: float = Field(description="今日活跃率 0-1")
 
+class ModeCount(BaseModel):
+    """对话模式计数"""
+    mode: Literal["free", "project"] = Field(description="模式: free自由/project项目")
+    count: int = Field(description="对话数")
+
 class DashboardResponse(BaseModel):
     """Dashboard 完整响应"""
     overview: DashboardOverview = Field(description="概览指标")
     anomalies: list[AnomalyStudent] = Field(description="异常学生列表")
     trend: list[LearningTrendPoint] = Field(description="学习趋势数据")
     class_comparison: list[ClassComparison] = Field(description="班级对比数据")
+    mode_distribution: list[ModeCount] = Field(description="对话模式分布")
 
 # ===========================================================================
 # 学生分析--响应模型
