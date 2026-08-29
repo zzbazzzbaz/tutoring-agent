@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Pagination } from "@/components/common/Pagination";
 import { ArrowLeft, Eye, Search } from "lucide-react";
-import type { ClassSession } from "@/lib/types";
+import type { ClassInfo, ClassSession } from "@/lib/types";
 
 export default function ClassSessionsPage() {
   const params = useParams();
@@ -29,6 +29,7 @@ export default function ClassSessionsPage() {
   const [mode, setMode] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cls, setCls] = useState<ClassInfo | null>(null);
 
   function refresh() {
     setLoading(true);
@@ -52,6 +53,15 @@ export default function ClassSessionsPage() {
       .finally(() => setLoading(false));
   }
 
+  // 页面标题需要班级信息，只拉取一次（不随筛选/翻页变化）
+  useEffect(() => {
+    if (!classId) return;
+    classesApi
+      .get(classId)
+      .then(setCls)
+      .catch(() => {});
+  }, [classId]);
+
   // 页码/模式变化时直接刷新
   useEffect(() => {
     if (classId) refresh();
@@ -74,7 +84,9 @@ export default function ClassSessionsPage() {
             <ArrowLeft className="size-4" />
           </Link>
         </Button>
-        <h1 className="text-xl font-bold">班级对话记录</h1>
+        <h1 className="text-xl font-bold">
+          {cls ? `${cls.grade} ${cls.classname} · 对话记录` : "班级对话记录"}
+        </h1>
       </div>
 
       <div className="mb-4 flex items-center gap-2">
