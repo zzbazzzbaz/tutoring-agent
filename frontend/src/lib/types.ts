@@ -239,12 +239,22 @@ export interface ModeCount {
   count: number;
 }
 
+export interface StudentRanking {
+  user_id: string;
+  name: string;
+  username: string;
+  total_sessions: number;
+  active_days: number;
+  last_active_at: string | null;
+}
+
 export interface DashboardResponse {
   overview: DashboardOverview;
   anomalies: AnomalyStudent[];
   trend: LearningTrendPoint[];
   class_comparison: ClassComparison[];
   mode_distribution: ModeCount[];
+  student_ranking: StudentRanking[];
 }
 
 // ===统计分析--> 学生分析 Student Analysis ===

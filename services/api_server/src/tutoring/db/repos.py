@@ -800,6 +800,42 @@ async def get_student_learning_data(
         "last_active_at": last_active,
         "active_days": active_days,
     }
+
+async def list_student_activity_ranking(
+    session: AsyncSession,
+    class_ids: list[UUID] | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    """
+    按学生统计累计对话数和活跃天数，按对话数降序排列。
+    如果指定 class_ids 则只统计这些班级下的学生（用子查询避免 JOIN 重复计数）。
+    """
+    stmt = (
+        select(
+            Session.user_id,
+            User.name,
+            User.username,
+            func.count(Session.id).label("total_sessions"),
+            func.count(func.distinct(func.date(Session.last_active_at))).label("active_days"),
+            func.max(Session.last_active_at).label("last_active_at"),
+        )
+        .join(User, User.id == Session.user_id)
+        .where(Session.deleted_at.is_(None))
+        .group_by(Session.user_id, User.name, User.username)
+        .order_by(func.count(Session.id).desc())
+        .limit(limit)
+    )
+    if class_ids:
+        class_student_subq = (
+            select(ClassStudent.user_id)
+            .where(ClassStudent.class_id.in_(class_ids))
+            .distinct()
+        )
+        stmt = stmt.where(Session.user_id.in_(class_student_subq))
+
+    result = await session.execute(stmt)
+    return [dict(row._mapping) for row in result.all()]
+
 # 按学生查对话数
 async def count_student_sessions_since(
     session: AsyncSession,

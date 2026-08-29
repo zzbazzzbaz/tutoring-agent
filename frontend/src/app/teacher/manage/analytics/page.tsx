@@ -12,6 +12,7 @@ import {
   TrendingUp,
   GraduationCap,
   RefreshCw,
+  Trophy,
   PieChart as PieChartIcon,
 } from "lucide-react";
 import {
@@ -44,6 +45,7 @@ import type {
   DashboardOverview,
   LearningTrendPoint,
   ModeCount,
+  StudentRanking,
 } from "@/lib/types";
 
 export default function TeacherManageAnalyticsPage() {
@@ -55,6 +57,8 @@ export default function TeacherManageAnalyticsPage() {
   const [trend, setTrend] = useState<LearningTrendPoint[]>([]);
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
   const [modeDistribution, setModeDistribution] = useState<ModeCount[]>([]);
+  const [studentRanking, setStudentRanking] = useState<StudentRanking[]>([]);
+  const [rankingSort, setRankingSort] = useState<"total_sessions" | "active_days">("total_sessions");
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("all");
   const [trendDays, setTrendDays] = useState(30);
@@ -68,6 +72,7 @@ export default function TeacherManageAnalyticsPage() {
       setTrend(data.trend || []);
       setClassComparison(data.class_comparison || []);
       setModeDistribution(data.mode_distribution || []);
+      setStudentRanking(data.student_ranking || []);
     } catch (err: any) {
       console.error("加载 Dashboard 失败:", err);
       setError(err?.message || "加载失败，请重试");
@@ -402,6 +407,85 @@ export default function TeacherManageAnalyticsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* 学生活跃度排行 */}
+      <div className="rounded-lg border bg-card p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy className="size-4 text-muted-foreground" />
+            <h3 className="font-medium">学生活跃度排行</h3>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setRankingSort("total_sessions")}
+              className={`rounded px-2 py-1 text-xs ${rankingSort === "total_sessions" ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
+            >
+              按对话数
+            </button>
+            <button
+              onClick={() => setRankingSort("active_days")}
+              className={`rounded px-2 py-1 text-xs ${rankingSort === "active_days" ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
+            >
+              按活跃天数
+            </button>
+          </div>
+        </div>
+        {studentRanking.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">暂无学生数据</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium">排名</th>
+                  <th className="px-4 py-2 text-left font-medium">学号</th>
+                  <th className="px-4 py-2 text-left font-medium">姓名</th>
+                  <th className="px-4 py-2 text-right font-medium">累计对话</th>
+                  <th className="px-4 py-2 text-right font-medium">活跃天数</th>
+                  <th className="px-4 py-2 text-left font-medium">最后活跃</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...studentRanking]
+                  .sort((a, b) => b[rankingSort] - a[rankingSort])
+                  .map((s, i) => (
+                    <tr key={s.user_id} className="border-t">
+                      <td className="px-4 py-2">
+                        {i < 3 ? (
+                          <span
+                            className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-bold text-white ${
+                              i === 0 ? "bg-yellow-500" : i === 1 ? "bg-gray-400" : "bg-amber-600"
+                            }`}
+                          >
+                            {i + 1}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">{i + 1}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">{s.username}</td>
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`/teacher/manage/analytics/students/${s.user_id}`}
+                          className="font-medium text-blue-600 hover:underline"
+                        >
+                          {s.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2 text-right font-medium">{s.total_sessions}</td>
+                      <td className="px-4 py-2 text-right">{s.active_days}</td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {s.last_active_at
+                          ? new Date(s.last_active_at).toLocaleDateString("zh-CN").replace(/\//g, "-")
+                          : "从未活跃"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
     </div>

@@ -15,6 +15,7 @@ from tutoring.analytics.schemas import (
     StudentClassInfo,
     StudentDailyActivity,
     StudentOverview,
+    StudentRanking,
 )
 from tutoring.db import repos
 from tutoring.db.models import Class
@@ -74,6 +75,10 @@ async def get_dashboard(
         {"mode": "free", "count": free_count},
     ]
 
+    # 7. 学生活跃度排行(按累计对话数降序)
+    ranking_raw = await repos.list_student_activity_ranking(db, class_ids, limit=50)
+    student_ranking = [StudentRanking(**r) for r in ranking_raw]
+
     return DashboardResponse(
         overview=DashboardOverview(
             total_students=total_students,
@@ -86,6 +91,7 @@ async def get_dashboard(
         trend=trend,
         class_comparison=class_comparison,
         mode_distribution=mode_distribution,
+        student_ranking=student_ranking,
     )
 
 
@@ -111,6 +117,7 @@ def _empty_dashboard(days: int = 30) -> DashboardResponse:
         ],
         class_comparison=[],
         mode_distribution=[],
+        student_ranking=[],
     )
 
 # === 学生分析 ===

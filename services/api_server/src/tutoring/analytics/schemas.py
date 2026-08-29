@@ -45,6 +45,15 @@ class ModeCount(BaseModel):
     mode: Literal["free", "project"] = Field(description="模式: free自由/project项目")
     count: int = Field(description="对话数")
 
+class StudentRanking(BaseModel):
+    """学生活跃度排行条目"""
+    user_id: UUID
+    name: str
+    username: str
+    total_sessions: int = Field(description="累计对话数")
+    active_days: int = Field(description="活跃天数")
+    last_active_at: datetime | None = Field(default=None, description="最后活跃时间")
+
 class DashboardResponse(BaseModel):
     """Dashboard 完整响应"""
     overview: DashboardOverview = Field(description="概览指标")
@@ -52,6 +61,7 @@ class DashboardResponse(BaseModel):
     trend: list[LearningTrendPoint] = Field(description="学习趋势数据")
     class_comparison: list[ClassComparison] = Field(description="班级对比数据")
     mode_distribution: list[ModeCount] = Field(description="对话模式分布")
+    student_ranking: list[StudentRanking] = Field(description="学生活跃度排行")
 
 # ===========================================================================
 # 学生分析--响应模型
