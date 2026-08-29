@@ -22,11 +22,12 @@ def _require_teacher(user: CurrentUser) -> None:
 @router.get("/dashboard", response_model=DashboardResponse)
 async def get_dashboard(
     class_id: UUID | None = Query(None, description="班级ID,不传则返回该教师所有班级聚合"),
+    days: int = Query(30, ge=7, le=30, description="趋势图天数(7或30)"),
     user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardResponse:
     _require_teacher(user)
-    data = await analytics_service.get_dashboard(db, user.id, class_id)
+    data = await analytics_service.get_dashboard(db, user.id, class_id, days=days)
     return data
 
 # 学生分析路由

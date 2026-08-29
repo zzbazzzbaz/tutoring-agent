@@ -25,6 +25,7 @@ async def get_dashboard(
     db: AsyncSession,
     teacher_id: UUID,
     class_id: UUID | None = None,
+    days: int = 30,
 ) -> DashboardResponse:
     """
     获取教师 Dashboard 数据。
@@ -34,13 +35,13 @@ async def get_dashboard(
     if class_id:
         single = await db.get(Class, class_id)
         if not single or single.teacher_id != teacher_id or single.deleted_at is not None:
-            return _empty_dashboard()
+            return _empty_dashboard(days=days)
         classes = [single]
     else:
         classes = await repos.list_classes_by_teacher(db, teacher_id)
 
     if not classes:
-        return _empty_dashboard()
+        return _empty_dashboard(days=days)
 
     class_ids = [c.id for c in classes]
     today = datetime.now(UTC).date()
@@ -57,8 +58,8 @@ async def get_dashboard(
     anomalies_raw = await repos.list_anomaly_students(db, class_ids, inactive_threshold_days=7)
     anomalies = [AnomalyStudent(**a) for a in anomalies_raw]
 
-    # 4. 学习趋势(最近30天)
-    trend_raw = await repos.get_daily_trend(db, class_ids, days=30)
+    # 4. 学习趋势(最近N天)
+    trend_raw = await repos.get_daily_trend(db, class_ids, days=days)
     trend = [LearningTrendPoint(**t) for t in trend_raw]
 
     # 5. 班级对比
@@ -79,7 +80,7 @@ async def get_dashboard(
     )
 
 
-def _empty_dashboard() -> DashboardResponse:
+def _empty_dashboard(days: int = 30) -> DashboardResponse:
     """空数据兜底"""
     today = datetime.now(UTC).date()
     return DashboardResponse(
@@ -97,7 +98,7 @@ def _empty_dashboard() -> DashboardResponse:
                 session_count=0,
                 active_student_count=0,
             )
-            for i in range(29, -1, -1)
+            for i in range(days - 1, -1, -1)
         ],
         class_comparison=[],
     )

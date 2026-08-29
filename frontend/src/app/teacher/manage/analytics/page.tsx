@@ -51,11 +51,12 @@ export default function TeacherManageAnalyticsPage() {
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("all");
+  const [trendDays, setTrendDays] = useState(30);
 
-  async function load(classId?: string) {
+  async function load(classId?: string, days: number = 30) {
     try {
       setError(null);
-      const data = await analyticsApi.getDashboard(classId);
+      const data = await analyticsApi.getDashboard(classId, days);
       setOverview(data.overview);
       setAnomalies(data.anomalies || []);
       setTrend(data.trend || []);
@@ -71,7 +72,7 @@ export default function TeacherManageAnalyticsPage() {
     if (refreshing || loading) return;
     setRefreshing(true);
     try {
-      await load(selectedClassId === "all" ? undefined : selectedClassId);
+      await load(selectedClassId === "all" ? undefined : selectedClassId, trendDays);
     } catch {
       // 刷新失败保留旧数据，错误已在 load 中记录
     } finally {
@@ -89,11 +90,11 @@ export default function TeacherManageAnalyticsPage() {
       .catch(() => setClasses([]));
   }, []);
 
-  // 班级切换时重新加载 dashboard（首次加载也走这里）
+  // 班级切换或趋势天数变化时重新加载 dashboard（首次加载也走这里）
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    load(selectedClassId === "all" ? undefined : selectedClassId)
+    load(selectedClassId === "all" ? undefined : selectedClassId, trendDays)
       .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -101,7 +102,7 @@ export default function TeacherManageAnalyticsPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedClassId]);
+  }, [selectedClassId, trendDays]);
 
   if (loading) {
     return (
@@ -214,9 +215,25 @@ export default function TeacherManageAnalyticsPage() {
 
       {/* 学习趋势 */}
       <div className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <TrendingUp className="size-4 text-muted-foreground" />
-          <h3 className="font-medium">最近30天学习趋势</h3>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="size-4 text-muted-foreground" />
+            <h3 className="font-medium">最近{trendDays}天学习趋势</h3>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setTrendDays(7)}
+              className={`rounded px-2 py-1 text-xs ${trendDays === 7 ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
+            >
+              7天
+            </button>
+            <button
+              onClick={() => setTrendDays(30)}
+              className={`rounded px-2 py-1 text-xs ${trendDays === 30 ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
+            >
+              30天
+            </button>
+          </div>
         </div>
         <div className="h-64">
           {trend.length > 0 ? (

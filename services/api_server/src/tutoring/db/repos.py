@@ -659,7 +659,7 @@ async def list_anomaly_students(
     anomalies.sort(key=lambda x: x["inactive_days"], reverse=True)
     return anomalies
 
-
+# 学习趋势
 async def get_daily_trend(
     session: AsyncSession,
     class_ids: list[UUID],
