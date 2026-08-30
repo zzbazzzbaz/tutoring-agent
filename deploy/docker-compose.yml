@@ -44,6 +44,13 @@ services:
     container_name: teaching-lightrag
     restart: unless-stopped
     environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      ALL_PROXY: ""
+      all_proxy: ""
+      NO_PROXY: "*"
       WORKSPACE: "workspace-1"
       LIGHTRAG_KV_STORAGE: PGKVStorage
       LIGHTRAG_VECTOR_STORAGE: PGVectorStorage

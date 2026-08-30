@@ -22,6 +22,10 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
+import {
+  KnowledgeSearchCard,
+  parseKnowledgeSearchResult,
+} from "./knowledge-search-card";
 
 function CustomComponent({
   message,
@@ -159,8 +163,17 @@ export function AssistantMessage({
     ? coerceQuizOptions(quizToolCall.args?.options)
     : null;
   const showAnsweredQuiz = !!(quizToolCall && quizResult);
+  const knowledgeResult = isToolResult
+    ? parseKnowledgeSearchResult(message?.content)
+    : null;
+  const showKnowledgeCard = !!knowledgeResult;
 
-  if (isToolResult && hideToolCalls && !showAnsweredQuiz) {
+  if (
+    isToolResult &&
+    hideToolCalls &&
+    !showAnsweredQuiz &&
+    !showKnowledgeCard
+  ) {
     return null;
   }
 
@@ -179,6 +192,8 @@ export function AssistantMessage({
                 skipped={!!quizResult?.skipped}
                 correctAnswer={String(quizToolCall?.args?.correct_answer ?? "")}
               />
+            ) : showKnowledgeCard && knowledgeResult ? (
+              <KnowledgeSearchCard result={knowledgeResult} />
             ) : (
               <ToolResult message={message} />
             )}

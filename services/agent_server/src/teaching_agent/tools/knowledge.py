@@ -1,3 +1,4 @@
+import json
 import logging
 
 from langchain_core.tools import BaseTool, tool
@@ -15,9 +16,13 @@ def create_search_knowledge_tool(lightrag_client: LightRAGClient) -> BaseTool:
     )
     async def search_knowledge(query: str) -> str:
         try:
-            return await lightrag_client.search(query)
+            result = await lightrag_client.search(query)
+            return json.dumps(result, ensure_ascii=False)
         except LightRAGError:
             logger.exception("Knowledge search failed")
-            return "知识库检索暂时不可用，请基于已有对话继续引导学生思考。"
+            return json.dumps(
+                {"query": query, "error": "知识库检索暂时不可用，请基于已有对话继续引导学生思考。"},
+                ensure_ascii=False,
+            )
 
     return search_knowledge
