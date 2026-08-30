@@ -1,7 +1,7 @@
 # 语音交互模块设计
 
 日期：2026-08-30
-状态：已确认
+状态：已确认（2026-08-30 更新为流式播报档位）
 
 ## 背景
 
@@ -9,45 +9,56 @@
 
 约束：现场真机演示、无期限、无需考虑安全性问题（不引入鉴权/权限设计负担）。
 
+**交互档位：流式播报**（用户确认）
+- 学生端流式 ASR：边说边出字，语音提问体验即时
+- Agent 回复流式文本的同时，已生成的句子实时送 TTS，前端边出字边发声
+- 不做全实时语音对话（Agent 工具检索期间有静默，演示反而不稳）
+
 ## 技术选型
 
 沿用阿里云 DashScope（项目已用于通义千问，同一 API Key 生态）：
 
-| 环节 | 服务 | 模型 |
-| --- | --- | --- |
-| 语音识别 ASR | DashScope Qwen-Audio-3.0-ASR | `qwen-audio-3.0-asr-flash`（2026-06 最新版，非实时，Base64 输入，≤5 分钟） |
-| 语音合成 TTS | DashScope Qwen-Audio-TTS | `qwen-audio-3.0-tts-flash`（支持 LaTeX 公式转语音、指令控制方言/情感） |
-| 音频存储 | API Server 本地磁盘 | 数据库存路径，静态挂载直接提供 |
+| 环节 | 服务 | 模型 | 延迟 |
+| --- | --- | --- | --- |
+| 语音识别 ASR | DashScope Qwen-Audio-3.0-ASR | `qwen-audio-3.0-asr-flash-streaming`（WebSocket 流式，边说边出字） | ~300ms 出字 |
+| 语音合成 TTS | DashScope Qwen-Audio-TTS | `qwen-audio-3.0-tts-flash`（WebSocket 流式合成） | <200ms 首包 |
+| 音频存储 | API Server 本地磁盘 | 数据库存路径，静态挂载直接提供 | — |
 
 选型理由：
-- ASR 选用 `qwen-audio-3.0-asr-flash`：百炼官方非实时识别首选（对标 gpt-4o-transcribe），教育场景专项优化（古诗词/文言、七大方言、标点与数字归一化），支持热词与 Prompt 上下文（可注入课程领域背景）；Paraformer 为上一代模型，官方已不推荐。
-- TTS 选用 `qwen-audio-3.0-tts-flash`：支持 LaTeX 公式转语音（数学题朗读）、指令控制方言/情感/角色，音色丰富；CosyVoice v3 亦可，两者同一 WebSocket 协议可切换。
+- ASR 用 streaming 版：官方为低延迟实时交互打造的旗舰模型，100ms 级分块解码、~300ms 出字，中文错字率 7.8%，支持热词与 Prompt 上下文（可注入课程领域背景）；教育场景专项优化（古诗词/文言、七大方言、标点与数字归一化）。
+- TTS 用 flash 流式：首包 <200ms，第一个字产出即出音频；支持 LaTeX 公式转语音（数学题朗读）、指令控制方言/情感/角色。
+- 端到端瓶颈在 Agent 推理（LLM + 工具调用 + 知识检索，首段文本约 2~8s），语音模型本身均亚秒级，Agent 思考期间前端显示"思考中"状态掩盖停顿。
 
 不暴露 DashScope API Key 给前端：前端只与 API Server 交互，ASR/TTS 由 API Server 代理调用。
 
 ## 架构
 
 ```
-学生前端 ──(录音上传 webm/opus)──▶ API Server /speech/upload
-    │                                 │ 1. 保存原声到本地磁盘
-    │                                 │ 2. 调 Qwen-Audio-3.0-ASR 转写
-    │                                 │ 3. 返回 {text, audio_url}
+学生前端 ──(录音流 WebSocket)──▶ API Server /speech/asr-stream
+    │  ▲                          │ 1. 转发音频帧 → DashScope ASR 流式
+    │  │ 识别中间结果             │ 2. 同时把音频帧写盘保存原声
+    │  └──────────────────────────┤ 3. 说话结束返回 {text, audio_url}
     │
-    │──(文字消息)──▶ Agent Server (LangGraph) 流式回复
+    │──(转写文本)──▶ Agent Server (LangGraph) 流式回复文本
     │
-    │──(回复完成后)──▶ API Server /speech/tts ──▶ Qwen-Audio-TTS 合成
-    │                     └── 返回 audio_url → 前端自动播放（可开关）
+    │──(回复文本流)──▶ API Server /speech/tts-stream (WebSocket)
+    │                     ▲  │ 1. 按句切分送 DashScope TTS 流式合成
+    │                     │  │ 2. 音频帧回传前端播放（边出字边发声）
+    │                     │  │ 3. 同时写盘，结束返回 audio_url
+    │                     └──┘
 ```
 
 ### 数据流：一次语音提问的完整链路
 
-1. 学生按住/点击麦克风录音（MediaRecorder，webm/opus）
-2. 录音结束 → 上传 `POST /speech/upload`（multipart）
-3. API Server 保存原声文件到磁盘 → 调 Paraformer 非流式转写 → 返回 `{text, audio_url}`
+1. 学生按住麦克风说话，录音流经 WebSocket `WS /speech/asr-stream` 推给 API Server
+2. API Server 边转发音频帧给 DashScope ASR 流式识别，边把音频帧写盘（学生原声）
+3. ASR 中间结果实时回传前端显示（边说边出字）；学生说完（松手/点停止）→ API Server 结束识别 → 返回 `{text, audio_url}`
 4. 前端把 `text` 作为消息发送给 Agent（LangGraph SDK），并记录本轮消息 id
-5. Agent 流式回复完成后，前端调 `POST /speech/tts {text}` → CosyVoice 合成 → 返回 audio_url → 前端自动播放（用户可关闭，偏好存 localStorage）
-6. 前端将 `{session_id, message_id, role, text, audio_path}` 注册到 `POST /sessions/{id}/audio`
-7. 教师端读会话时 `GET /sessions/{id}/audio` 拉取全部语音映射，按消息渲染播放器
+5. Agent 流式回复文本 → 前端按句切分（句号/问号/换行），完整句子经 `WS /speech/tts-stream` 送 API Server
+6. API Server 转发 DashScope TTS 流式合成 → 音频帧回传前端播放（边出字边发声），同时写盘
+7. Agent 回复结束 → API Server 返回完整 audio_url
+8. 前端注册语音映射：`POST /sessions/{id}/audio`（学生原声 → user 消息 id，Agent 语音 → assistant 消息 id）
+9. 教师端读会话时 `GET /sessions/{id}/audio` 拉取全部映射，按消息渲染播放器
 
 ## 数据库变更
 
@@ -68,16 +79,16 @@ message_audio
 
 | 端点 | 说明 |
 | --- | --- |
-| `POST /speech/upload` | multipart 接收录音 → 存原声 → ASR 转写（Base64 → `qwen-audio-3.0-asr-flash`）→ 返回 `{text, audio_url}` |
-| `POST /speech/tts` | body `{text}` → Qwen-Audio-TTS 合成（`qwen-audio-3.0-tts-flash`）→ 存文件 → 返回 `{audio_url}` |
+| `WS /speech/asr-stream` | 双向流式：接收前端音频帧 → 转发 DashScope ASR 流式 + 写盘保存原声 → 回传识别中间/最终结果，结束时返回 `{text, audio_url}` |
+| `WS /speech/tts-stream` | 双向流式：接收按句切分的文本 → 转发 DashScope TTS 流式 → 音频帧回传前端 + 写盘，结束时返回 `{audio_url}` |
 | `POST /sessions/{id}/audio` | 注册消息与音频的映射 |
 | `GET /sessions/{id}/audio` | 返回该会话全部语音映射 |
 | 静态音频 | FastAPI 静态挂载音频目录，直接 URL 访问（不加鉴权） |
 
 ### 格式处理
 
-- 前端 MediaRecorder 默认产出 webm/opus 容器
-- `qwen-audio-3.0-asr-flash` 支持 webm/opus 输入（Base64 上传），无需转码
+- 流式 ASR 支持 pcm/wav/mp3/opus 二进制流；前端优先用 Web Audio API 取 PCM 16k 16bit 单声道推帧（兼容性最稳），备选 MediaRecorder opus 流（实现时验证）
+- TTS 流式输出音频格式：实现时验证 pcm 或 mp3/opus；若用 PCM，前端经 Web Audio API（AudioContext）播放
 
 ### 配置新增（API Server `.env`）
 
@@ -87,9 +98,9 @@ message_audio
 ## 前端改动
 
 **学生端（`/student/chat`）**
-- 输入区新增麦克风按钮：录音 → 上传 → 转写文本发送
-- Agent 消息气泡带音量图标；回复完成后自动播放语音（可关闭，偏好存 localStorage）
-- 播放中显示进度/停止按钮
+- 输入区新增麦克风按钮：按住说话 → 录音流推 ASR → 边说边显示转写文字 → 松手发送
+- Agent 消息流式回复：文字边出边把完整句子送 TTS，同步语音播放（可关闭，偏好存 localStorage）
+- 播放中显示进度/停止按钮；Agent 思考期间显示"思考中"状态
 
 **教师端（`/teacher/manage/classes/[classId]/sessions/[sid]`）**
 - 会话详情页：按 `message_audio` 映射，在学生消息和 Agent 消息旁渲染播放按钮（学生原声、Agent 语音），文字照常显示
@@ -98,14 +109,14 @@ message_audio
 
 | 层 | 测试 |
 | --- | --- |
-| API Server | `speech` 模块单测：mock DashScope 客户端，验证上传→保存原声→转写→返回链路；`/sessions/{id}/audio` 增查链路 |
-| 前端 | 手动验证：录音→转写→发送→自动播报→教师端回放 |
-| 端到端 | 本地全栈手动验证语音闭环 |
+| API Server | `speech` 模块单测：mock DashScope 客户端，验证流式转发/写盘/结果回传链路；`/sessions/{id}/audio` 增查链路 |
+| 前端 | 手动验证：语音说话→边出字→发送→Agent 回复边出字边发声→教师端回放 |
+| 端到端 | 本地全栈手动验证语音闭环，重点验证流式播放无卡顿、写盘完整 |
 
 ## 实施顺序
 
 1. 数据库迁移（`message_audio` 表）
-2. API Server `speech` 模块（ASR + TTS + 音频映射端点 + 静态挂载）
-3. 前端学生端录音/播报
+2. API Server `speech` 模块（ASR 流式代理 + TTS 流式代理 + 音频映射端点 + 静态挂载）
+3. 前端学生端录音/流式播报
 4. 前端教师端回放
 5. 测试与演示验证
