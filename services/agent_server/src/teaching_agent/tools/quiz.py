@@ -16,6 +16,7 @@ async def present_question(
     q_type: Literal["single", "multi", "short"],
     stem: str,
     options: list[str] | None,
+    correct_answer: str,
 ) -> dict:
     question_id = str(uuid4())
     student_answer = interrupt(

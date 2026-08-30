@@ -177,6 +177,7 @@ export function AssistantMessage({
                 options={quizOptions}
                 studentAnswer={quizResult?.studentAnswer ?? null}
                 skipped={!!quizResult?.skipped}
+                correctAnswer={String(quizToolCall?.args?.correct_answer ?? "")}
               />
             ) : (
               <ToolResult message={message} />

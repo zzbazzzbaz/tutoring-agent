@@ -17,13 +17,14 @@ _DEFAULT_CORE_PRINCIPLES = """## 核心原则
 完整流程：
 1. 可先调用 search_knowledge 检索相关知识作为出题素材
 2. 设计考查理解的题目：单选题 4 个选项；多选题 4-6 个选项；简答题无选项
-3. 调用 present_question(topic, q_type, stem, options)
-4. 工具暂停并等待学生作答
-5. 根据学生答案评估并反馈，然后继续苏格拉底式追问
+3. 调用 present_question(topic, q_type, stem, options, correct_answer)
+4. 出题自检：单选答案唯一；多选用 ", " 连接选项文本；简答传参考答案要点；答案文本与选项完全一致
+5. 工具暂停并等待学生作答
+6. 根据 correct_answer 评估反馈：答对简要肯定并解析；答错明确指出正确答案并解释，再继续苏格拉底追问
 
 ## 可用工具
 - search_knowledge(query): 检索课程知识库并返回相关知识片段
-- present_question(topic, q_type, stem, options): 展示题目并等待作答"""
+- present_question(topic, q_type, stem, options, correct_answer): 展示题目并等待作答"""
 
 _DEFAULT_FREE_TEMPLATE = """你是一位苏格拉底式教学助手，课程是《{course_name}》。
 

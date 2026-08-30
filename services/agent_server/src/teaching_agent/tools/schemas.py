@@ -20,6 +20,12 @@ class PresentQuestionArgs(BaseModel):
         None,
         description='选项列表数组，如 ["选项A","选项B","选项C","选项D"]。简答题传 null。',
     )
+    correct_answer: str = Field(
+        description=(
+            "正确答案：单选/多选传正确选项的完整文本，多选用 ', ' 连接，"
+            "须与 options 中文本完全一致；简答题传参考答案要点"
+        )
+    )
 
     @field_validator("options", mode="before")
     @classmethod
