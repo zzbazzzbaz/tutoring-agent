@@ -15,9 +15,13 @@
 
 | 环节 | 服务 | 模型 |
 | --- | --- | --- |
-| 语音识别 ASR | DashScope Paraformer | `paraformer-realtime-v2`（非流式 `call` 即可，录音完成后整段转写） |
-| 语音合成 TTS | DashScope CosyVoice | `cosyvoice-v3-flash`（系统音色，如 `longanyang`） |
+| 语音识别 ASR | DashScope Qwen-Audio-3.0-ASR | `qwen-audio-3.0-asr-flash`（2026-06 最新版，非实时，Base64 输入，≤5 分钟） |
+| 语音合成 TTS | DashScope Qwen-Audio-TTS | `qwen-audio-3.0-tts-flash`（支持 LaTeX 公式转语音、指令控制方言/情感） |
 | 音频存储 | API Server 本地磁盘 | 数据库存路径，静态挂载直接提供 |
+
+选型理由：
+- ASR 选用 `qwen-audio-3.0-asr-flash`：百炼官方非实时识别首选（对标 gpt-4o-transcribe），教育场景专项优化（古诗词/文言、七大方言、标点与数字归一化），支持热词与 Prompt 上下文（可注入课程领域背景）；Paraformer 为上一代模型，官方已不推荐。
+- TTS 选用 `qwen-audio-3.0-tts-flash`：支持 LaTeX 公式转语音（数学题朗读）、指令控制方言/情感/角色，音色丰富；CosyVoice v3 亦可，两者同一 WebSocket 协议可切换。
 
 不暴露 DashScope API Key 给前端：前端只与 API Server 交互，ASR/TTS 由 API Server 代理调用。
 
@@ -26,12 +30,12 @@
 ```
 学生前端 ──(录音上传 webm/opus)──▶ API Server /speech/upload
     │                                 │ 1. 保存原声到本地磁盘
-    │                                 │ 2. 调 Paraformer 转写
+    │                                 │ 2. 调 Qwen-Audio-3.0-ASR 转写
     │                                 │ 3. 返回 {text, audio_url}
     │
     │──(文字消息)──▶ Agent Server (LangGraph) 流式回复
     │
-    │──(回复完成后)──▶ API Server /speech/tts ──▶ CosyVoice 合成
+    │──(回复完成后)──▶ API Server /speech/tts ──▶ Qwen-Audio-TTS 合成
     │                     └── 返回 audio_url → 前端自动播放（可开关）
 ```
 
@@ -64,8 +68,8 @@ message_audio
 
 | 端点 | 说明 |
 | --- | --- |
-| `POST /speech/upload` | multipart 接收录音 → 存原声 → ASR 转写 → 返回 `{text, audio_url}` |
-| `POST /speech/tts` | body `{text}` → CosyVoice 合成 → 存文件 → 返回 `{audio_url}` |
+| `POST /speech/upload` | multipart 接收录音 → 存原声 → ASR 转写（Base64 → `qwen-audio-3.0-asr-flash`）→ 返回 `{text, audio_url}` |
+| `POST /speech/tts` | body `{text}` → Qwen-Audio-TTS 合成（`qwen-audio-3.0-tts-flash`）→ 存文件 → 返回 `{audio_url}` |
 | `POST /sessions/{id}/audio` | 注册消息与音频的映射 |
 | `GET /sessions/{id}/audio` | 返回该会话全部语音映射 |
 | 静态音频 | FastAPI 静态挂载音频目录，直接 URL 访问（不加鉴权） |
@@ -73,8 +77,7 @@ message_audio
 ### 格式处理
 
 - 前端 MediaRecorder 默认产出 webm/opus 容器
-- Paraformer 支持 opus 编码流；若容器格式不被接受，后端用 ffmpeg 转 wav 16k 再识别
-- Docker 镜像需安装 ffmpeg（部署文件同步更新）
+- `qwen-audio-3.0-asr-flash` 支持 webm/opus 输入（Base64 上传），无需转码
 
 ### 配置新增（API Server `.env`）
 
