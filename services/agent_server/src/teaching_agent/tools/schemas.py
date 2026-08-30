@@ -6,12 +6,12 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 class SearchKnowledgeArgs(BaseModel):
     query: str = Field(
-        description="检索关键词，需包含完整上下文（消除代词指代），如 'TCP三次握手' 而非 '它'"
+        description="检索关键词，需包含完整上下文（消除代词指代），如 '知觉恒常性' 而非 '它'"
     )
 
 
 class PresentQuestionArgs(BaseModel):
-    topic: str = Field(description="知识点名称，如 TCP三次握手")
+    topic: str = Field(description="知识点名称，如 知觉恒常性")
     q_type: Literal["single", "multi", "short"] = Field(
         description="题型：single=单选 multi=多选 short=简答"
     )

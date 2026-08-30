@@ -8,7 +8,11 @@ from teaching_agent.tools.schemas import PresentQuestionArgs, QuizResume
 
 
 @tool(
-    description="向学生展示一道题目并等待作答，拿到答案后自行评估并反馈。",
+    description=(
+        "向学生展示一道题目并等待作答。出题时必须同时给出正确答案 "
+        "(correct_answer):选择题传正确选项的完整文本,多选用 ', ' 连接;"
+        "简答题传参考答案要点。拿到答案后基于正确答案评估并反馈。"
+    ),
     args_schema=PresentQuestionArgs,
 )
 async def present_question(
