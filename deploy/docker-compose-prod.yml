@@ -97,9 +97,10 @@ services:
       context: ../services/api_server
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+asyncpg://tutoring:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}@postgres:5432/tutoring_db
-      AGENT_SERVER_SECRET: ${AGENT_SERVER_SECRET:?Set AGENT_SERVER_SECRET in deploy/.env}
       LIGHTRAG_BASE_URL: http://lightrag:9621
     ports:
       - "8000:8000"
@@ -125,20 +126,13 @@ services:
       context: ../services/agent_server
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_URI: postgresql://tutoring:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}@postgres:5432/tutoring_agent_server_db?sslmode=disable
       REDIS_URI: redis://redis:6379
-      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:?Set DASHSCOPE_API_KEY in deploy/.env}
-      DASHSCOPE_BASE_URL: ${DASHSCOPE_BASE_URL:?Set DASHSCOPE_BASE_URL in deploy/.env}
-      LLM_MODEL: ${LLM_MODEL:?Set LLM_MODEL in deploy/.env}
       BACKEND_INTERNAL_URL: http://api_server:8000
-      AGENT_SERVER_SECRET: ${AGENT_SERVER_SECRET:?Set AGENT_SERVER_SECRET in deploy/.env}
       LIGHTRAG_QUERY_URL: http://lightrag:9621/query
-      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:?Set CORS_ALLOW_ORIGINS in deploy/.env}
-      LANGSMITH_TRACING: ${LANGSMITH_TRACING:?Set LANGSMITH_TRACING in deploy/.env}
-      LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT:?Set LANGSMITH_ENDPOINT in deploy/.env}
-      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY?Set LANGSMITH_API_KEY in deploy/.env}
-      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:?Set LANGSMITH_PROJECT in deploy/.env}
     ports:
       - "2024:8000"
     depends_on:
