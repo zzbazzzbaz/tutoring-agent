@@ -68,7 +68,9 @@ def _extract_turn(messages: list) -> tuple[str | None, str | None]:
 
 
 def _has_knowledge_hit(messages: list) -> bool:
-    """本轮（最后一条学生提问之后）是否调用过知识检索工具。"""
+    """本轮（最后一条学生提问之后）是否调用过知识检索工具。
+        为知识命中率提供数据支撑(本轮学生提问是否命中知识库)
+    """
     last_human_idx = -1
     for i, msg in enumerate(messages):
         if isinstance(msg, HumanMessage):

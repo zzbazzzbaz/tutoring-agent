@@ -248,6 +248,14 @@ export interface StudentRanking {
   last_active_at: string | null;
 }
 
+export interface MessageStats {
+  total_messages: number;
+  student_messages: number;
+  assistant_messages: number;
+  avg_turns: number;
+  knowledge_hit_rate: number;
+}
+
 export interface DashboardResponse {
   overview: DashboardOverview;
   anomalies: AnomalyStudent[];
@@ -255,6 +263,7 @@ export interface DashboardResponse {
   class_comparison: ClassComparison[];
   mode_distribution: ModeCount[];
   student_ranking: StudentRanking[];
+  message_stats: MessageStats;
 }
 
 // ===统计分析--> 学生分析 Student Analysis ===

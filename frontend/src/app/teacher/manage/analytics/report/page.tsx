@@ -17,6 +17,10 @@ import {
   PieChart as PieChartIcon,
   Printer,
   BarChart3,
+  MessageSquare,
+  Bot,
+  Repeat,
+  Target,
 } from "lucide-react";
 import {
   Select,
@@ -33,6 +37,7 @@ import type {
   ClassInfo,
   DashboardOverview,
   LearningTrendPoint,
+  MessageStats,
   ModeCount,
   StudentRanking,
 } from "@/lib/types";
@@ -52,6 +57,7 @@ function ReportPageInner() {
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
   const [modeDistribution, setModeDistribution] = useState<ModeCount[]>([]);
   const [studentRanking, setStudentRanking] = useState<StudentRanking[]>([]);
+  const [messageStats, setMessageStats] = useState<MessageStats | null>(null);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState(
     () => searchParams.get("class_id") ?? "all"
@@ -92,6 +98,7 @@ function ReportPageInner() {
       setClassComparison(data.class_comparison || []);
       setModeDistribution(data.mode_distribution || []);
       setStudentRanking(data.student_ranking || []);
+      setMessageStats(data.message_stats || null);
     } catch (err: any) {
       console.error("加载报告数据失败:", err);
       setError(err?.message || "加载失败，请重试");
@@ -244,6 +251,13 @@ function ReportPageInner() {
         ? `当前有 ${overview!.pending_alert_count} 名学生需要重点关注，建议及时跟进。`
         : "当前无待关注学生。"
     );
+    if (messageStats && messageStats.total_messages > 0) {
+      parts.push(
+        `消息级互动：总互动 ${messageStats.total_messages} 条（学生发起 ${messageStats.student_messages}，AI 回复 ${messageStats.assistant_messages}），平均每会话 ${messageStats.avg_turns} 轮，知识命中率 ${Math.round(
+          messageStats.knowledge_hit_rate * 100
+        )}%。`
+      );
+    }
     return parts.join("");
   }
 
@@ -343,9 +357,27 @@ function ReportPageInner() {
           </div>
         </section>
 
-        {/* 3. 数据摘要 */}
+        {/* 3. 互动明细（消息级，自 message 表启用后累积） */}
         <section>
-          <h2 className="mb-2 text-base font-semibold text-gray-900">二、数据摘要</h2>
+          <div className="mb-2 flex items-center gap-2">
+            <MessageSquare className="size-4 text-gray-500" />
+            <h2 className="text-base font-semibold text-gray-900">二、互动明细</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <StatCard icon={<MessageSquare className="size-4" />} label="总互动" value={messageStats?.total_messages ?? 0} />
+            <StatCard icon={<Users className="size-4" />} label="学生发起" value={messageStats?.student_messages ?? 0} />
+            <StatCard icon={<Bot className="size-4" />} label="AI回复(轮次)" value={messageStats?.assistant_messages ?? 0} />
+            <StatCard icon={<Repeat className="size-4" />} label="平均轮次" value={messageStats ? `${messageStats.avg_turns} 轮` : "-"} />
+            <StatCard icon={<Target className="size-4" />} label="知识命中率" value={messageStats ? `${Math.round(messageStats.knowledge_hit_rate * 100)}%` : "-"} />
+          </div>
+          <p className="mt-2 text-xs text-gray-400">
+            【口径注释】互动明细基于 message 表统计，自本版本启用后开始累积，历史会话无消息数据，短期内显示 0/暂无属正常冷启动。平均轮次 = AI 回复数 ÷ 窗口内产生过消息的会话数；知识命中率 = 命中知识库的学生提问 ÷ 学生提问总数。
+          </p>
+        </section>
+
+        {/* 4. 数据摘要 */}
+        <section>
+          <h2 className="mb-2 text-base font-semibold text-gray-900">三、数据摘要</h2>
           <p className="text-sm leading-relaxed text-gray-700">{summaryText}</p>
           <p className="mt-1 text-xs text-gray-400">
             （本摘要由规则自动生成，P1 阶段将升级为 AI 智能摘要）
@@ -356,7 +388,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <TrendingUp className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">三、趋势概览</h2>
+            <h2 className="text-base font-semibold text-gray-900">四、趋势概览</h2>
           </div>
           <div className="mb-3 grid grid-cols-3 gap-3 text-sm">
             <MiniStat label="互动峰值" value={peak && peak.session_count > 0 ? `${peak.date} · ${peak.session_count} 次` : "暂无"} />
@@ -401,7 +433,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <PieChartIcon className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">四、对话模式分布</h2>
+            <h2 className="text-base font-semibold text-gray-900">五、对话模式分布</h2>
           </div>
           {modeTotal === 0 ? (
             <p className="text-sm text-gray-400">暂无对话数据</p>
@@ -429,7 +461,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">五、班级活跃率对比</h2>
+            <h2 className="text-base font-semibold text-gray-900">六、班级活跃率对比</h2>
           </div>
           {classComparison.length === 0 ? (
             <p className="text-sm text-gray-400">暂无班级数据</p>
@@ -467,7 +499,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <Trophy className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">六、学生活跃度排行 TOP10</h2>
+            <h2 className="text-base font-semibold text-gray-900">七、学生活跃度排行 TOP10</h2>
           </div>
           {studentRanking.length === 0 ? (
             <p className="text-sm text-gray-400">暂无学生数据</p>
@@ -509,7 +541,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="size-4 text-red-500" />
-            <h2 className="text-base font-semibold text-gray-900">七、待关注学生</h2>
+            <h2 className="text-base font-semibold text-gray-900">八、待关注学生</h2>
           </div>
           {anomalies.length === 0 ? (
             <p className="text-sm text-gray-400">所有学生状态良好</p>
@@ -544,7 +576,7 @@ function ReportPageInner() {
 
         {/* 9. 页脚 */}
         <footer className="border-t border-gray-200 pt-3 text-xs text-gray-400">
-          <p>本报告为 P0 版本，基于学情总览现有数据自动生成；指标口径以学情总览页为准。</p>
+          <p>本报告为 P1 阶段版本（含消息级互动明细），会话级指标口径以学情总览页为准，消息级指标口径见互动明细注释。</p>
         </footer>
       </div>
     </div>
