@@ -54,6 +54,14 @@ class StudentRanking(BaseModel):
     active_days: int = Field(description="活跃天数")
     last_active_at: datetime | None = Field(default=None, description="最后活跃时间")
 
+class MessageStats(BaseModel):
+    """消息级互动统计（互动明细 / 知识命中率）"""
+    total_messages: int = Field(description="总互动(学生发起+AI回复)")
+    student_messages: int = Field(description="学生发起数")
+    assistant_messages: int = Field(description="AI回复数(轮次)")
+    avg_turns: float = Field(description="平均轮次(AI回复/窗口内有消息的会话数)")
+    knowledge_hit_rate: float = Field(description="知识命中率(命中知识的学生提问/学生提问总数) 0-1")
+
 class DashboardResponse(BaseModel):
     """Dashboard 完整响应"""
     overview: DashboardOverview = Field(description="概览指标")
@@ -62,6 +70,7 @@ class DashboardResponse(BaseModel):
     class_comparison: list[ClassComparison] = Field(description="班级对比数据")
     mode_distribution: list[ModeCount] = Field(description="对话模式分布")
     student_ranking: list[StudentRanking] = Field(description="学生活跃度排行")
+    message_stats: MessageStats = Field(description="消息级互动统计(互动明细)")
 
 # ===========================================================================
 # 学生分析--响应模型

@@ -2,11 +2,11 @@ import uuid
 from datetime import UTC, datetime,date, timedelta
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from tutoring.db.models import AuthToken, Project, Session, User, Class, ClassStudent
+from tutoring.db.models import AuthToken, Project, Session, User, Class, ClassStudent, Message
 
 # === User ===
 
@@ -912,3 +912,87 @@ async def get_student_classes(
         }
         for cs, cls in rows
     ]
+# === Message ===
+
+async def create_messages(
+    session: AsyncSession,
+    *,
+    session_id: UUID,
+    items: list[dict],
+) -> int:
+    """批量写入消息记录。items: [{role, content, knowledge_hit}]。返回写入条数。"""
+    for item in items:
+        session.add(
+            Message(
+                session_id=session_id,
+                role=item["role"],
+                content=item["content"],
+                knowledge_hit=bool(item.get("knowledge_hit", False)),
+            )
+        )
+    await session.commit()
+    return len(items)
+
+
+async def get_message_stats(
+    session: AsyncSession,
+    class_ids: list[UUID],
+    since: date,
+) -> dict:
+    """统计班级范围内、`since`（含）起的消息级互动指标。
+
+    口径（互动明细/知识命中率用，注意与会话级统计区分）：
+    - 总互动 = 窗口内全部消息数（学生发起 + AI 回复）
+    - 学生发起 = role=student 的消息数
+    - AI 回复 = role=assistant 的消息数
+    - 知识命中数 = role=student 且 knowledge_hit=True 的消息数
+    时间过滤按 Message.created_at 的自然日（>= since）；冷启动期无消息时各计数为 0。
+    """
+    stmt = (
+        select(
+            func.count(Message.id).label("total"),# 总互动
+            func.sum(case((Message.role == "student", 1), else_=0)).label("student_count"),# 学生发起
+            func.sum(case((Message.role == "assistant", 1), else_=0)).label("assistant_count"),# AI 回复
+            func.sum(case((Message.knowledge_hit.is_(True), 1), else_=0)).label("hit_count"),# 知识命中数
+        )
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)# 消息→会话
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)# 会话→班级学生
+        .where(
+            ClassStudent.class_id.in_(class_ids),# 只算当前班级范围
+            Session.deleted_at.is_(None),# 排除已删会话
+            func.date(Message.created_at) >= since,# 只算时间窗口内
+        )
+    )
+    result = await session.execute(stmt)
+    row = result.one()
+    return {
+        "total_messages": int(row.total or 0),
+        "student_messages": int(row.student_count or 0),
+        "assistant_messages": int(row.assistant_count or 0),
+        "knowledge_hit_count": int(row.hit_count or 0),
+    }
+
+
+async def count_sessions_in_window(
+    session: AsyncSession,
+    class_ids: list[UUID],
+    since: date,
+) -> int:
+    """统计窗口内（Message.created_at >= since）产生过消息的会话数（平均轮次分母，去重）。
+
+    冷启动期历史会话无消息数据，不会被计入该分母，避免稀释平均轮次。
+    """
+    stmt = (
+        select(func.count(func.distinct(Message.session_id)))
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+            func.date(Message.created_at) >= since,
+        )
+    )
+    result = await session.execute(stmt)
+    return int(result.scalar_one())

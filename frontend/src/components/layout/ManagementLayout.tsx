@@ -75,7 +75,7 @@ export function ManagementLayout({
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#efece3] dark:bg-[#091611]">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 px-4">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 px-4 print:hidden">
         <div className="flex items-center gap-3">
           <Suspense fallback={
             <Button

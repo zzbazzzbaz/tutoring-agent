@@ -185,3 +185,37 @@ class Session(SQLModel, table=True):
 
     project: Project | None = Relationship(back_populates="sessions")
     user: User | None = Relationship(back_populates="sessions")
+    messages: list["Message"] = Relationship(back_populates="session", cascade_delete=True)
+
+
+class Message(SQLModel, table=True):
+    """消息表：记录每句学生/AI 发言。用于互动明细 / 知识命中率等消息级统计。
+
+    说明：
+    - `role` 取值：student（学生发起）/ assistant（AI 回复）
+    - `knowledge_hit`：本轮学生提问是否命中知识库（是否调用过检索知识工具）
+    - 落库由 Agent Server 每回合结束写入，本表数据自启用后开始累积
+    """
+
+    __tablename__ = "message"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        sa_column=Column(PG_UUID(as_uuid=True), primary_key=True),
+    )
+    session_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("session.id", ondelete="CASCADE"),
+            index=True,
+        ),
+    )
+    role: str = Field(max_length=20, index=True)  # student / assistant
+    content: str = Field(sa_column=Column(Text))
+    # 本轮学生提问是否命中知识库
+    knowledge_hit: bool = Field(default=False)
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )
+
+    session: Session | None = Relationship(back_populates="messages")

@@ -11,6 +11,7 @@ from tutoring.analytics.schemas import (
     DashboardOverview,
     DashboardResponse,
     LearningTrendPoint,
+    MessageStats,
     StudentAnalysisResponse,
     StudentClassInfo,
     StudentDailyActivity,
@@ -79,6 +80,24 @@ async def get_dashboard(
     ranking_raw = await repos.list_student_activity_ranking(db, class_ids, limit=50)
     student_ranking = [StudentRanking(**r) for r in ranking_raw]
 
+    # 8. 消息级互动明细 + 知识命中率（数据源：message 表，窗口与趋势一致为 days 个自然日）
+    window_start = today - timedelta(days=days - 1)
+    msg_raw = await repos.get_message_stats(db, class_ids, since=window_start)
+    msg_sessions = await repos.count_sessions_in_window(db, class_ids, since=window_start)
+    assistant_count = msg_raw["assistant_messages"]
+    student_count = msg_raw["student_messages"]
+    avg_turns = round(assistant_count / msg_sessions, 1) if msg_sessions > 0 else 0.0       # 平均轮次 = AI回复 ÷ 有消息的会话数
+    hit_rate = (
+        round(msg_raw["knowledge_hit_count"] / student_count, 4) if student_count > 0 else 0.0  # 命中率 = 命中知识库 ÷ 学生提问
+    )
+    message_stats = MessageStats(
+        total_messages=msg_raw["total_messages"],
+        student_messages=student_count,
+        assistant_messages=assistant_count,
+        avg_turns=avg_turns,
+        knowledge_hit_rate=hit_rate,
+    )
+
     return DashboardResponse(
         overview=DashboardOverview(
             total_students=total_students,
@@ -92,6 +111,7 @@ async def get_dashboard(
         class_comparison=class_comparison,
         mode_distribution=mode_distribution,
         student_ranking=student_ranking,
+        message_stats=message_stats,
     )
 
 
@@ -118,6 +138,13 @@ def _empty_dashboard(days: int = 30) -> DashboardResponse:
         class_comparison=[],
         mode_distribution=[],
         student_ranking=[],
+        message_stats=MessageStats(
+            total_messages=0,
+            student_messages=0,
+            assistant_messages=0,
+            avg_turns=0.0,
+            knowledge_hit_rate=0.0,
+        ),
     )
 
 # === 学生分析 ===

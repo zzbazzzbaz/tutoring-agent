@@ -220,3 +220,23 @@
     animation: login-fade-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
   }
 }
+
+/* === 导出报告：打印样式=== */
+@media print {
+  /* 报告纸始终白底黑字，不受深色主题影响 */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  /* 强制 opacity/visibility，避免布局动画(motion)导致打印内容不可见 */
+  * {
+    opacity: 1 !important;
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    margin: 12mm;
+  }
+}
