@@ -35,8 +35,10 @@ def create_report_stage_progress_tool() -> BaseTool:
         args_schema=ReportStageProgressArgs,
         description=(
             "汇报学生在项目学习主线中的阶段进度，并同步到服务器。"
-            "当学生开始学习某阶段时标记 in_progress；"
-            "确认学生真正掌握该阶段核心内容、且产出物（若有）达标后标记 completed。"
+            "调用时机：会话开始时若没有进行中的阶段，先把第一个未完成阶段标记为 in_progress；"
+            "某阶段标记 completed 后立即把下一个阶段标记为 in_progress；"
+            "学生真正掌握当前阶段核心内容（含产出物达标）后标记 completed。"
+            "只在状态发生变化时调用一次，不要在每轮对话中重复标记同一状态。"
             "stage_id 必须来自学习主线中已列出的阶段 id。"
         ),
     )

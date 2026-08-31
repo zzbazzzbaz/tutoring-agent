@@ -88,8 +88,10 @@ function StageNode({
           )}
         </div>
 
-        {stage.guide && status !== "completed" && (
-          <p className="text-xs leading-relaxed text-ink/45">{stage.guide}</p>
+        {stage.student_desc && status !== "completed" && (
+          <p className="text-xs leading-relaxed text-ink/45">
+            {stage.student_desc}
+          </p>
         )}
 
         {showDeliverable && (

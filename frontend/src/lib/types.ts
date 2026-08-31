@@ -54,6 +54,7 @@ export interface MainlineStage {
   order: number;
   title: string;
   guide?: string;
+  student_desc?: string;
   deliverable: MainlineDeliverable | null;
 }
 

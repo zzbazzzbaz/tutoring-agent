@@ -176,12 +176,26 @@ export function MainlineEditor({
               </div>
               <div className="grid gap-2">
                 <Label>
-                  引导提示 <span className="text-ink/35">（给 agent 的引导语，可空）</span>
+                  引导提示 <span className="text-ink/35">（仅给 agent 参考，可空）</span>
                 </Label>
                 <Textarea
                   value={stage.guide ?? ""}
                   onChange={(e) => patchStage(index, { guide: e.target.value })}
                   placeholder="例如：先引导学生观察哭闹现象，再推导依恋与情绪机制"
+                  className="min-h-[64px]"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>
+                  学生可见描述{" "}
+                  <span className="text-ink/35">（展示在学生学习主线面板，可空）</span>
+                </Label>
+                <Textarea
+                  value={stage.student_desc ?? ""}
+                  onChange={(e) =>
+                    patchStage(index, { student_desc: e.target.value })
+                  }
+                  placeholder="例如：了解孩子哭闹、黏人背后的情绪与依恋机制，学会安抚策略"
                   className="min-h-[64px]"
                 />
               </div>
