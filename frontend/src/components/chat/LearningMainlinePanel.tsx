@@ -115,10 +115,10 @@ function StageNode({
 
 export function LearningMainlinePanel({
   projectId,
-  userId,
+  sessionId,
 }: {
   projectId: string;
-  userId: string;
+  sessionId: string;
 }) {
   const [mainline, setMainline] = useState<Mainline | null>(null);
   const [fetchedProgress, setFetchedProgress] = useState<ProjectProgress>({});
@@ -133,7 +133,10 @@ export function LearningMainlinePanel({
   useEffect(() => {
     let active = true;
     setLoading(true);
-    Promise.all([projectsApi.get(projectId), progressApi.get(projectId, userId)])
+    Promise.all([
+      projectsApi.get(projectId),
+      progressApi.get(sessionId),
+    ])
       .then(([proj, prog]) => {
         if (!active) return;
         setMainline(proj.mainline);
@@ -144,7 +147,7 @@ export function LearningMainlinePanel({
     return () => {
       active = false;
     };
-  }, [projectId, userId]);
+  }, [projectId, sessionId]);
 
   const progress = useMemo(
     () => ({ ...fetchedProgress, ...liveProgress }),

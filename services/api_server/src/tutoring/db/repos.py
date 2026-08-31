@@ -12,8 +12,8 @@ from tutoring.db.models import (
     ClassStudent,
     Message,
     Project,
-    ProjectProgress,
     Session,
+    SessionProgress,
     User,
 )
 
@@ -259,38 +259,36 @@ async def delete_project(session: AsyncSession, project_id: UUID) -> None:
     await session.commit()
 
 
-# === ProjectProgress ===
+# === SessionProgress ===
 
 
-async def upsert_project_progress(
+async def upsert_session_progress(
     session: AsyncSession,
     *,
-    user_id: UUID,
-    project_id: UUID,
+    session_id: UUID,
     progress: dict,
-) -> ProjectProgress:
-    """写入/更新某个学生某项目的进度（合并式更新：仅覆盖传入的 stage_id）。"""
-    existing = await get_project_progress(session, user_id=user_id, project_id=project_id)
+) -> SessionProgress:
+    """写入/更新某会话的学习进度（合并式更新：仅覆盖传入的 stage_id）。"""
+    existing = await get_session_progress(session, session_id=session_id)
     merged: dict = {**(existing.progress if existing else {}), **progress}
     if existing:
         existing.progress = merged
         existing.updated_at = datetime.now(UTC)
         obj = existing
     else:
-        obj = ProjectProgress(user_id=user_id, project_id=project_id, progress=merged)
+        obj = SessionProgress(session_id=session_id, progress=merged)
         session.add(obj)
     await session.commit()
     await session.refresh(obj)
     return obj
 
 
-async def get_project_progress(
+async def get_session_progress(
     session: AsyncSession,
     *,
-    user_id: UUID,
-    project_id: UUID,
-) -> ProjectProgress | None:
-    return await session.get(ProjectProgress, (user_id, project_id))
+    session_id: UUID,
+) -> SessionProgress | None:
+    return await session.get(SessionProgress, session_id)
 
 # === Class ===
 

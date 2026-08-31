@@ -16,13 +16,6 @@ async def get_graph(runtime: ServerRuntime) -> AsyncIterator[CompiledStateGraph]
     async with lightrag_client() as client:
         context = get_trusted_agent_context(runtime)
         tools = create_tools(client)
-        if context.mode == "project" and context.project_id:
-            user = runtime.ensure_user()
-            user_id = str((user or {}).get("identity", ""))
-            tools = [
-                *tools,
-                create_report_stage_progress_tool(
-                    user_id=user_id, project_id=context.project_id
-                ),
-            ]
+        if context.mode == "project":
+            tools = [*tools, create_report_stage_progress_tool()]
         yield build_agent(context, tools=tools)

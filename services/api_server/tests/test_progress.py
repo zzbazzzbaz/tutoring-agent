@@ -7,19 +7,19 @@ from tutoring.core.errors import AppError
 from tutoring.progress import service as progress_service
 
 
-class _ExistingProjectDB:
+class _ExistingSessionDB:
     def __init__(self):
-        self.project = SimpleNamespace(id=uuid4(), deleted_at=None)
+        self.session = SimpleNamespace(id=uuid4(), deleted_at=None)
         self.stored = {}
 
-    async def get(self, model, project_id):
-        if model.__name__ == "Project":
-            return self.project if self.project.id == project_id else None
-        return self.stored.get(project_id)
+    async def get(self, model, session_id):
+        if model.__name__ == "Session":
+            return self.session if self.session.id == session_id else None
+        return self.stored.get(session_id)
 
 
-class _MissingProjectDB:
-    async def get(self, _model, _project_id):
+class _MissingSessionDB:
+    async def get(self, _model, _session_id):
         return None
 
 
@@ -27,23 +27,22 @@ class _MissingProjectDB:
 async def test_update_progress_merges_into_existing(monkeypatch):
     merged = {}
 
-    async def fake_upsert(_db, *, user_id, project_id, progress):
+    async def fake_upsert(_db, *, session_id, progress):
         merged.update(progress)
 
-    async def fake_get(_db, *, user_id, project_id):
+    async def fake_get(_db, *, session_id):
         return SimpleNamespace(progress=merged)
 
-    monkeypatch.setattr("tutoring.db.repos.upsert_project_progress", fake_upsert)
-    monkeypatch.setattr("tutoring.db.repos.get_project_progress", fake_get)
+    monkeypatch.setattr("tutoring.db.repos.upsert_session_progress", fake_upsert)
+    monkeypatch.setattr("tutoring.db.repos.get_session_progress", fake_get)
 
-    db = _ExistingProjectDB()
+    db = _ExistingSessionDB()
     await progress_service.update_progress(
-        db, user_id=uuid4(), project_id=db.project.id, progress={"stg_01": {"status": "in_progress"}}
+        db, session_id=db.session.id, progress={"stg_01": {"status": "in_progress"}}
     )
     await progress_service.update_progress(
         db,
-        user_id=uuid4(),
-        project_id=db.project.id,
+        session_id=db.session.id,
         progress={"stg_01": {"status": "completed", "deliverable_done": True}},
     )
 
@@ -52,27 +51,24 @@ async def test_update_progress_merges_into_existing(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_update_progress_rejects_missing_project():
+async def test_update_progress_rejects_missing_session():
     with pytest.raises(AppError) as exc_info:
         await progress_service.update_progress(
-            _MissingProjectDB(),
-            user_id=uuid4(),
-            project_id=uuid4(),
+            _MissingSessionDB(),
+            session_id=uuid4(),
             progress={"stg_01": {"status": "in_progress"}},
         )
     assert exc_info.value.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_get_progress_returns_empty_for_new_user():
-    class _NoProgressDB(_ExistingProjectDB):
-        async def get(self, model, project_id):
-            if model.__name__ == "Project":
-                return self.project
+async def test_get_progress_returns_empty_for_new_session():
+    class _NoProgressDB(_ExistingSessionDB):
+        async def get(self, model, session_id):
+            if model.__name__ == "Session":
+                return self.session
             return None
 
     db = _NoProgressDB()
-    result = await progress_service.get_progress(
-        db, user_id=uuid4(), project_id=db.project.id
-    )
+    result = await progress_service.get_progress(db, session_id=db.session.id)
     assert result.progress == {}

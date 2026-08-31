@@ -12,15 +12,31 @@ import type {
   Session,
 } from "@/lib/types";
 
-interface ProjectProgressView {
+interface SessionProgressView {
+  sessionId: string;
   projectId: string;
   projectName: string;
+  lastActiveAt: string;
   mainline: Mainline | null;
   progress: ProjectProgress;
 }
 
+function formatTime(date: string | null | undefined): string {
+  if (!date) return "";
+  try {
+    return new Date(date).toLocaleString("zh-CN", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
 export function StudentMainlineProgress({ userId }: { userId: string }) {
-  const [views, setViews] = useState<ProjectProgressView[]>([]);
+  const [views, setViews] = useState<SessionProgressView[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,31 +47,31 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
         const projectSessions = (result.items ?? []).filter(
           (s: Session) => s.mode === "project" && s.project_id,
         );
-        const projectIds = [
-          ...new Set(projectSessions.map((s: Session) => s.project_id!)),
-        ];
 
         const loaded = await Promise.all(
-          projectIds.map(async (projectId) => {
+          projectSessions.map(async (s: Session) => {
             try {
               const [proj, prog] = await Promise.all([
-                projectsApi.get(projectId),
-                progressApi.get(projectId, userId),
+                projectsApi.get(s.project_id!),
+                progressApi.get(s.id),
               ]);
               return {
-                projectId,
+                sessionId: s.id,
+                projectId: s.project_id!,
                 projectName: proj.name,
+                lastActiveAt: s.last_active_at,
                 mainline: proj.mainline,
                 progress: prog.progress ?? {},
-              } satisfies ProjectProgressView;
+              } satisfies SessionProgressView;
             } catch {
               return null;
             }
           }),
         );
-        if (!cancelled) setViews(loaded.filter((v): v is ProjectProgressView => v !== null));
+        if (!cancelled)
+          setViews(loaded.filter((v): v is SessionProgressView => v !== null));
       } catch (err) {
-        console.error("加载项目学习主线失败:", err);
+        console.error("加载会话学习主线失败:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -79,13 +95,18 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
         if (stages.length === 0) return null;
         const percent = Math.round((completed / stages.length) * 100);
         return (
-          <div key={view.projectId} className="rounded-lg border bg-card p-4">
+          <div key={view.sessionId} className="rounded-lg border bg-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Map className="size-4 text-muted-foreground" />
                 <h3 className="font-medium">{view.projectName}</h3>
               </div>
               <div className="flex items-center gap-2">
+                {view.lastActiveAt && (
+                  <span className="text-xs text-muted-foreground">
+                    {formatTime(view.lastActiveAt)}
+                  </span>
+                )}
                 <div className="bg-muted h-1.5 w-24 overflow-hidden rounded-full">
                   <div
                     className="h-full rounded-full bg-emerald-500"
@@ -112,7 +133,10 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                 const status = sp?.status ?? "pending";
                 const isLast = idx === stages.length - 1;
                 return (
-                  <div key={stage.id} className="flex flex-1 items-start last:flex-none">
+                  <div
+                    key={stage.id}
+                    className="flex flex-1 items-start last:flex-none"
+                  >
                     <div className="flex flex-col items-center">
                       <div
                         className={cn(
@@ -128,14 +152,18 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                         {status === "completed" ? (
                           <Check className="size-4" strokeWidth={3} />
                         ) : (
-                          <span className="text-xs font-semibold">{stage.order}</span>
+                          <span className="text-xs font-semibold">
+                            {stage.order}
+                          </span>
                         )}
                       </div>
                       <div className="mt-1.5 flex max-w-[120px] items-center gap-1">
                         <span
                           className={cn(
                             "text-center text-xs leading-tight",
-                            status === "pending" ? "text-muted-foreground/50" : "text-foreground",
+                            status === "pending"
+                              ? "text-muted-foreground/50"
+                              : "text-foreground",
                           )}
                         >
                           {stage.title}
@@ -145,7 +173,9 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                         <span
                           className={cn(
                             "mt-1 flex items-center gap-1 text-[10px]",
-                            sp?.deliverable_done ? "text-emerald-600" : "text-amber-600",
+                            sp?.deliverable_done
+                              ? "text-emerald-600"
+                              : "text-amber-600",
                           )}
                         >
                           <FileText className="size-3" />
@@ -177,7 +207,8 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                   return (
                     <div key={stage.id} className="text-xs">
                       <span className="font-medium">
-                        {stage.order}. {stage.title}「{stage.deliverable?.title}」：
+                        {stage.order}. {stage.title}「
+                        {stage.deliverable?.title}」：
                       </span>
                       <span className="text-muted-foreground">
                         {sp.deliverable.slice(0, 120)}

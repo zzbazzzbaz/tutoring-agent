@@ -223,26 +223,19 @@ class Message(SQLModel, table=True):
     session: Session | None = Relationship(back_populates="messages")
 
 
-class ProjectProgress(SQLModel, table=True):
-    """学生学习项目进度（跨会话累积）。
+class SessionProgress(SQLModel, table=True):
+    """会话级学习进度（每个会话独立，不跨会话累积）。
 
     progress 结构：{stage_id: {"status": "pending|in_progress|completed",
                                 "deliverable": str | None, "deliverable_done": bool}}
     """
 
-    __tablename__ = "project_progress"
+    __tablename__ = "session_progress"
 
-    user_id: uuid.UUID = Field(
+    session_id: uuid.UUID = Field(
         sa_column=Column(
             PG_UUID(as_uuid=True),
-            ForeignKey("user.id", ondelete="CASCADE"),
-            primary_key=True,
-        )
-    )
-    project_id: uuid.UUID = Field(
-        sa_column=Column(
-            PG_UUID(as_uuid=True),
-            ForeignKey("project.id", ondelete="CASCADE"),
+            ForeignKey("session.id", ondelete="CASCADE"),
             primary_key=True,
         )
     )
@@ -251,5 +244,4 @@ class ProjectProgress(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     )
 
-    user: User | None = Relationship()
-    project: Project | None = Relationship()
+    session: Session | None = Relationship()

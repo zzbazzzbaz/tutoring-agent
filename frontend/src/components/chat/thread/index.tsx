@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/select";
 import { projectsApi } from "@/lib/api/projects";
 import type { Project } from "@/lib/types";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { LearningMainlinePanel } from "@/components/chat/LearningMainlinePanel";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
@@ -112,11 +111,12 @@ export function Thread({
   const [projects, setProjects] = useState<Project[]>([]);
 
   const { createSession } = useSessions();
-  const { user } = useAuth();
   const { sessions } = useSessions();
   const currentSession = sessions.find((s) => s.id === threadId);
   const currentProjectId =
     currentSession?.mode === "project" ? currentSession.project_id : undefined;
+  const currentSessionId =
+    currentSession?.mode === "project" ? currentSession.id : undefined;
 
   // 切到项目模式时拉取已发布项目
   useEffect(() => {
@@ -296,7 +296,7 @@ export function Thread({
     (m) => m.type === "ai" || m.type === "tool",
   );
   const showMainline =
-    !!currentProjectId && !!user && !artifactOpen;
+    !!currentProjectId && !!currentSessionId && !artifactOpen;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#efece3] dark:bg-[#091611]">
@@ -586,11 +586,11 @@ export function Thread({
               </div>
               <ArtifactContent className="relative flex-grow" />
             </div>
-          ) : showMainline && currentProjectId && user ? (
+          ) : showMainline && currentProjectId && currentSessionId ? (
             <div className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ink/15 [&::-webkit-scrollbar-track]:bg-transparent">
               <LearningMainlinePanel
                 projectId={currentProjectId}
-                userId={user.id}
+                sessionId={currentSessionId}
               />
             </div>
           ) : null}
