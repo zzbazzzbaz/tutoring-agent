@@ -6,7 +6,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from tutoring.db.models import AuthToken, Project, Session, User, Class, ClassStudent
+from tutoring.db.models import AuthToken, Project, Session, User, Class, ClassStudent, Message
 
 # === User ===
 
@@ -912,3 +912,23 @@ async def get_student_classes(
         }
         for cs, cls in rows
     ]
+# === Message ===
+
+async def create_messages(
+    session: AsyncSession,
+    *,
+    session_id: UUID,
+    items: list[dict],
+) -> int:
+    """批量写入消息记录。items: [{role, content, knowledge_hit}]。返回写入条数。"""
+    for item in items:
+        session.add(
+            Message(
+                session_id=session_id,
+                role=item["role"],
+                content=item["content"],
+                knowledge_hit=bool(item.get("knowledge_hit", False)),
+            )
+        )
+    await session.commit()
+    return len(items)

@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Trophy,
   PieChart as PieChartIcon,
+  FileDown,
 } from "lucide-react";
 import {
   LineChart,
@@ -184,10 +185,19 @@ export default function TeacherManageAnalyticsPage() {
             刷新
           </button>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {selectedClassId === "all"
-            ? `全部班级 · 共 ${classes.length} 个班级`
-            : `${currentClass?.grade} ${currentClass?.classname} · ${overview.total_students} 人`}
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-muted-foreground">
+            {selectedClassId === "all"
+              ? `全部班级 · 共 ${classes.length} 个班级`
+              : `${currentClass?.grade} ${currentClass?.classname} · ${overview.total_students} 人`}
+          </div>
+          <Link
+            href={`/teacher/manage/analytics/report?class_id=${selectedClassId}&days=${trendDays}`}
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+          >
+            <FileDown className="size-4" />
+            导出报告
+          </Link>
         </div>
       </div>
 
