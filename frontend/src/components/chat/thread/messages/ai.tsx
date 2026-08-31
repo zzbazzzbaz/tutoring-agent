@@ -22,10 +22,13 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
-import {
-  KnowledgeSearchCard,
-  parseKnowledgeSearchResult,
-} from "./knowledge-search-card";
+import dynamic from "next/dynamic";
+import { parseKnowledgeSearchResult } from "./knowledge-search-result";
+
+const KnowledgeSearchCard = dynamic(
+  () => import("./knowledge-search-card").then((m) => m.KnowledgeSearchCard),
+  { ssr: false },
+);
 
 function CustomComponent({
   message,

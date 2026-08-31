@@ -30,31 +30,9 @@ const NODE_BORDER = "#e5e7eb";
 const NODE_SELECTED = "#f57f17";
 const EDGE_COLOR = "#d3d3d3";
 
-export type KnowledgeSearchResult = {
-  query?: string;
-  response?: string;
-  chunks?: { content: string; score?: number; file_path?: string }[];
-  entities?: {
-    entity_name: string;
-    entity_type?: string;
-    description?: string;
-  }[];
-  relations?: { src_id: string; tgt_id: string; description?: string }[];
-  error?: string;
-};
-
-export function parseKnowledgeSearchResult(
-  content: unknown,
-): KnowledgeSearchResult | null {
-  if (typeof content !== "string") return null;
-  try {
-    const parsed = JSON.parse(content);
-    if (!parsed || typeof parsed !== "object") return null;
-    return parsed as KnowledgeSearchResult;
-  } catch {
-    return null;
-  }
-}
+export type { KnowledgeSearchResult } from "./knowledge-search-result";
+export { parseKnowledgeSearchResult } from "./knowledge-search-result";
+import type { KnowledgeSearchResult } from "./knowledge-search-result";
 
 function GraphTab({
   entities,
