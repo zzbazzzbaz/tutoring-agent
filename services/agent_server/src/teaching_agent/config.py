@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     prompt_free_template: str
     prompt_project_template: str
 
+    # === Agent 中间件 ===
+    agent_tool_max_retries: int
+    agent_context_trigger_tokens: int
+    agent_context_keep_messages: int
+
 
 @lru_cache
 def get_settings() -> Settings:
