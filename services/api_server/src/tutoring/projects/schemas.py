@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,12 +8,14 @@ from pydantic import BaseModel, ConfigDict, Field
 class ProjectCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     background_md: str = Field(min_length=1)
+    mainline: dict[str, Any] | None = None
     status: Literal["draft", "published"] = "draft"
 
 
 class ProjectUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     background_md: str | None = Field(default=None, min_length=1)
+    mainline: dict[str, Any] | None = None
     status: Literal["draft", "published"] | None = None
 
 
@@ -23,6 +25,7 @@ class ProjectOut(BaseModel):
     id: UUID
     name: str
     background_md: str
+    mainline: dict[str, Any] | None = None
     status: str
     created_at: datetime
     updated_at: datetime

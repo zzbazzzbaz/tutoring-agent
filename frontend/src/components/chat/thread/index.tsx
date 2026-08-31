@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/select";
 import { projectsApi } from "@/lib/api/projects";
 import type { Project } from "@/lib/types";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { LearningMainlinePanel } from "@/components/chat/LearningMainlinePanel";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -110,6 +112,11 @@ export function Thread({
   const [projects, setProjects] = useState<Project[]>([]);
 
   const { createSession } = useSessions();
+  const { user } = useAuth();
+  const { sessions } = useSessions();
+  const currentSession = sessions.find((s) => s.id === threadId);
+  const currentProjectId =
+    currentSession?.mode === "project" ? currentSession.project_id : undefined;
 
   // 切到项目模式时拉取已发布项目
   useEffect(() => {
@@ -288,6 +295,8 @@ export function Thread({
   const hasNoAIOrToolMessages = !messages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
+  const showMainline =
+    !!currentProjectId && !!user && !artifactOpen;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#efece3] dark:bg-[#091611]">
@@ -295,6 +304,7 @@ export function Thread({
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-[grid-template-columns] duration-500",
           artifactOpen && "grid-cols-[3fr_2fr]",
+          !artifactOpen && showMainline && "grid-cols-[1fr_minmax(300px,400px)]",
         )}
       >
         <motion.div
@@ -563,18 +573,27 @@ export function Thread({
           </StickToBottom>
         </motion.div>
         <div className="relative flex flex-col border-l border-ink/8 bg-paper-card/60 backdrop-blur-sm">
-          <div className="absolute inset-0 flex min-w-[30vw] flex-col">
-            <div className="grid grid-cols-[1fr_auto] border-b border-ink/8 p-4">
-              <ArtifactTitle className="truncate overflow-hidden" />
-              <button
-                onClick={closeArtifact}
-                className="cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
+          {artifactOpen ? (
+            <div className="absolute inset-0 flex min-w-[30vw] flex-col">
+              <div className="grid grid-cols-[1fr_auto] border-b border-ink/8 p-4">
+                <ArtifactTitle className="truncate overflow-hidden" />
+                <button
+                  onClick={closeArtifact}
+                  className="cursor-pointer"
+                >
+                  <XIcon className="size-5" />
+                </button>
+              </div>
+              <ArtifactContent className="relative flex-grow" />
             </div>
-            <ArtifactContent className="relative flex-grow" />
-          </div>
+          ) : showMainline && currentProjectId && user ? (
+            <div className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-ink/15 [&::-webkit-scrollbar-track]:bg-transparent">
+              <LearningMainlinePanel
+                projectId={currentProjectId}
+                userId={user.id}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

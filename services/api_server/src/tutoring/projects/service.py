@@ -9,10 +9,17 @@ from tutoring.db.models import Project
 
 
 async def create_project(
-    db: AsyncSession, *, name: str, background_md: str, status: str = "draft"
+    db: AsyncSession,
+    *,
+    name: str,
+    background_md: str,
+    status: str = "draft",
+    mainline: dict | None = None,
 ) -> Project:
     try:
-        return await repos.create_project(db, name=name, background_md=background_md, status=status)
+        return await repos.create_project(
+            db, name=name, background_md=background_md, status=status, mainline=mainline
+        )
     except IntegrityError as exc:
         await db.rollback()
         raise AppError(

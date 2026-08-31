@@ -13,5 +13,5 @@ def build_agent(context: AgentContextV1, *, tools: list[BaseTool]) -> CompiledSt
         model=get_llm(),
         tools=tools,
         system_prompt=render_system_prompt(context),
-        middleware=build_middleware(),
+        middleware=build_middleware(context),
     )

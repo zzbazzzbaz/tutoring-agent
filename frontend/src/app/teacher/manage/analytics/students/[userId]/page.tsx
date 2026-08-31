@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Users,
   History,
+  Map,
 } from "lucide-react";
 import {
   LineChart,
@@ -25,6 +26,7 @@ import {
 } from "recharts";
 import { analyticsApi } from "@/lib/api/analytics";
 import { sessionsApi } from "@/lib/api/sessions";
+import { StudentMainlineProgress } from "@/components/projects/StudentMainlineProgress";
 import type { StudentAnalysisResponse, Session } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -251,6 +253,15 @@ export default function StudentAnalysisPage() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* 学习主线进度 */}
+      <div className="rounded-lg border bg-card p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Map className="size-4 text-muted-foreground" />
+          <h3 className="font-medium">项目学习主线进度</h3>
+        </div>
+        <StudentMainlineProgress userId={userId} />
       </div>
 
       {/* 最近会话 */}

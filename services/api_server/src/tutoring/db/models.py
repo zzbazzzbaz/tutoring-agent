@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, Text, func
-from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlmodel import Column, Field, Relationship, SQLModel
 
@@ -134,6 +134,8 @@ class Project(SQLModel, table=True):
     )
     name: str = Field(max_length=200, unique=True, index=True)
     background_md: str = Field(sa_column=Column(Text))#背景信息
+    # 结构化学习主线（老师配置）：{"objective": str, "stages": [{id, order, title, guide, deliverable?}]}
+    mainline: dict | None = Field(default=None, sa_column=Column(JSONB))
     status: str = Field(default="draft", max_length=20, index=True)  # draft/published
     deleted_at: datetime | None = Field(default=None, sa_column=Column(TIMESTAMP(timezone=True)))
     created_at: datetime = Field(
@@ -219,3 +221,35 @@ class Message(SQLModel, table=True):
     )
 
     session: Session | None = Relationship(back_populates="messages")
+
+
+class ProjectProgress(SQLModel, table=True):
+    """学生学习项目进度（跨会话累积）。
+
+    progress 结构：{stage_id: {"status": "pending|in_progress|completed",
+                                "deliverable": str | None, "deliverable_done": bool}}
+    """
+
+    __tablename__ = "project_progress"
+
+    user_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("user.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
+    project_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("project.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
+    progress: dict = Field(default_factory=dict, sa_column=Column(JSONB))
+    updated_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
+
+    user: User | None = Relationship()
+    project: Project | None = Relationship()

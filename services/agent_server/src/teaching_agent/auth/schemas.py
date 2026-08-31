@@ -10,7 +10,9 @@ class AgentContextV1(BaseModel):
     version: Literal[1] = 1
     mode: Literal["free", "project"]
     project_name: str = ""
+    project_id: str = ""
     project_background_md: str = ""
+    project_mainline: str = ""
 
     @model_validator(mode="after")
     def validate_mode_fields(self) -> Self:

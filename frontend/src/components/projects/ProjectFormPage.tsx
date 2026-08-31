@@ -12,13 +12,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MarkdownText } from "@/components/chat/thread/markdown-text";
 import { projectsApi } from "@/lib/api/projects";
 import { toast } from "sonner";
-import type { Project, ProjectStatus } from "@/lib/types";
+import type { Mainline, Project, ProjectStatus } from "@/lib/types";
+import { MainlineEditor } from "./MainlineEditor";
 
 export function ProjectFormPage({ projectId }: { projectId?: string }) {
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [name, setName] = useState("");
   const [backgroundMd, setBackgroundMd] = useState("");
+  const [mainline, setMainline] = useState<Mainline | null>(null);
   const [status, setStatus] = useState<ProjectStatus>("draft");
   const [loading, setLoading] = useState(Boolean(projectId));
   const [saving, setSaving] = useState(false);
@@ -32,6 +34,7 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
         setProject(data);
         setName(data.name);
         setBackgroundMd(data.background_md);
+        setMainline(data.mainline);
         setStatus(data.status);
       })
       .catch(console.error)
@@ -49,11 +52,12 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
         await projectsApi.update(project.id, {
           name,
           background_md: backgroundMd,
+          mainline,
           status,
         });
         toast.success("项目已更新");
       } else {
-        await projectsApi.create({ name, background_md: backgroundMd, status });
+        await projectsApi.create({ name, background_md: backgroundMd, mainline, status });
         toast.success("项目已创建");
       }
       router.push("/teacher/manage/projects");
@@ -133,6 +137,10 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 border-t pt-4">
+        <MainlineEditor value={mainline} onChange={setMainline} />
       </div>
     </div>
   );

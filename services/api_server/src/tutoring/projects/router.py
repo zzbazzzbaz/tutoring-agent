@@ -26,7 +26,11 @@ async def create_project_endpoint(
 ) -> ProjectOut:
     _require_teacher(user)
     proj = await project_service.create_project(
-        db_session, name=body.name, background_md=body.background_md, status=body.status
+        db_session,
+        name=body.name,
+        background_md=body.background_md,
+        status=body.status,
+        mainline=body.mainline,
     )
     return ProjectOut.model_validate(proj)
 

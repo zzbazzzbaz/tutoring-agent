@@ -41,3 +41,6 @@ async def init_db(engine: AsyncEngine) -> None:
         await conn.execute(
             text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS deleted_by UUID')
         )
+        await conn.execute(
+            text('ALTER TABLE "project" ADD COLUMN IF NOT EXISTS mainline JSONB')
+        )

@@ -44,10 +44,39 @@ export interface Page<T> {
 
 export type ProjectStatus = "draft" | "published";
 
+export interface MainlineDeliverable {
+  title: string;
+  instructions: string;
+}
+
+export interface MainlineStage {
+  id: string;
+  order: number;
+  title: string;
+  guide?: string;
+  deliverable: MainlineDeliverable | null;
+}
+
+export interface Mainline {
+  objective: string;
+  stages: MainlineStage[];
+}
+
+export type StageStatus = "pending" | "in_progress" | "completed";
+
+export interface StageProgress {
+  status: StageStatus;
+  deliverable: string | null;
+  deliverable_done: boolean;
+}
+
+export type ProjectProgress = Record<string, StageProgress>;
+
 export interface Project {
   id: string;
   name: string;
   background_md: string;
+  mainline: Mainline | null;
   status: ProjectStatus;
   created_at: string;
   updated_at: string;
@@ -56,12 +85,14 @@ export interface Project {
 export interface ProjectCreate {
   name: string;
   background_md: string;
+  mainline?: Mainline | null;
   status: ProjectStatus;
 }
 
 export interface ProjectUpdate {
   name?: string;
   background_md?: string;
+  mainline?: Mainline | null;
   status?: ProjectStatus;
 }
 

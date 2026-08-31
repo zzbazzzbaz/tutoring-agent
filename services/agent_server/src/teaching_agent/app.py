@@ -8,9 +8,21 @@ from teaching_agent.agent.factory import build_agent
 from teaching_agent.auth.context import get_trusted_agent_context
 from teaching_agent.infrastructure.lightrag import lightrag_client
 from teaching_agent.tools import create_tools
+from teaching_agent.tools.progress import create_report_stage_progress_tool
 
 
 @contextlib.asynccontextmanager
 async def get_graph(runtime: ServerRuntime) -> AsyncIterator[CompiledStateGraph]:
     async with lightrag_client() as client:
-        yield build_agent(get_trusted_agent_context(runtime), tools=create_tools(client))
+        context = get_trusted_agent_context(runtime)
+        tools = create_tools(client)
+        if context.mode == "project" and context.project_id:
+            user = runtime.ensure_user()
+            user_id = str((user or {}).get("identity", ""))
+            tools = [
+                *tools,
+                create_report_stage_progress_tool(
+                    user_id=user_id, project_id=context.project_id
+                ),
+            ]
+        yield build_agent(context, tools=tools)

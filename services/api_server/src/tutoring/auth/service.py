@@ -52,6 +52,38 @@ async def build_agent_context(db: AsyncSession, sess: Session) -> dict:
         return {
             "mode": "project",
             "project_name": proj.name if proj else "",
+            "project_id": str(proj.id) if proj else "",
             "project_background_md": proj.background_md if proj else "",
+            "project_mainline": _serialize_mainline(proj.mainline) if proj else "",
         }
     return {"mode": "free"}
+
+
+def _serialize_mainline(mainline: dict | None) -> str:
+    """把结构化 mainline 序列化为提示词可读文本；无主线或未配置阶段返回空串。"""
+    if not mainline:
+        return ""
+    stages = mainline.get("stages") or []
+    if not stages:
+        return ""
+    lines: list[str] = []
+    objective = mainline.get("objective")
+    if objective:
+        lines.append(f"总体学习目标：{objective}")
+    lines.append("学习主线（按顺序推进，学生掌握当前阶段后再进入下一阶段）：")
+    for stage in stages:
+        order = stage.get("order", "")
+        title = stage.get("title", "")
+        head = f"{order}. {title}" if order else title
+        guide = stage.get("guide")
+        if guide:
+            head += f" —— {guide}"
+        lines.append(head)
+        deliverable = stage.get("deliverable")
+        if deliverable:
+            d_title = deliverable.get("title", "")
+            d_instructions = deliverable.get("instructions", "")
+            lines.append(
+                f"   - 产出物「{d_title}」：{d_instructions}（学生须完成该产出物且达到要求后，本阶段才算完成）"
+            )
+    return "\n".join(lines)

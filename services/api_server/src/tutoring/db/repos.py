@@ -6,7 +6,16 @@ from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from tutoring.db.models import AuthToken, Project, Session, User, Class, ClassStudent, Message
+from tutoring.db.models import (
+    AuthToken,
+    Class,
+    ClassStudent,
+    Message,
+    Project,
+    ProjectProgress,
+    Session,
+    User,
+)
 
 # === User ===
 
@@ -199,8 +208,9 @@ async def create_project(
     name: str,
     background_md: str,
     status: str = "draft",
+    mainline: dict | None = None,
 ) -> Project:
-    obj = Project(name=name, background_md=background_md, status=status)
+    obj = Project(name=name, background_md=background_md, status=status, mainline=mainline)
     session.add(obj)
     await session.commit()
     await session.refresh(obj)
@@ -247,6 +257,40 @@ async def delete_project(session: AsyncSession, project_id: UUID) -> None:
         update(Project).where(Project.id == project_id).values(deleted_at=datetime.now(UTC))
     )
     await session.commit()
+
+
+# === ProjectProgress ===
+
+
+async def upsert_project_progress(
+    session: AsyncSession,
+    *,
+    user_id: UUID,
+    project_id: UUID,
+    progress: dict,
+) -> ProjectProgress:
+    """写入/更新某个学生某项目的进度（合并式更新：仅覆盖传入的 stage_id）。"""
+    existing = await get_project_progress(session, user_id=user_id, project_id=project_id)
+    merged: dict = {**(existing.progress if existing else {}), **progress}
+    if existing:
+        existing.progress = merged
+        existing.updated_at = datetime.now(UTC)
+        obj = existing
+    else:
+        obj = ProjectProgress(user_id=user_id, project_id=project_id, progress=merged)
+        session.add(obj)
+    await session.commit()
+    await session.refresh(obj)
+    return obj
+
+
+async def get_project_progress(
+    session: AsyncSession,
+    *,
+    user_id: UUID,
+    project_id: UUID,
+) -> ProjectProgress | None:
+    return await session.get(ProjectProgress, (user_id, project_id))
 
 # === Class ===
 

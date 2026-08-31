@@ -14,6 +14,7 @@ def render_system_prompt(context: AgentContextV1) -> str:
             course_name=settings.course_name,
             project_name=context.project_name,
             project_background_md=context.project_background_md,
+            project_mainline=context.project_mainline,
         )
     return free_template.format(
         core_principles=core_principles,
