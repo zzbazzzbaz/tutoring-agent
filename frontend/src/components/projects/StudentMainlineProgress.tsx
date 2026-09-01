@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { sessionsApi } from "@/lib/api/sessions";
 import { projectsApi } from "@/lib/api/projects";
 import { progressApi } from "@/lib/api/progress";
+import { DeliverableCard } from "./DeliverableCard";
 import type {
   Mainline,
   ProjectProgress,
@@ -199,22 +200,33 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
             </div>
 
             {/* 产出物详情 */}
-            {stages.some((s) => view.progress[s.id]?.deliverable) && (
-              <div className="mt-4 space-y-2 rounded-md border bg-muted/40 p-3">
+            {stages.some((s) => s.deliverable) && (
+              <div className="mt-4 space-y-2">
                 {stages.map((stage) => {
                   const sp = view.progress[stage.id];
-                  if (!sp?.deliverable) return null;
+                  if (!stage.deliverable) return null;
+                  if (!sp?.deliverable) {
+                    return (
+                      <div
+                        key={stage.id}
+                        className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground"
+                      >
+                        <FileText className="size-3.5 shrink-0" />
+                        <span>
+                          {stage.order}. {stage.title}「
+                          {stage.deliverable.title}」未提交
+                        </span>
+                      </div>
+                    );
+                  }
                   return (
-                    <div key={stage.id} className="text-xs">
-                      <span className="font-medium">
-                        {stage.order}. {stage.title}「
-                        {stage.deliverable?.title}」：
-                      </span>
-                      <span className="text-muted-foreground">
-                        {sp.deliverable.slice(0, 120)}
-                        {sp.deliverable.length > 120 ? "…" : ""}
-                      </span>
-                    </div>
+                    <DeliverableCard
+                      key={stage.id}
+                      stageTitle={`${stage.order}. ${stage.title}`}
+                      deliverableTitle={stage.deliverable.title}
+                      content={sp.deliverable}
+                      done={!!sp.deliverable_done}
+                    />
                   );
                 })}
               </div>
