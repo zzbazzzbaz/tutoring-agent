@@ -1,22 +1,29 @@
+from functools import lru_cache
+from pathlib import Path
+
 from teaching_agent.auth.schemas import AgentContextV1
-from teaching_agent.config import get_settings
+
+_PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts"
+
+
+@lru_cache(maxsize=None)
+def _load(name: str) -> str:
+    return (_PROMPTS_DIR / name).read_text(encoding="utf-8")
 
 
 def render_system_prompt(context: AgentContextV1) -> str:
-    settings = get_settings()
-    core_principles = settings.prompt_core_principles
-    free_template = settings.prompt_free_template
-    project_template = settings.prompt_project_template
+    core_principles = _load("core_principles.md")
+    tools = _load("tools_project.md" if context.mode == "project" else "tools_free.md")
 
     if context.mode == "project":
-        return project_template.format(
+        return _load("project_template.md").format(
             core_principles=core_principles,
-            course_name=settings.course_name,
+            tools=tools,
             project_name=context.project_name,
             project_background_md=context.project_background_md,
             project_mainline=context.project_mainline,
         )
-    return free_template.format(
+    return _load("free_template.md").format(
         core_principles=core_principles,
-        course_name=settings.course_name,
+        tools=tools,
     )

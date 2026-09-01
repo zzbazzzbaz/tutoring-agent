@@ -22,3 +22,23 @@ def test_project_prompt_uses_authorized_project_context():
     assert "园区网络设计" in prompt
     assert "为教学楼规划可靠网络。" in prompt
     assert "项目背景" in prompt
+
+
+def test_project_prompt_lists_report_stage_progress_tool():
+    prompt = render_system_prompt(
+        AgentContextV1(
+            mode="project",
+            project_name="园区网络设计",
+            project_mainline="1. 需求分析",
+        )
+    )
+
+    assert "report_stage_progress" in prompt
+    assert "进度管理" in prompt
+
+
+def test_free_prompt_does_not_list_project_tool():
+    prompt = render_system_prompt(AgentContextV1(mode="free"))
+
+    assert "report_stage_progress" not in prompt
+    assert "进度管理" not in prompt

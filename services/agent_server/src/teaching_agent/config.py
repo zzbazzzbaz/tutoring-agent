@@ -14,12 +14,6 @@ class Settings(BaseSettings):
     agent_server_secret: SecretStr
     lightrag_query_url: str
 
-    # === Prompts ===
-    course_name: str
-    prompt_core_principles: str
-    prompt_free_template: str
-    prompt_project_template: str
-
     # === Agent 中间件 ===
     agent_tool_max_retries: int
     agent_context_trigger_tokens: int
