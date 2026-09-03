@@ -1038,3 +1038,113 @@ async def count_sessions_in_window(
     )
     result = await session.execute(stmt)
     return int(result.scalar_one())
+
+
+async def list_key_students(
+    session: AsyncSession,
+    class_ids: list[UUID],
+    since: date,
+    inactive_threshold_days: int = 7,
+) -> list[dict]:
+    """重点学生：高风险 / 高优先级。
+
+    规则：
+    - high_risk（高风险）：窗口内（Message.created_at >= since）有会话但 AI 从未回复（assistant 消息数=0）
+    - high_priority（高优先级）：处于待关注列表（长时间未活跃，inactive_days >= 阈值）
+    - 同时命中时优先记 high_risk
+
+    冷启动保护：若整个班级范围内窗口内没有任何 assistant 消息（total_ai == 0），
+    说明 message 表刚启用尚无消息数据，跳过所有高风险判定，避免把仅有历史会话的
+    学生误标成"AI 未回复"；此时命中待关注的学生仍按高优先级输出。
+    """
+    # 1. 冷启动保护判定：窗口内班级范围内 AI 回复总数
+    total_ai_stmt = (
+        select(func.count())
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+            Message.role == "assistant",
+            func.date(Message.created_at) >= since,
+        )
+    )
+    total_ai = int((await session.execute(total_ai_stmt)).scalar_one())
+
+    # 2. 班级学生列表
+    students_stmt = (
+        select(ClassStudent, User, Class)
+        .join(User, User.id == ClassStudent.user_id)
+        .join(Class, Class.id == ClassStudent.class_id)
+        .where(ClassStudent.class_id.in_(class_ids))
+    )
+    rows = (await session.execute(students_stmt)).all()
+
+    results: list[dict] = []
+    for cs, user, cls in rows:
+        # 窗口内会话数（该学生整体，未删除）
+        session_stmt = (
+            select(func.count())
+            .select_from(Session)
+            .where(
+                Session.user_id == user.id,
+                Session.deleted_at.is_(None),
+                func.date(Session.last_active_at) >= since,
+            )
+        )
+        session_count = int((await session.execute(session_stmt)).scalar_one())
+
+        # 窗口内 AI 回复数（该学生）
+        ai_stmt = (
+            select(func.count())
+            .select_from(Message)
+            .join(Session, Session.id == Message.session_id)
+            .where(
+                Session.user_id == user.id,
+                Session.deleted_at.is_(None),
+                Message.role == "assistant",
+                func.date(Message.created_at) >= since,
+            )
+        )
+        ai_count = int((await session.execute(ai_stmt)).scalar_one())
+
+        # 未活跃天数（最后活跃时间距今；无会话 = 999）
+        last_active_stmt = (
+            select(func.max(Session.last_active_at))
+            .select_from(Session)
+            .where(Session.user_id == user.id, Session.deleted_at.is_(None))
+        )
+        last_active = (await session.execute(last_active_stmt)).scalar_one_or_none()
+        if last_active is None:
+            inactive_days = 999
+        else:
+            inactive_days = (datetime.now(UTC) - last_active).days
+
+        level: str | None = None
+        reason = ""
+        if total_ai > 0 and session_count > 0 and ai_count == 0:
+            level = "high_risk"
+            reason = "窗口内有会话但 AI 从未回复"
+        elif inactive_days >= inactive_threshold_days:
+            level = "high_priority"
+            reason = "长时间未活跃，需跟进"
+        if level is None:
+            continue
+
+        results.append({
+            "user_id": user.id,
+            "name": user.name,
+            "username": user.username,
+            "class_id": cls.id,
+            "class_name": f"{cls.grade} {cls.classname}",
+            "level": level,
+            "reason": reason,
+            "session_count": session_count,
+            "assistant_messages": ai_count,
+        })
+
+    # 高风险优先在前，同级别按名称稳定排序
+    order = {"high_risk": 0, "high_priority": 1}
+    results.sort(key=lambda x: (order[x["level"]], x["name"]))
+    return results

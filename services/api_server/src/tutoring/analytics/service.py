@@ -10,6 +10,7 @@ from tutoring.analytics.schemas import (
     ClassComparison,
     DashboardOverview,
     DashboardResponse,
+    KeyStudent,
     LearningTrendPoint,
     MessageStats,
     StudentAnalysisResponse,
@@ -98,6 +99,10 @@ async def get_dashboard(
         knowledge_hit_rate=hit_rate,
     )
 
+    # 9. 重点学生（高风险/高优先级，窗口与互动明细一致）
+    key_students_raw = await repos.list_key_students(db, class_ids, since=window_start)
+    key_students = [KeyStudent(**k) for k in key_students_raw]
+
     return DashboardResponse(
         overview=DashboardOverview(
             total_students=total_students,
@@ -112,6 +117,7 @@ async def get_dashboard(
         mode_distribution=mode_distribution,
         student_ranking=student_ranking,
         message_stats=message_stats,
+        key_students=key_students,
     )
 
 
@@ -145,6 +151,7 @@ def _empty_dashboard(days: int = 30) -> DashboardResponse:
             avg_turns=0.0,
             knowledge_hit_rate=0.0,
         ),
+        key_students=[],
     )
 
 # === 学生分析 ===

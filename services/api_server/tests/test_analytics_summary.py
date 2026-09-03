@@ -43,6 +43,7 @@ def _dashboard_stub() -> DashboardResponse:
             avg_turns=1.5,
             knowledge_hit_rate=0.67,
         ),
+        key_students=[],
     )
 
 

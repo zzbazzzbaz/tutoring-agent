@@ -62,6 +62,18 @@ class MessageStats(BaseModel):
     avg_turns: float = Field(description="平均轮次(AI回复/窗口内有消息的会话数)")
     knowledge_hit_rate: float = Field(description="知识命中率(命中知识的学生提问/学生提问总数) 0-1")
 
+class KeyStudent(BaseModel):
+    """重点学生条目（高风险/高优先级）"""
+    user_id: UUID
+    name: str
+    username: str
+    class_id: UUID
+    class_name: str
+    level: Literal["high_risk", "high_priority"] = Field(description="重点等级: high_risk高风险/high_priority高优先级")
+    reason: str = Field(description="命中规则说明")
+    session_count: int = Field(description="窗口内会话数")
+    assistant_messages: int = Field(description="窗口内AI回复数")
+
 class DashboardResponse(BaseModel):
     """Dashboard 完整响应"""
     overview: DashboardOverview = Field(description="概览指标")
@@ -71,6 +83,7 @@ class DashboardResponse(BaseModel):
     mode_distribution: list[ModeCount] = Field(description="对话模式分布")
     student_ranking: list[StudentRanking] = Field(description="学生活跃度排行")
     message_stats: MessageStats = Field(description="消息级互动统计(互动明细)")
+    key_students: list[KeyStudent] = Field(description="重点学生(高风险/高优先级)")
 
 class DashboardSummaryResponse(BaseModel):
     """研究摘要响应"""

@@ -288,6 +288,20 @@ export interface MessageStats {
   knowledge_hit_rate: number;
 }
 
+export type KeyStudentLevel = "high_risk" | "high_priority";
+
+export interface KeyStudent {
+  user_id: string;
+  name: string;
+  username: string;
+  class_id: string;
+  class_name: string;
+  level: KeyStudentLevel;
+  reason: string;
+  session_count: number;
+  assistant_messages: number;
+}
+
 export interface DashboardResponse {
   overview: DashboardOverview;
   anomalies: AnomalyStudent[];
@@ -296,6 +310,7 @@ export interface DashboardResponse {
   mode_distribution: ModeCount[];
   student_ranking: StudentRanking[];
   message_stats: MessageStats;
+  key_students: KeyStudent[];
 }
 
 export interface DashboardSummaryResponse {

@@ -36,6 +36,7 @@ import type {
   ClassComparison,
   ClassInfo,
   DashboardOverview,
+  KeyStudent,
   LearningTrendPoint,
   MessageStats,
   ModeCount,
@@ -58,6 +59,7 @@ function ReportPageInner() {
   const [modeDistribution, setModeDistribution] = useState<ModeCount[]>([]);
   const [studentRanking, setStudentRanking] = useState<StudentRanking[]>([]);
   const [messageStats, setMessageStats] = useState<MessageStats | null>(null);
+  const [keyStudents, setKeyStudents] = useState<KeyStudent[]>([]);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState(
     () => searchParams.get("class_id") ?? "all"
@@ -103,6 +105,7 @@ function ReportPageInner() {
       setModeDistribution(data.mode_distribution || []);
       setStudentRanking(data.student_ranking || []);
       setMessageStats(data.message_stats || null);
+      setKeyStudents(data.key_students || []);
     } catch (err: any) {
       console.error("加载报告数据失败:", err);
       setError(err?.message || "加载失败，请重试");
@@ -620,9 +623,54 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 9. 页脚 */}
+        {/* 9. 重点学生 */}
+        <section>
+          <div className="mb-2 flex items-center gap-2">
+            <AlertTriangle className="size-4 text-amber-500" />
+            <h2 className="text-base font-semibold text-gray-900">九、重点学生</h2>
+          </div>
+          {keyStudents.length === 0 ? (
+            <p className="text-sm text-gray-400">暂无重点学生</p>
+          ) : (
+            <div className="space-y-2">
+              {keyStudents.map((s) => (
+                <div
+                  key={s.user_id}
+                  className={`flex items-center justify-between rounded border px-3 py-2 text-sm ${
+                    s.level === "high_risk"
+                      ? "border-red-200 bg-red-50"
+                      : "border-amber-200 bg-amber-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block rounded px-1.5 py-0.5 text-xs text-white ${
+                        s.level === "high_risk" ? "bg-red-500" : "bg-amber-500"
+                      }`}
+                    >
+                      {s.level === "high_risk" ? "高风险" : "高优先级"}
+                    </span>
+                    <span className="font-medium">{s.name}</span>
+                    <span className="text-gray-600">{s.class_name}</span>
+                  </div>
+                  <div className="text-right text-xs text-gray-600">
+                    <div>{s.reason}</div>
+                    <div>
+                      会话 {s.session_count} 次 · AI回复 {s.assistant_messages} 轮
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-xs text-gray-400">
+            【规则说明】高风险 = 窗口内有会话但 AI 从未回复；高优先级 = 长时间未活跃（待关注）。冷启动期 message 表暂无消息数据时自动跳过高风险判定，避免误报。
+          </p>
+        </section>
+
+        {/* 10. 页脚 */}
         <footer className="border-t border-gray-200 pt-3 text-xs text-gray-400">
-          <p>本报告为 P1 阶段版本（含消息级互动明细），会话级指标口径以学情总览页为准，消息级指标口径见互动明细注释。</p>
+          <p>本报告为 P1 阶段版本（含互动明细、研究摘要、重点学生），会话级指标口径以学情总览页为准，消息级指标口径见互动明细注释。</p>
         </footer>
       </div>
     </div>

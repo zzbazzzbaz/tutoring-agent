@@ -48,6 +48,21 @@ def _patch_repos(monkeypatch, *, message_raw, sessions_with_msgs, empty=False):
     async def fake_count_sessions_in_window(_db, _class_ids, since):
         return sessions_with_msgs
 
+    async def fake_list_key_students(_db, _class_ids, since, inactive_threshold_days=7):
+        return [
+            {
+                "user_id": uuid4(),
+                "name": "张三",
+                "username": "2023001",
+                "class_id": uuid4(),
+                "class_name": "大一 一班",
+                "level": "high_risk",
+                "reason": "窗口内有会话但 AI 从未回复",
+                "session_count": 2,
+                "assistant_messages": 0,
+            }
+        ]
+
     monkeypatch.setattr(repos_module, "count_class_students", fake_count_class_students)
     monkeypatch.setattr(repos_module, "count_active_students_in_classes", fake_count_active_students_in_classes)
     monkeypatch.setattr(repos_module, "count_class_sessions", fake_count_class_sessions)
@@ -57,6 +72,7 @@ def _patch_repos(monkeypatch, *, message_raw, sessions_with_msgs, empty=False):
     monkeypatch.setattr(repos_module, "list_student_activity_ranking", fake_list_student_activity_ranking)
     monkeypatch.setattr(repos_module, "get_message_stats", fake_get_message_stats)
     monkeypatch.setattr(repos_module, "count_sessions_in_window", fake_count_sessions_in_window)
+    monkeypatch.setattr(repos_module, "list_key_students", fake_list_key_students)
 
 
 @pytest.mark.asyncio
@@ -86,6 +102,10 @@ async def test_dashboard_message_stats_computed(monkeypatch):
     assert data.message_stats.assistant_messages == 7
     assert data.message_stats.avg_turns == 1.8  # round(7/4, 1)
     assert data.message_stats.knowledge_hit_rate == pytest.approx(3 / 5)
+    # 重点学生透传
+    assert len(data.key_students) == 1
+    assert data.key_students[0].level == "high_risk"
+    assert data.key_students[0].assistant_messages == 0
 
 
 @pytest.mark.asyncio
@@ -137,3 +157,4 @@ async def test_dashboard_message_stats_empty_class(monkeypatch):
     assert data.message_stats.total_messages == 0
     assert data.message_stats.avg_turns == 0.0
     assert data.message_stats.knowledge_hit_rate == 0.0
+    assert data.key_students == []
