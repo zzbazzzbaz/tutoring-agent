@@ -150,3 +150,36 @@ class ProjectProgressSummary(BaseModel):
 class ProjectProgressResponse(BaseModel):
     """班级阶段分布/产出物完成响应（项目维度聚合，不限时间窗口）"""
     projects: list[ProjectProgressSummary] = Field(description="项目列表,按项目名排序")
+
+
+# ===========================================================================
+# 班级评价--响应模型
+
+class EvaluationMetric(BaseModel):
+    """单个维度下的证据指标（原始数值，便于报告展示与核验）"""
+    label: str = Field(description="指标名")
+    value: str = Field(description="指标值(字符串化)")
+
+class ClassEvaluationDimension(BaseModel):
+    """班级评价单维度评分"""
+    dimension_id: str = Field(description="维度标识,如 participation/thinking/...")
+    name: str = Field(description="维度名称,如 参与度")
+    score: int = Field(description="评分 0-100")
+    level: str = Field(description="等级: 高/中/低")
+    metrics: list[EvaluationMetric] = Field(default_factory=list, description="证据指标")
+
+class ClassEvaluationItem(BaseModel):
+    """单个班级的班级评价（六维）"""
+    class_id: UUID = Field(description="班级ID")
+    class_name: str = Field(description="班级名称")
+    dimensions: list[ClassEvaluationDimension] = Field(description="该班级已实现的评价维度")
+
+class ClassEvaluationResponse(BaseModel):
+    """班级评价响应。
+
+    - 指定班级：classes 含 1 项（前端渲染六维卡片）
+    - 全部班级：classes 含 N 项（前端渲染班级×维度横向对比表）
+    - 班级不存在/教师无班级：classes 为空
+    """
+    days: int = Field(description="统计窗口天数(7/30)")
+    classes: list[ClassEvaluationItem] = Field(description="各班级的评价维度(按班级解析顺序)")

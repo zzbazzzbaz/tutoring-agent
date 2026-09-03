@@ -345,6 +345,33 @@ export interface ProjectProgressResponse {
   projects: ProjectProgressSummary[];
 }
 
+// ===统计分析--> 班级评价===
+
+export interface EvaluationMetric {
+  label: string;
+  value: string;
+}
+
+export interface ClassEvaluationDimension {
+  dimension_id: string;
+  name: string;
+  score: number;
+  level: string;
+  metrics: EvaluationMetric[];
+}
+
+export interface ClassEvaluationItem {
+  class_id: string;
+  class_name: string;
+  dimensions: ClassEvaluationDimension[];
+}
+
+export interface ClassEvaluationResponse {
+  days: number;
+  // 指定班级=1 项（渲染六维卡片）；全部班级=N 项（渲染班级×维度横向对比表）
+  classes: ClassEvaluationItem[];
+}
+
 // ===统计分析--> 学生分析 Student Analysis ===
 
 export interface StudentClassInfo {

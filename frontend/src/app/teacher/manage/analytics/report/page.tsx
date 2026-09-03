@@ -36,6 +36,9 @@ import { classesApi } from "@/lib/api/classes";
 import type {
   AnomalyStudent,
   ClassComparison,
+  ClassEvaluationDimension,
+  ClassEvaluationItem,
+  ClassEvaluationResponse,
   ClassInfo,
   DashboardOverview,
   KeyStudent,
@@ -64,6 +67,7 @@ function ReportPageInner() {
   const [messageStats, setMessageStats] = useState<MessageStats | null>(null);
   const [keyStudents, setKeyStudents] = useState<KeyStudent[]>([]);
   const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
+  const [classEvaluation, setClassEvaluation] = useState<ClassEvaluationResponse | null>(null);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState(
     () => searchParams.get("class_id") ?? "all"
@@ -122,6 +126,14 @@ function ReportPageInner() {
     } catch (err: any) {
       console.error("加载项目进度聚合失败:", err);
       setProjectProgress(null);
+    }
+    // 班级评价：随班级与 days 窗口切换
+    try {
+      const evaluation = await analyticsApi.getClassEvaluation(classId, d);
+      setClassEvaluation(evaluation);
+    } catch (err: any) {
+      console.error("加载班级评价失败:", err);
+      setClassEvaluation(null);
     }
   }
 
@@ -403,7 +415,7 @@ function ReportPageInner() {
           </div>
         </section>
 
-        {/* 3. 互动明细（消息级，自 message 表启用后累积） */}
+        {/* 3. 互动明细 :互动明细基于 message 表统计*/}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <MessageSquare className="size-4 text-gray-500" />
@@ -417,11 +429,11 @@ function ReportPageInner() {
             <StatCard icon={<Target className="size-4" />} label="知识命中率" value={messageStats ? `${Math.round(messageStats.knowledge_hit_rate * 100)}%` : "-"} />
           </div>
           <p className="mt-2 text-xs text-gray-400">
-            【口径注释】互动明细基于 message 表统计，自本版本启用后开始累积，历史会话无消息数据，短期内显示 0/暂无属正常冷启动。平均轮次 = AI 回复数 ÷ 窗口内产生过消息的会话数；知识命中率 = 命中知识库的学生提问 ÷ 学生提问总数。
+            【口径注释】短期内显示 0/暂无属正常冷启动。平均轮次 = AI 回复数 ÷ 窗口内产生过消息的会话数；知识命中率 = 命中知识库的学生提问 ÷ 学生提问总数。
           </p>
         </section>
 
-        {/* 3. 阶段分布与产出物完成（项目维度聚合，进度为跨会话累积的当前状态） */}
+        {/* 3. 阶段分布与产出物完成（项目维度聚合，进度为跨会话累积的当前状态,阶段状态取最高值（pending<进行中<已完成）） */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <ListChecks className="size-4 text-gray-500" />
@@ -482,8 +494,7 @@ function ReportPageInner() {
             </div>
           )}
           <p className="mt-2 text-xs text-gray-400">
-            【口径注释】按项目维度聚合（学生×项目合并会话进度）：阶段状态取最高值（pending
-            &lt; 进行中 &lt; 已完成），产出物"已达标优先、否则后写入"；进度为跨会话累积的当前状态，不限时间窗口，不随报告天数切换变化。
+            【口径注释】按项目维度聚合（学生×项目合并会话进度）：阶段状态取最高值，产出物"已达标优先"；进度为跨会话累积的当前状态，不限时间窗口，不随报告天数切换变化。
           </p>
         </section>
 
@@ -511,7 +522,7 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 5. 趋势概览 */}
+        {/* 5. 趋势概览(若后端将该密集日序列改为稀疏数组，本均值将静默退化为「滚动 N 条」，需同步前端。) */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <TrendingUp className="size-4 text-gray-500" />
@@ -552,7 +563,7 @@ function ReportPageInner() {
             </table>
           </div>
           <p className="mt-2 text-xs text-gray-400">
-            【口径注释】三日滑动均值按自然日滑动计算：每个日期取「当天 + 前 2 天」窗口内对话数的平均，开头第 1/2 天按已有天数平均。若后端将该密集日序列改为稀疏数组，本均值将静默退化为「滚动 N 条」，需同步前端。
+            【口径注释】三日滑动均值按自然日滑动计算：每个日期取「当天 + 前 2 天」窗口内对话数的平均，开头第 1/2 天按已有天数平均。
           </p>
         </section>
 
@@ -742,14 +753,53 @@ function ReportPageInner() {
             </div>
           )}
           <p className="mt-2 text-xs text-gray-400">
-            【规则说明】高风险 = 窗口内有会话但 AI 从未回复；高优先级 = 长时间未活跃（待关注）。冷启动期 message 表暂无消息数据时自动跳过高风险判定，避免误报。
+            【规则说明】高风险 = 窗口内有会话但 AI 从未回复；高优先级 = 长时间未活跃（待关注）。冷启动期暂无消息数据时自动跳过高风险判定，避免误报。
           </p>
         </section>
 
-        {/* 10. 页脚 */}
-        <footer className="border-t border-gray-200 pt-3 text-xs text-gray-400">
-          <p>本报告为 P2 阶段版本（含互动明细、阶段分布/产出物完成、研究摘要、重点学生），会话级指标口径以学情总览页为准，消息级指标口径见互动明细注释，项目进度口径见阶段分布注释。</p>
-        </footer>
+        {/* 11. 班级评价 */}
+        <section>
+          <div className="mb-2 flex items-center gap-2">
+            <BarChart3 className="size-4 text-gray-500" />
+            <h2 className="text-base font-semibold text-gray-900">十一、班级评价</h2>
+          </div>
+          {!classEvaluation || classEvaluation.classes.length === 0 ? (
+            <p className="text-sm text-gray-400">暂无班级评价数据</p>
+          ) : classEvaluation.classes.length === 1 ? (
+            // 指定班级：单班六维卡片
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {classEvaluation.classes[0].dimensions.map((dim) => (
+                <ClassEvaluationCard key={dim.dimension_id} dim={dim} />
+              ))}
+            </div>
+          ) : (
+            // 全部班级：班级×维度横向对比表（不做跨班混算）
+            <ClassComparisonTable classes={classEvaluation.classes} />
+          )}
+          <p className="mt-2 space-y-1 text-xs leading-relaxed text-gray-400">
+            <span className="block">
+              【口径注释】六维：参与度 / 思考质量 / 知识运用 / 产出物完成 / 阶段覆盖 / 学科；选择「全部班级」时按班级逐一计算并横向对比（不做跨班混算）。等级统一：≥80 高 / 60-79 中 / &lt;60 低。
+            </span>
+            <span className="block">
+              · 参与度 = 活跃率×40% + 会话强度×30% + 互动深度×30%；活跃率 = 窗口内有会话的学生 ÷ 学生总数；会话强度按人均 5 会话、互动深度按人均 30 条学生消息为满分（封顶 100）。
+            </span>
+            <span className="block">
+              · 思考质量 = 提问深度×30% + 主动追问×25% + 知识命中率×25% + 多轮持续度×20%；提问深度 = 含深度词（为什么/如何/怎样/怎么/哪些/如果/是否/原因/机制/原理/影响/比较/区别/联系/分析/解释/结合/依据）的提问占比；主动追问 = 非会话首条学生消息占比；多轮持续度按人均 5 轮为满分（封顶 100）。
+            </span>
+            <span className="block">
+              · 知识运用 = 命中知识库的学生提问 ÷ 学生提问总数 × 100。
+            </span>
+            <span className="block">
+              · 产出物完成 = 提交率×50% + 达标率×50%；提交率 = 已提交条目 ÷（参与学生 × 有产出物阶段数），达标率 = 已达标条目 ÷ 已提交条目；按项目维度聚合（跨会话累积、不限时间窗口，与「三、阶段分布与产出物完成」一致）。
+            </span>
+            <span className="block">
+              · 阶段覆盖 = 阶段完成率×70% + 阶段覆盖率×30%；完成率 = 已完成条目 ÷（参与学生 × 项目阶段总数），覆盖率 = 已开始条目 ÷（参与学生 × 项目阶段总数）；按项目维度聚合（跨会话累积、不限时间窗口，与「三、阶段分布与产出物完成」一致）。
+            </span>
+            <span className="block">
+              · 学科 = 知识点覆盖×40% + 案例分析×30% + 情境应用×30%；知识点覆盖 = 学生人均命中去重文档数 ÷ 全班命中去重文档总数 × 100；案例分析 = 案例类产出物（标题含 记录/案例/观察/分析）达标条目 ÷ 已提交条目 × 100；情境应用 = 方案类产出物（标题含 方案/设计/计划/策略）达标条目 ÷ 已提交条目 × 100；按项目维度聚合（不限时间窗口），标题分类互斥（案例优先）。
+            </span>
+          </p>
+        </section>
       </div>
     </div>
   );
@@ -811,6 +861,96 @@ function MiniStat({
     <div className="rounded-lg border border-gray-200 p-3">
       <div className="text-xs text-gray-500">{label}</div>
       <div className="mt-1 font-medium text-gray-900">{value}</div>
+    </div>
+  );
+}
+
+// 等级徽章（班级评价：高/中/低）
+function LevelBadge({ level }: { level: string }) {
+  return (
+    <span
+      className={`inline-block rounded px-1.5 py-0.5 text-xs text-white ${
+        level === "高" ? "bg-emerald-600" : level === "中" ? "bg-amber-500" : "bg-red-500"
+      }`}
+    >
+      {level}
+    </span>
+  );
+}
+
+// 班级评价：单班六维卡片
+function ClassEvaluationCard({ dim }: { dim: ClassEvaluationDimension }) {
+  return (
+    <div className="rounded-lg border border-gray-200 p-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700">{dim.name}</span>
+        <LevelBadge level={dim.level} />
+      </div>
+      <div className="mt-1 text-2xl font-bold text-gray-900">{dim.score}</div>
+      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+        {dim.metrics.map((m) => (
+          <div key={m.label} className="flex items-baseline justify-between text-xs">
+            <span className="text-gray-500">{m.label}</span>
+            <span className="font-medium text-gray-700">{m.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 班级评价：多班级 × 维度横向对比表（全部班级时展示，逐班独立计算，不做混算）
+function ClassComparisonTable({ classes }: { classes: ClassEvaluationItem[] }) {
+  // 维度行 = 各班维度并集（保持出现顺序；当前各班维度集合一致）
+  const dimensionIds: string[] = [];
+  const seen = new Set<string>();
+  classes.forEach((c) =>
+    c.dimensions.forEach((d) => {
+      if (!seen.has(d.dimension_id)) {
+        seen.add(d.dimension_id);
+        dimensionIds.push(d.dimension_id);
+      }
+    })
+  );
+  const nameOf = (id: string) =>
+    classes[0].dimensions.find((d) => d.dimension_id === id)?.name ?? id;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[480px] text-sm">
+        <thead>
+          <tr className="border-b border-gray-200 text-left text-gray-500">
+            <th className="px-3 py-2 font-medium">维度</th>
+            {classes.map((c) => (
+              <th key={c.class_id} className="px-3 py-2 font-medium">
+                {c.class_name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dimensionIds.map((id) => (
+            <tr key={id} className="border-b border-gray-100">
+              <td className="px-3 py-2 text-gray-700">{nameOf(id)}</td>
+              {classes.map((c) => {
+                const dim = c.dimensions.find((d) => d.dimension_id === id);
+                return (
+                  <td key={c.class_id} className="px-3 py-2">
+                    {dim ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-semibold text-gray-900">{dim.score}</span>
+                        <LevelBadge level={dim.level} />
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

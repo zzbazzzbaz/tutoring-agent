@@ -1,6 +1,7 @@
 //统计分析
 import { api } from "./client";
 import type {
+  ClassEvaluationResponse,
   DashboardResponse,
   DashboardSummaryResponse,
   ProjectProgressResponse,
@@ -30,6 +31,14 @@ export const analyticsApi = {
     if (classId) params.set("class_id", classId);
     const qs = params.toString();
     return api.get<ProjectProgressResponse>(`/analytics/project-progress${qs ? `?${qs}` : ""}`);
+  },
+  // 获取班级评价（随 7/30 天窗口切换）
+  getClassEvaluation: (classId?: string, days?: number) => {
+    const params = new URLSearchParams();
+    if (classId) params.set("class_id", classId);
+    if (days) params.set("days", String(days));
+    const qs = params.toString();
+    return api.get<ClassEvaluationResponse>(`/analytics/class-evaluation${qs ? `?${qs}` : ""}`);
   },
   // 获取学生分析数据
   getStudentAnalysis: (userId: string, days = 30) => {

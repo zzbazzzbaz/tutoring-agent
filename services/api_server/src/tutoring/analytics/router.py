@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tutoring.analytics import service as analytics_service
 from tutoring.analytics import summary as analytics_summary
 from tutoring.analytics.schemas import (
+    ClassEvaluationResponse,
     DashboardResponse,
     DashboardSummaryResponse,
     ProjectProgressResponse,
@@ -78,3 +79,16 @@ async def get_project_progress(
     """项目维度进度聚合（阶段分布/产出物完成）。"""
     _require_teacher(user)
     return await analytics_service.get_project_progress_summary(db, user.id, class_id)
+
+
+# 班级评价
+@router.get("/class-evaluation", response_model=ClassEvaluationResponse)
+async def get_class_evaluation(
+    class_id: UUID | None = Query(None, description="班级ID,不传则返回该教师所有班级聚合"),
+    days: int = Query(30, ge=7, le=30, description="统计窗口天数(7或30)"),
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ClassEvaluationResponse:
+    """班级评价"""
+    _require_teacher(user)
+    return await analytics_service.get_class_evaluation(db, user.id, class_id, days=days)

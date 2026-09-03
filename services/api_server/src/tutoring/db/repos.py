@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime,date, timedelta
 from uuid import UUID
 
-from sqlalchemy import case, func, select, update
+from sqlalchemy import and_, case, func, select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -1191,6 +1191,237 @@ async def count_sessions_in_window(
     )
     result = await session.execute(stmt)
     return int(result.scalar_one())
+
+
+async def get_class_participation_stats(
+    session: AsyncSession,
+    *,
+    class_ids: list[UUID],
+    since: date,
+) -> dict:
+    """班级参与度统计（「参与度」维度的数据源）。
+
+    口径（窗口 = 报告 7/30 天自然日，随班级选择联动）：
+    - total_students：班级学生总数（去重）
+    - active_students：窗口内有过未删除会话的学生数（去重，会话按 last_active_at）
+    - sessions：窗口内会话数（按 Session.last_active_at 自然日）
+    - active_days：窗口内有会话的自然日天数（去重）
+    - student_messages：窗口内学生发起消息数（按 Message.created_at 自然日，
+      message 表自启用后累积，冷启动期可能为 0）
+    """
+    # 1. 学生总数（班级去重）
+    total_stmt = (
+        select(func.count(func.distinct(ClassStudent.user_id)))
+        .select_from(ClassStudent)
+        .where(ClassStudent.class_id.in_(class_ids))
+    )
+    total_students = int((await session.execute(total_stmt)).scalar_one())
+
+    # 2. 活跃学生数 / 会话数 / 活跃天数（同一会话范围一次查出）
+    act_stmt = (
+        select(
+            func.count(func.distinct(Session.user_id)).label("active_students"),
+            func.count(Session.id).label("sessions"),
+            func.count(func.distinct(func.date(Session.last_active_at))).label("active_days"),
+        )
+        .select_from(Session)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+            func.date(Session.last_active_at) >= since,
+        )
+    )
+    act_row = (await session.execute(act_stmt)).one()
+
+    # 3. 学生发起消息数（message 表）
+    student_messages = (await get_message_stats(session, class_ids, since=since))[
+        "student_messages"
+    ]
+
+    return {
+        "total_students": total_students,
+        "active_students": int(act_row.active_students),
+        "sessions": int(act_row.sessions),
+        "active_days": int(act_row.active_days),
+        "student_messages": student_messages,
+    }
+
+
+# 思考质量：提问深度关键词（命中任一词即算深度提问）
+_THINKING_DEPTH_PATTERN = (
+    "(为什么|如何|怎样|怎么|哪些|如果|是否|原因|机制|原理|"
+    "影响|比较|区别|联系|分析|解释|结合|依据)"
+)
+
+
+async def get_class_thinking_stats(
+    session: AsyncSession,
+    *,
+    class_ids: list[UUID],
+    since: date,
+) -> dict:
+    """班级思考质量统计（「思考质量」维度的数据源，规则化代理指标）。
+
+    口径（窗口 = 报告 7/30 天自然日，随班级选择联动；基于 message 表）：
+    - student_messages：窗口内学生提问总数（role=student）
+    - deep_questions：含深度词（_THINKING_DEPTH_PATTERN）的学生提问数
+    - follow_up_messages：非会话首条的学生消息数（AI 回复后继续提问，主动追问）
+    - knowledge_hit_count：命中知识库的学生提问数（复用互动明细口径）
+    - assistant_messages：窗口内 AI 回复数
+    - sessions_with_messages：窗口内产生过消息的会话数（平均轮次分母，去重）
+    冷启动期 message 表无数据时各计数为 0。
+    """
+    # 1. 消息级聚合（学生/助手消息、深度提问、知识命中，一次查出）
+    main_stmt = (
+        select(
+            func.count(Message.id).label("total"),
+            func.sum(case((Message.role == "student", 1), else_=0)).label("student_messages"),
+            func.sum(case((Message.role == "assistant", 1), else_=0)).label("assistant_messages"),
+            func.sum(
+                case(
+                    (and_(Message.role == "student", Message.knowledge_hit.is_(True)), 1),
+                    else_=0,
+                )
+            ).label("hit_count"),
+            func.sum(
+                case(
+                    (
+                        and_(
+                            Message.role == "student",
+                            Message.content.op("~*")(_THINKING_DEPTH_PATTERN),
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ).label("deep_count"),
+        )
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+            func.date(Message.created_at) >= since,
+        )
+    )
+    main_row = (await session.execute(main_stmt)).one()
+
+    # 2. 主动追问：非会话首条的学生消息（窗口函数 row_number，rn>1）
+    rn = func.row_number().over(
+        partition_by=Message.session_id,
+        order_by=Message.created_at,
+    ).label("rn")
+    follow_subq = (
+        select(Message.id.label("mid"), rn)
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.deleted_at.is_(None),
+            Message.role == "student",
+            func.date(Message.created_at) >= since,
+        )
+        .subquery()
+    )
+    follow_stmt = select(func.count()).select_from(follow_subq).where(follow_subq.c.rn > 1)
+    follow_up = int((await session.execute(follow_stmt)).scalar_one())
+
+    # 3. 有消息会话数（平均轮次分母，去重）
+    sessions_with_messages = await count_sessions_in_window(session, class_ids, since)
+
+    return {
+        "student_messages": int(main_row.student_messages or 0),
+        "deep_questions": int(main_row.deep_count or 0),
+        "follow_up_messages": follow_up,
+        "knowledge_hit_count": int(main_row.hit_count or 0),
+        "assistant_messages": int(main_row.assistant_messages or 0),
+        "sessions_with_messages": sessions_with_messages,
+    }
+
+
+async def get_class_subject_stats(
+    session: AsyncSession,
+    *,
+    class_ids: list[UUID],
+    since: date,
+) -> dict:
+    """班级学科维度统计（「学科维度」维度的数据源，规则化代理指标）。
+
+    口径（窗口 = 报告 7/30 天自然日；范围 = 班级内**项目模式会话**，与文档
+    "项目全体会话命中去重文档数"一致；基于 message.knowledge_doc_ids，
+    起落库累积，冷启动期为空）：
+    - project_students：窗口内项目模式会话学生数（去重，人均分母，"有会话即参与"）
+    - student_doc_counts：窗口内每学生命中的去重文档数（仅命中>0 的学生，{user_id: count}）
+    - class_doc_count：全班项目模式会话命中去重文档总数（分母，去重）
+    """
+    # 1. 参与项目学生数（窗口内项目模式会话，按 last_active_at，与参与度口径一致）
+    students_stmt = (
+        select(func.count(func.distinct(Session.user_id)))
+        .select_from(Session)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.mode == "project",
+            Session.deleted_at.is_(None),
+            func.date(Session.last_active_at) >= since,
+        )
+    )
+    project_students = int((await session.execute(students_stmt)).scalar_one())
+
+    # 2. 每学生命中去重文档数（项目模式会话 + 窗口 + 仅 student 消息）
+    #    jsonb 数组展开用 FROM 子句（LATERAL），聚合内不能直接调用 set-returning 函数
+    doc_series = (
+        func.jsonb_array_elements_text(Message.knowledge_doc_ids)
+        .table_valued("doc")
+        .render_derived(name="d")
+    )
+    per_student_stmt = (
+        select(
+            Session.user_id.label("uid"),
+            func.count(func.distinct(doc_series.c.doc)).label("doc_cnt"),
+        )
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(doc_series, true())
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.mode == "project",
+            Session.deleted_at.is_(None),
+            Message.role == "student",
+            func.date(Message.created_at) >= since,
+        )
+        .group_by(Session.user_id)
+    )
+    student_doc_counts: dict[str, int] = {}
+    for row in (await session.execute(per_student_stmt)).all():
+        student_doc_counts[str(row.uid)] = int(row.doc_cnt)
+
+    # 3. 全班命中去重文档总数（同范围，去重）
+    class_stmt = (
+        select(func.count(func.distinct(doc_series.c.doc)).label("doc_cnt"))
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(doc_series, true())
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.mode == "project",
+            Session.deleted_at.is_(None),
+            Message.role == "student",
+            func.date(Message.created_at) >= since,
+        )
+    )
+    class_doc_count = int((await session.execute(class_stmt)).scalar_one())
+
+    return {
+        "project_students": project_students,
+        "student_doc_counts": student_doc_counts,
+        "class_doc_count": class_doc_count,
+    }
 
 
 async def list_key_students(
