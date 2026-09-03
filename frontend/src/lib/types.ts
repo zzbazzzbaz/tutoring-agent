@@ -318,6 +318,33 @@ export interface DashboardSummaryResponse {
   source: "llm";
 }
 
+// ===统计分析--> 项目维度进度聚合===
+
+export interface ProjectStageStat {
+  stage_id: string;
+  order: number;
+  title: string;
+  has_deliverable: boolean;
+  deliverable_title: string | null;
+  completed_count: number;
+  in_progress_count: number;
+  started_count: number;
+  deliverable_submitted_count: number;
+  deliverable_done_count: number;
+}
+
+export interface ProjectProgressSummary {
+  project_id: string;
+  project_name: string;
+  student_count: number;
+  stage_count: number;
+  stages: ProjectStageStat[];
+}
+
+export interface ProjectProgressResponse {
+  projects: ProjectProgressSummary[];
+}
+
 // ===统计分析--> 学生分析 Student Analysis ===
 
 export interface StudentClassInfo {

@@ -21,6 +21,8 @@ import {
   Bot,
   Repeat,
   Target,
+  ListChecks,
+  CheckCircle2,
 } from "lucide-react";
 import {
   Select,
@@ -40,6 +42,7 @@ import type {
   LearningTrendPoint,
   MessageStats,
   ModeCount,
+  ProjectProgressResponse,
   StudentRanking,
 } from "@/lib/types";
 
@@ -60,6 +63,7 @@ function ReportPageInner() {
   const [studentRanking, setStudentRanking] = useState<StudentRanking[]>([]);
   const [messageStats, setMessageStats] = useState<MessageStats | null>(null);
   const [keyStudents, setKeyStudents] = useState<KeyStudent[]>([]);
+  const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState(
     () => searchParams.get("class_id") ?? "all"
@@ -110,6 +114,14 @@ function ReportPageInner() {
       console.error("加载报告数据失败:", err);
       setError(err?.message || "加载失败，请重试");
       throw err;
+    }
+    // 项目维度进度聚合：进度为跨会话累积的当前状态，不限时间窗口（不随 days 切换），独立请求不拖累主报告
+    try {
+      const progress = await analyticsApi.getProjectProgress(classId);
+      setProjectProgress(progress);
+    } catch (err: any) {
+      console.error("加载项目进度聚合失败:", err);
+      setProjectProgress(null);
     }
   }
 
@@ -409,9 +421,77 @@ function ReportPageInner() {
           </p>
         </section>
 
+        {/* 3. 阶段分布与产出物完成（项目维度聚合，进度为跨会话累积的当前状态） */}
+        <section>
+          <div className="mb-2 flex items-center gap-2">
+            <ListChecks className="size-4 text-gray-500" />
+            <h2 className="text-base font-semibold text-gray-900">三、阶段分布与产出物完成</h2>
+          </div>
+          {!projectProgress || projectProgress.projects.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              暂无项目进度数据（冷启动期学生尚未产生项目会话进度）
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {projectProgress.projects.map((proj) => (
+                <div key={proj.project_id} className="rounded-lg border border-gray-200">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-100 bg-gray-50 px-3 py-2 text-sm">
+                    <span className="font-semibold text-gray-900">{proj.project_name}</span>
+                    <span className="text-gray-500">参与学生 {proj.student_count}</span>
+                    <span className="text-gray-500">阶段数 {proj.stage_count}</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-100 text-left text-gray-600">
+                          <th className="px-3 py-2 font-medium">阶段</th>
+                          <th className="px-3 py-2 font-medium">产出物</th>
+                          <th className="px-3 py-2 text-right font-medium">已完成</th>
+                          <th className="px-3 py-2 text-right font-medium">进行中</th>
+                          <th className="px-3 py-2 text-right font-medium">已开始</th>
+                          <th className="px-3 py-2 text-right font-medium">产出物提交</th>
+                          <th className="px-3 py-2 text-right font-medium">产出物达标</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {proj.stages.map((st) => (
+                          <tr key={st.stage_id} className="border-t border-gray-200">
+                            <td className="px-3 py-1.5 font-medium">{st.title}</td>
+                            <td className="px-3 py-1.5 text-gray-600">
+                              {st.has_deliverable ? st.deliverable_title || "—" : "—"}
+                            </td>
+                            <td className="px-3 py-1.5 text-right">{st.completed_count}</td>
+                            <td className="px-3 py-1.5 text-right">{st.in_progress_count}</td>
+                            <td className="px-3 py-1.5 text-right">{st.started_count}</td>
+                            <td className="px-3 py-1.5 text-right">
+                              {st.deliverable_submitted_count}
+                            </td>
+                            <td className="px-3 py-1.5 text-right">
+                              <span className="inline-flex items-center gap-1 text-emerald-700">
+                                {st.deliverable_done_count > 0 && (
+                                  <CheckCircle2 className="size-3.5" />
+                                )}
+                                {st.deliverable_done_count}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-xs text-gray-400">
+            【口径注释】按项目维度聚合（学生×项目合并会话进度）：阶段状态取最高值（pending
+            &lt; 进行中 &lt; 已完成），产出物"已达标优先、否则后写入"；进度为跨会话累积的当前状态，不限时间窗口，不随报告天数切换变化。
+          </p>
+        </section>
+
         {/* 4. 数据摘要 */}
         <section>
-          <h2 className="mb-2 text-base font-semibold text-gray-900">三、数据摘要</h2>
+          <h2 className="mb-2 text-base font-semibold text-gray-900">四、数据摘要</h2>
           {summaryLoading ? (
             <p className="flex items-center gap-2 text-sm text-gray-400">
               <RefreshCw className="size-3.5 animate-spin" />
@@ -433,11 +513,11 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 4. 趋势概览 */}
+        {/* 5. 趋势概览 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <TrendingUp className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">四、趋势概览</h2>
+            <h2 className="text-base font-semibold text-gray-900">五、趋势概览</h2>
           </div>
           <div className="mb-3 grid grid-cols-3 gap-3 text-sm">
             <MiniStat label="互动峰值" value={peak && peak.session_count > 0 ? `${peak.date} · ${peak.session_count} 次` : "暂无"} />
@@ -478,11 +558,11 @@ function ReportPageInner() {
           </p>
         </section>
 
-        {/* 5. 对话模式分布 */}
+        {/* 6. 对话模式分布 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <PieChartIcon className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">五、对话模式分布</h2>
+            <h2 className="text-base font-semibold text-gray-900">六、对话模式分布</h2>
           </div>
           {modeTotal === 0 ? (
             <p className="text-sm text-gray-400">暂无对话数据</p>
@@ -506,11 +586,11 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 6. 班级活跃率对比 */}
+        {/* 7. 班级活跃率对比 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">六、班级活跃率对比</h2>
+            <h2 className="text-base font-semibold text-gray-900">七、班级活跃率对比</h2>
           </div>
           {classComparison.length === 0 ? (
             <p className="text-sm text-gray-400">暂无班级数据</p>
@@ -544,11 +624,11 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 7. 学生活跃度排行 TOP10 */}
+        {/* 8. 学生活跃度排行 TOP10 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <Trophy className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">七、学生活跃度排行 TOP10</h2>
+            <h2 className="text-base font-semibold text-gray-900">八、学生活跃度排行 TOP10</h2>
           </div>
           {studentRanking.length === 0 ? (
             <p className="text-sm text-gray-400">暂无学生数据</p>
@@ -586,11 +666,11 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 8. 待关注学生 */}
+        {/* 9. 待关注学生 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="size-4 text-red-500" />
-            <h2 className="text-base font-semibold text-gray-900">八、待关注学生</h2>
+            <h2 className="text-base font-semibold text-gray-900">九、待关注学生</h2>
           </div>
           {anomalies.length === 0 ? (
             <p className="text-sm text-gray-400">所有学生状态良好</p>
@@ -623,11 +703,11 @@ function ReportPageInner() {
           )}
         </section>
 
-        {/* 9. 重点学生 */}
+        {/* 10. 重点学生 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="size-4 text-amber-500" />
-            <h2 className="text-base font-semibold text-gray-900">九、重点学生</h2>
+            <h2 className="text-base font-semibold text-gray-900">十、重点学生</h2>
           </div>
           {keyStudents.length === 0 ? (
             <p className="text-sm text-gray-400">暂无重点学生</p>
@@ -670,7 +750,7 @@ function ReportPageInner() {
 
         {/* 10. 页脚 */}
         <footer className="border-t border-gray-200 pt-3 text-xs text-gray-400">
-          <p>本报告为 P1 阶段版本（含互动明细、研究摘要、重点学生），会话级指标口径以学情总览页为准，消息级指标口径见互动明细注释。</p>
+          <p>本报告为 P2 阶段版本（含互动明细、阶段分布/产出物完成、研究摘要、重点学生），会话级指标口径以学情总览页为准，消息级指标口径见互动明细注释，项目进度口径见阶段分布注释。</p>
         </footer>
       </div>
     </div>

@@ -1,6 +1,11 @@
 //统计分析
 import { api } from "./client";
-import type { DashboardResponse, DashboardSummaryResponse, StudentAnalysisResponse } from "@/lib/types";
+import type {
+  DashboardResponse,
+  DashboardSummaryResponse,
+  ProjectProgressResponse,
+  StudentAnalysisResponse,
+} from "@/lib/types";
 
 export const analyticsApi = {
   // 获取学情总览数据
@@ -18,6 +23,13 @@ export const analyticsApi = {
     if (days) params.set("days", String(days));
     const qs = params.toString();
     return api.get<DashboardSummaryResponse>(`/analytics/dashboard/summary${qs ? `?${qs}` : ""}`);
+  },
+  // 获取项目维度进度聚合（阶段分布/产出物完成；进度为跨会话累积的当前状态，不限时间窗口）
+  getProjectProgress: (classId?: string) => {
+    const params = new URLSearchParams();
+    if (classId) params.set("class_id", classId);
+    const qs = params.toString();
+    return api.get<ProjectProgressResponse>(`/analytics/project-progress${qs ? `?${qs}` : ""}`);
   },
   // 获取学生分析数据
   getStudentAnalysis: (userId: string, days = 30) => {
