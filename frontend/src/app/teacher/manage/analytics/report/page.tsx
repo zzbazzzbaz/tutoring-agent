@@ -67,6 +67,10 @@ function ReportPageInner() {
     return (DAYS_OPTIONS as readonly number[]).includes(raw) ? (raw as DaysOption) : 30;
   });
   const [refreshing, setRefreshing] = useState(false);
+  // LLM 研究摘要：成功则为 AI 摘要文本；失败(null)回退规则摘要
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryUnavailable, setSummaryUnavailable] = useState(false);
 
   // 同步 URL 参数，便于打印/分享固定视图
   function syncUrl(classId: string, d: DaysOption) {
@@ -136,6 +140,33 @@ function ReportPageInner() {
       .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClassId, days]);
+
+  // LLM 研究摘要：独立请求，失败(503/异常)时回退规则摘要，不影响报告主体
+  useEffect(() => {
+    let cancelled = false;
+    setSummaryLoading(true);
+    analyticsApi
+      .getDashboardSummary(selectedClassId === "all" ? undefined : selectedClassId, days)
+      .then((data) => {
+        if (!cancelled) {
+          setAiSummary(data.summary);
+          setSummaryUnavailable(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAiSummary(null);
+          setSummaryUnavailable(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false);
       });
     return () => {
       cancelled = true;
@@ -378,10 +409,25 @@ function ReportPageInner() {
         {/* 4. 数据摘要 */}
         <section>
           <h2 className="mb-2 text-base font-semibold text-gray-900">三、数据摘要</h2>
-          <p className="text-sm leading-relaxed text-gray-700">{summaryText}</p>
-          <p className="mt-1 text-xs text-gray-400">
-            （本摘要由规则自动生成，P1 阶段将升级为 AI 智能摘要）
-          </p>
+          {summaryLoading ? (
+            <p className="flex items-center gap-2 text-sm text-gray-400">
+              <RefreshCw className="size-3.5 animate-spin" />
+              AI 摘要生成中...
+            </p>
+          ) : (
+            <p className="text-sm leading-relaxed text-gray-700">{aiSummary ?? summaryText}</p>
+          )}
+          {aiSummary ? (
+            <p className="mt-1 text-xs text-gray-400">（本摘要由 AI 智能生成）</p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-400">
+              （本摘要由规则自动生成
+              {summaryUnavailable
+                ? "；AI 摘要暂不可用：DASHSCOPE_API_KEY 未配置或服务异常"
+                : ""}
+              ）
+            </p>
+          )}
         </section>
 
         {/* 4. 趋势概览 */}

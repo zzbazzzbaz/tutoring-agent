@@ -298,6 +298,11 @@ export interface DashboardResponse {
   message_stats: MessageStats;
 }
 
+export interface DashboardSummaryResponse {
+  summary: string;
+  source: "llm";
+}
+
 // ===统计分析--> 学生分析 Student Analysis ===
 
 export interface StudentClassInfo {

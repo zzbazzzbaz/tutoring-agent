@@ -72,6 +72,11 @@ class DashboardResponse(BaseModel):
     student_ranking: list[StudentRanking] = Field(description="学生活跃度排行")
     message_stats: MessageStats = Field(description="消息级互动统计(互动明细)")
 
+class DashboardSummaryResponse(BaseModel):
+    """研究摘要响应"""
+    summary: str = Field(description="LLM 生成的研究摘要")
+    source: Literal["llm"] = Field(default="llm", description="摘要来源")
+
 # ===========================================================================
 # 学生分析--响应模型
 
