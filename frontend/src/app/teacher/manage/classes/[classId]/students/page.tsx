@@ -120,7 +120,7 @@ export default function ClassStudentsPage() {
           <h1 className="text-xl font-bold">班级学生管理</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDownloadTemplate}>
+          <Button onClick={handleDownloadTemplate}>
             <Download className="mr-2 size-4" />
             下载模板
           </Button>
@@ -131,7 +131,7 @@ export default function ClassStudentsPage() {
             <UserPlus className="mr-2 size-4" />
           添加学生
           </Button>
-          <Button variant="outline" onClick={() => setBulkDeleteOpen(true)}>
+          <Button onClick={() => setBulkDeleteOpen(true)}>
             <Trash2 className="mr-2 size-4" />
             批量删除
           </Button>
