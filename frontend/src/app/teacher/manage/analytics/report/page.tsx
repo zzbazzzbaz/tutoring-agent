@@ -428,9 +428,7 @@ function ReportPageInner() {
             <h2 className="text-base font-semibold text-gray-900">三、阶段分布与产出物完成</h2>
           </div>
           {!projectProgress || projectProgress.projects.length === 0 ? (
-            <p className="text-sm text-gray-400">
-              暂无项目进度数据（冷启动期学生尚未产生项目会话进度）
-            </p>
+            <p className="text-sm text-gray-400">暂无可展示的已发布项目</p>
           ) : (
             <div className="space-y-4">
               {projectProgress.projects.map((proj) => (

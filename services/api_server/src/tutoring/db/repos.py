@@ -325,13 +325,29 @@ async def list_project_progress_summary(
     """项目维度进度聚合：班级范围内每个项目的阶段分布 + 产出物完成。
 
     聚合口径（报告「阶段分布/产出物完成」板块用，注意与消息级统计区分）：
+    - 项目范围：**全量 published 项目**（含 0 会话、0 进度的项目，计数为 0），
+      不随班级内会话有无而增减（方案 B：教师一眼能看到尚未启动的项目）。
     - 统计单元 = 学生 × 项目：同一学生同一项目多个会话的进度合并，
       每个 stage 取状态最高值；产出物取"已达标优先、否则后写入"。
     - 时间窗口：不限（进度是跨会话累积的当前状态，不随报告天数切换变化）。
-    - 范围：班级学生（class_student）名下、未删除的 project 模式会话。
-    - 分母：该项目下有进度记录的学生数（student_count）。
+    - 会话范围：班级学生（class_student）名下、未删除的 project 模式会话。
+    - 分母（student_count）：该项目下有 project 模式会话的学生数（去重）；
+      "参与"以会话为准，与学生是否上报过阶段进度（SessionProgress）无关。
     """
-    # 1. 班级范围内的 project 模式会话
+    # 1. 全量 published 项目（mainline 阶段定义来源，先取项目再按会话聚合）
+    projects_stmt = (
+        select(Project)
+        .where(
+            Project.status == "published",
+            Project.deleted_at.is_(None),
+        )
+        .order_by(Project.name)
+    )
+    projects = (await session.execute(projects_stmt)).scalars().all()
+    if not projects:
+        return []
+
+    # 2. 班级范围内的 project 模式会话（可为 0 条：全量列出项目时允许 0 会话）
     sessions_stmt = (
         select(Session.id, Session.user_id, Session.project_id)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
@@ -343,47 +359,40 @@ async def list_project_progress_summary(
         )
     )
     session_rows = (await session.execute(sessions_stmt)).all()
-    if not session_rows:
-        return []
 
     user_by_session: dict[UUID, UUID] = {}
     project_by_session: dict[UUID, UUID] = {}
     session_ids: list[UUID] = []
-    project_ids: set[UUID] = set()
+    # 参与学生按 (项目) 去重：有 project 模式会话即视为参与，与是否有进度记录无关
+    students_by_project: dict[UUID, set[UUID]] = {}
     for sid, uid, pid in session_rows:
         user_by_session[sid] = uid
         project_by_session[sid] = pid
         session_ids.append(sid)
-        project_ids.add(pid)
+        students_by_project.setdefault(pid, set()).add(uid)
 
-    # 2. 会话进度
-    progress_stmt = select(SessionProgress).where(SessionProgress.session_id.in_(session_ids))
-    progress_rows = (await session.execute(progress_stmt)).scalars().all()
-
-    # 3. 项目元数据（mainline 阶段定义）
-    projects_stmt = select(Project).where(Project.id.in_(list(project_ids)))
-    projects = (await session.execute(projects_stmt)).scalars().all()
-    project_by_id = {p.id: p for p in projects}
-
-    # 4. 按 (学生, 项目) 合并会话进度
+    # 3. 会话进度 + 按 (学生, 项目) 合并会话进度
     merged: dict[tuple[UUID, UUID], dict[str, dict]] = {}
-    for sp in progress_rows:
-        sid = sp.session_id
-        key = (user_by_session.get(sid), project_by_session.get(sid))
-        if None in key:
-            continue
-        per_stage = merged.setdefault(key, {})
-        for stage_id, stage_prog in (sp.progress or {}).items():
-            per_stage[stage_id] = _merge_stage_progress(
-                per_stage.get(stage_id), dict(stage_prog)
-            )
+    if session_rows:
+        progress_stmt = select(SessionProgress).where(SessionProgress.session_id.in_(session_ids))
+        progress_rows = (await session.execute(progress_stmt)).scalars().all()
+        for sp in progress_rows:
+            sid = sp.session_id
+            key = (user_by_session.get(sid), project_by_session.get(sid))
+            if None in key:
+                continue
+            per_stage = merged.setdefault(key, {})
+            for stage_id, stage_prog in (sp.progress or {}).items():
+                per_stage[stage_id] = _merge_stage_progress(
+                    per_stage.get(stage_id), dict(stage_prog)
+                )
 
-    # 5. 输出每个项目的阶段统计
+    # 4. 输出每个项目的阶段统计（projects 已按 name 排序）
     results: list[dict] = []
-    for proj in sorted(projects, key=lambda p: p.name or ""):
+    for proj in projects:
         mainline = proj.mainline or {}
         stages_def = mainline.get("stages") or []
-        student_count = sum(1 for (uid, pid) in merged if pid == proj.id)
+        student_count = len(students_by_project.get(proj.id, set()))
 
         stage_stats: list[dict] = []
         for sd in stages_def:
