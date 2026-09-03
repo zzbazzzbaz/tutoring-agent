@@ -1,4 +1,5 @@
 # 消息落库中间件：每回合 agent 执行结束后写入 API Server
+import json
 import logging
 from uuid import UUID
 
@@ -39,11 +40,13 @@ class MessagePersistenceMiddleware(AgentMiddleware):
                 return None
 
             knowledge_hit = _has_knowledge_hit(messages)
+            knowledge_doc_ids = _extract_knowledge_docs(messages)
             await _persist(
                 session_id=UUID(str(thread_id)),
                 student_content=student_content,
                 ai_content=ai_content,
                 knowledge_hit=knowledge_hit,
+                knowledge_doc_ids=knowledge_doc_ids,
             )
         except Exception:
             # 落库失败不影响聊天主流程
@@ -86,6 +89,59 @@ def _has_knowledge_hit(messages: list) -> bool:
     return False
 
 
+def _extract_knowledge_docs(messages: list) -> list[str]:
+    """从本轮（最后一条学生提问之后）知识检索工具结果中提取命中的文档/知识点标识。
+
+    - 优先取 chunk.file_path（文档路径，去重保序）
+    - 若本轮回合无任何 file_path，兜底取 entity.name（知识图谱实体名，代表知识点）
+    - 解析失败或缺失一律返回空列表，不影响聊天与落库主流程
+    """
+    last_human_idx = -1
+    for i, msg in enumerate(messages):
+        if isinstance(msg, HumanMessage):
+            last_human_idx = i
+    if last_human_idx < 0:
+        return []
+
+    docs: list[str] = []
+    for msg in messages[last_human_idx:]:
+        if getattr(msg, "name", None) != _KNOWLEDGE_TOOL_NAME:
+            continue
+        content = getattr(msg, "content", None)
+        if not content:
+            continue
+        try:
+            payload = json.loads(content) if isinstance(content, str) else None
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+
+        chunks = payload.get("chunks")
+        if isinstance(chunks, list):
+            file_paths = [
+                str(c.get("file_path")).strip()
+                for c in chunks
+                if isinstance(c, dict) and c.get("file_path")
+            ]
+            if file_paths:
+                docs.extend(file_paths)
+
+        # 仅当本轮 chunks 无 file_path 时，用实体名兜底
+        if not docs:
+            entities = payload.get("entities")
+            if isinstance(entities, list):
+                names = [
+                    str(e.get("name")).strip()
+                    for e in entities
+                    if isinstance(e, dict) and e.get("name")
+                ]
+                docs.extend(names)
+
+    # 去重保序
+    return list(dict.fromkeys(d for d in docs if d))
+
+
 def _content_text(msg) -> str:
     """提取消息正文文本（兼容 str 与多模态 list）。"""
     content = msg.content
@@ -109,17 +165,28 @@ async def _persist(
     student_content: str | None,
     ai_content: str | None,
     knowledge_hit: bool,
+    knowledge_doc_ids: list[str] | None = None,
 ) -> None:
     """调用 API Server 内部端点写入消息。"""
     settings = get_settings()
     payload = {"session_id": str(session_id), "messages": []}
     if student_content is not None:
         payload["messages"].append(
-            {"role": "student", "content": student_content, "knowledge_hit": knowledge_hit}
+            {
+                "role": "student",
+                "content": student_content,
+                "knowledge_hit": knowledge_hit,
+                "knowledge_doc_ids": list(knowledge_doc_ids or []),
+            }
         )
     if ai_content is not None:
         payload["messages"].append(
-            {"role": "assistant", "content": ai_content, "knowledge_hit": False}
+            {
+                "role": "assistant",
+                "content": ai_content,
+                "knowledge_hit": False,
+                "knowledge_doc_ids": [],
+            }
         )
     if not payload["messages"]:
         return

@@ -39,7 +39,12 @@ async def test_persist_agent_messages_writes_items(monkeypatch):
         db,
         session_id=db.session.id,
         items=[
-            AgentMessageItem(role="student", content="学生提问", knowledge_hit=True),
+            AgentMessageItem(
+                role="student",
+                content="学生提问",
+                knowledge_hit=True,
+                knowledge_doc_ids=["心理学/情绪.md", "心理学/记忆.md"],
+            ),
             AgentMessageItem(role="assistant", content="AI回复", knowledge_hit=False),
         ],
     )
@@ -47,7 +52,9 @@ async def test_persist_agent_messages_writes_items(monkeypatch):
     assert written == 2
     assert captured["session_id"] == db.session.id
     assert captured["items"][0]["knowledge_hit"] is True
+    assert captured["items"][0]["knowledge_doc_ids"] == ["心理学/情绪.md", "心理学/记忆.md"]
     assert captured["items"][1]["knowledge_hit"] is False
+    assert captured["items"][1]["knowledge_doc_ids"] == []
 
 
 @pytest.mark.asyncio

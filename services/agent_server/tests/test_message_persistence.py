@@ -5,6 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from teaching_agent.infrastructure.message_persistence import (
+    _extract_knowledge_docs,
     _extract_turn,
     _has_knowledge_hit,
     MessagePersistenceMiddleware,
@@ -13,6 +14,24 @@ from teaching_agent.infrastructure.message_persistence import (
 
 def _tool_result(tool_name: str, content: str = "ok") -> ToolMessage:
     return ToolMessage(content=content, name=tool_name, tool_call_id="t1")
+
+
+def _knowledge_result(chunks: list | None = None, entities: list | None = None) -> ToolMessage:
+    import json
+
+    return _tool_result(
+        "search_knowledge",
+        json.dumps(
+            {
+                "query": "q",
+                "response": "",
+                "chunks": chunks or [],
+                "entities": entities or [],
+                "relations": [],
+            },
+            ensure_ascii=False,
+        ),
+    )
 
 
 # === _extract_turn ===
@@ -106,6 +125,61 @@ def test_has_knowledge_hit_false_without_any_call():
     assert _has_knowledge_hit(messages) is False
 
 
+# === _extract_knowledge_docs ===
+
+
+def test_extract_knowledge_docs_uses_file_paths_dedup():
+    messages = [
+        HumanMessage(content="问"),
+        _knowledge_result(
+            chunks=[
+                {"id": "c1", "file_path": "心理学/情绪.md", "content": "x"},
+                {"id": "c2", "file_path": "心理学/情绪.md"},
+                {"id": "c3", "file_path": "心理学/记忆.md"},
+            ]
+        ),
+        AIMessage(content="答"),
+    ]
+    assert _extract_knowledge_docs(messages) == ["心理学/情绪.md", "心理学/记忆.md"]
+
+
+def test_extract_knowledge_docs_falls_back_to_entity_names():
+    messages = [
+        HumanMessage(content="问"),
+        _knowledge_result(
+            chunks=[{"id": "c1", "content": "无路径"}],
+            entities=[{"name": "分离焦虑"}, {"name": "依恋"}],
+        ),
+        AIMessage(content="答"),
+    ]
+    assert _extract_knowledge_docs(messages) == ["分离焦虑", "依恋"]
+
+
+def test_extract_knowledge_docs_empty_without_hit():
+    messages = [HumanMessage(content="问"), AIMessage(content="答")]
+    assert _extract_knowledge_docs(messages) == []
+
+
+def test_extract_knowledge_docs_ignores_invalid_content():
+    messages = [
+        HumanMessage(content="问"),
+        _tool_result("search_knowledge", "not-json"),
+        AIMessage(content="答"),
+    ]
+    assert _extract_knowledge_docs(messages) == []
+
+
+def test_extract_knowledge_docs_only_current_turn():
+    messages = [
+        HumanMessage(content="上轮问"),
+        _knowledge_result(chunks=[{"id": "c", "file_path": "old.md"}]),
+        AIMessage(content="上轮答"),
+        HumanMessage(content="本轮问"),
+        AIMessage(content="本轮答"),
+    ]
+    assert _extract_knowledge_docs(messages) == []
+
+
 # === MessagePersistenceMiddleware.aafter_agent ===
 
 
@@ -154,6 +228,7 @@ async def test_middleware_marks_knowledge_hit(monkeypatch):
     await MessagePersistenceMiddleware().aafter_agent(state, runtime)
 
     assert captured["knowledge_hit"] is True
+    assert captured["knowledge_doc_ids"] == []
 
 
 @pytest.mark.asyncio

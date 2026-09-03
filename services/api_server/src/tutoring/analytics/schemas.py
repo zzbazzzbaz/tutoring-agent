@@ -121,3 +121,32 @@ class StudentAnalysisResponse(BaseModel):
     """学生分析完整响应"""
     overview: StudentOverview = Field(description="学生概览")
     daily_activity: list[StudentDailyActivity] = Field(description="每日活动趋势")
+
+
+# ===========================================================================
+# 阶段分布 / 产出物完成（项目维度聚合）--响应模型
+
+class ProjectStageStat(BaseModel):
+    """单个项目单个阶段的进度统计"""
+    stage_id: str = Field(description="阶段ID")
+    order: int = Field(description="阶段顺序")
+    title: str = Field(description="阶段标题")
+    has_deliverable: bool = Field(description="该阶段是否配置了产出物")
+    deliverable_title: str | None = Field(default=None, description="产出物标题")
+    completed_count: int = Field(description="该项目该阶段已完成的学生数")
+    in_progress_count: int = Field(description="进行中的学生数")
+    started_count: int = Field(description="已开始(进行中或完成)的学生数")
+    deliverable_submitted_count: int = Field(description="已提交产出物的学生数")
+    deliverable_done_count: int = Field(description="产出物已达标的学生数")
+
+class ProjectProgressSummary(BaseModel):
+    """单个项目的阶段分布/产出物完成聚合"""
+    project_id: UUID = Field(description="项目ID")
+    project_name: str = Field(description="项目名称")
+    student_count: int = Field(description="该项目有进度记录的学生数(分母)")
+    stage_count: int = Field(description="项目阶段总数")
+    stages: list[ProjectStageStat] = Field(description="各阶段进度统计")
+
+class ProjectProgressResponse(BaseModel):
+    """班级阶段分布/产出物完成响应（项目维度聚合，不限时间窗口）"""
+    projects: list[ProjectProgressSummary] = Field(description="项目列表,按项目名排序")

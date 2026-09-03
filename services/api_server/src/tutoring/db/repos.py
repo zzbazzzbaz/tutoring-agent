@@ -290,6 +290,149 @@ async def get_session_progress(
 ) -> SessionProgress | None:
     return await session.get(SessionProgress, session_id)
 
+
+# === 项目维度进度聚合（报告「阶段分布/产出物完成」） ===
+
+# 阶段状态等级：pending < in_progress < completed
+_STATUS_RANK = {"pending": 0, "in_progress": 1, "completed": 2}
+
+
+def _merge_stage_progress(existing: dict | None, incoming: dict) -> dict:
+    """合并同一 (学生, 项目, 阶段) 的两条进度记录。
+
+    - status 取状态最高值（pending < in_progress < completed）
+    - deliverable_done 取任一 True
+    - deliverable 内容：优先保留已达标者的；都未达标时保留后写入的
+    """
+    merged = dict(incoming)
+    if existing:
+        if _STATUS_RANK.get(existing.get("status"), 0) > _STATUS_RANK.get(
+            merged.get("status"), 0
+        ):
+            merged["status"] = existing["status"]
+        if bool(existing.get("deliverable_done")) and not bool(merged.get("deliverable_done")):
+            merged["deliverable_done"] = True
+            if existing.get("deliverable"):
+                merged["deliverable"] = existing["deliverable"]
+    return merged
+
+
+async def list_project_progress_summary(
+    session: AsyncSession,
+    *,
+    class_ids: list[UUID],
+) -> list[dict]:
+    """项目维度进度聚合：班级范围内每个项目的阶段分布 + 产出物完成。
+
+    聚合口径（报告「阶段分布/产出物完成」板块用，注意与消息级统计区分）：
+    - 统计单元 = 学生 × 项目：同一学生同一项目多个会话的进度合并，
+      每个 stage 取状态最高值；产出物取"已达标优先、否则后写入"。
+    - 时间窗口：不限（进度是跨会话累积的当前状态，不随报告天数切换变化）。
+    - 范围：班级学生（class_student）名下、未删除的 project 模式会话。
+    - 分母：该项目下有进度记录的学生数（student_count）。
+    """
+    # 1. 班级范围内的 project 模式会话
+    sessions_stmt = (
+        select(Session.id, Session.user_id, Session.project_id)
+        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            Session.mode == "project",
+            Session.project_id.is_not(None),
+            Session.deleted_at.is_(None),
+        )
+    )
+    session_rows = (await session.execute(sessions_stmt)).all()
+    if not session_rows:
+        return []
+
+    user_by_session: dict[UUID, UUID] = {}
+    project_by_session: dict[UUID, UUID] = {}
+    session_ids: list[UUID] = []
+    project_ids: set[UUID] = set()
+    for sid, uid, pid in session_rows:
+        user_by_session[sid] = uid
+        project_by_session[sid] = pid
+        session_ids.append(sid)
+        project_ids.add(pid)
+
+    # 2. 会话进度
+    progress_stmt = select(SessionProgress).where(SessionProgress.session_id.in_(session_ids))
+    progress_rows = (await session.execute(progress_stmt)).scalars().all()
+
+    # 3. 项目元数据（mainline 阶段定义）
+    projects_stmt = select(Project).where(Project.id.in_(list(project_ids)))
+    projects = (await session.execute(projects_stmt)).scalars().all()
+    project_by_id = {p.id: p for p in projects}
+
+    # 4. 按 (学生, 项目) 合并会话进度
+    merged: dict[tuple[UUID, UUID], dict[str, dict]] = {}
+    for sp in progress_rows:
+        sid = sp.session_id
+        key = (user_by_session.get(sid), project_by_session.get(sid))
+        if None in key:
+            continue
+        per_stage = merged.setdefault(key, {})
+        for stage_id, stage_prog in (sp.progress or {}).items():
+            per_stage[stage_id] = _merge_stage_progress(
+                per_stage.get(stage_id), dict(stage_prog)
+            )
+
+    # 5. 输出每个项目的阶段统计
+    results: list[dict] = []
+    for proj in sorted(projects, key=lambda p: p.name or ""):
+        mainline = proj.mainline or {}
+        stages_def = mainline.get("stages") or []
+        student_count = sum(1 for (uid, pid) in merged if pid == proj.id)
+
+        stage_stats: list[dict] = []
+        for sd in stages_def:
+            stage_id = sd.get("id")
+            deliverable_def = (
+                sd.get("deliverable") if isinstance(sd.get("deliverable"), dict) else None
+            )
+            stats = {
+                "stage_id": sd.get("id"),
+                "order": sd.get("order"),
+                "title": sd.get("title"),
+                "has_deliverable": bool(deliverable_def),
+                "deliverable_title": (deliverable_def or {}).get("title"),
+                "completed_count": 0,
+                "in_progress_count": 0,
+                "started_count": 0,
+                "deliverable_submitted_count": 0,
+                "deliverable_done_count": 0,
+            }
+            for (uid, pid), per_stage in merged.items():
+                if pid != proj.id:
+                    continue
+                st = per_stage.get(stage_id)
+                if not st:
+                    continue
+                status = st.get("status")
+                if status == "completed":
+                    stats["completed_count"] += 1
+                elif status == "in_progress":
+                    stats["in_progress_count"] += 1
+                if status in ("in_progress", "completed"):
+                    stats["started_count"] += 1
+                if st.get("deliverable"):
+                    stats["deliverable_submitted_count"] += 1
+                if st.get("deliverable_done"):
+                    stats["deliverable_done_count"] += 1
+            stage_stats.append(stats)
+
+        results.append(
+            {
+                "project_id": proj.id,
+                "project_name": proj.name,
+                "student_count": student_count,
+                "stage_count": len(stages_def),
+                "stages": stage_stats,
+            }
+        )
+    return results
+
 # === Class ===
 
 # 创建班级
@@ -962,7 +1105,7 @@ async def create_messages(
     session_id: UUID,
     items: list[dict],
 ) -> int:
-    """批量写入消息记录。items: [{role, content, knowledge_hit}]。返回写入条数。"""
+    """批量写入消息记录。items: [{role, content, knowledge_hit, knowledge_doc_ids}]。返回写入条数。"""
     for item in items:
         session.add(
             Message(
@@ -970,6 +1113,7 @@ async def create_messages(
                 role=item["role"],
                 content=item["content"],
                 knowledge_hit=bool(item.get("knowledge_hit", False)),
+                knowledge_doc_ids=list(item.get("knowledge_doc_ids") or []),
             )
         )
     await session.commit()

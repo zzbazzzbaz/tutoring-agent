@@ -12,6 +12,8 @@ class AgentMessageItem(BaseModel):
     content: str
     # 本轮学生提问是否命中知识库（仅 student 消息标记）
     knowledge_hit: bool = False
+    # 本轮学生提问命中的知识库文档/知识点标识（chunk.file_path 或 entity.name 去重；仅 student 消息标记）
+    knowledge_doc_ids: list[str] = Field(default_factory=list)
 
 
 class AgentMessageBulkWriteRequest(BaseModel):

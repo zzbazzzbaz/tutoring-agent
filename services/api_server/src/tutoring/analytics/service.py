@@ -13,6 +13,8 @@ from tutoring.analytics.schemas import (
     KeyStudent,
     LearningTrendPoint,
     MessageStats,
+    ProjectProgressResponse,
+    ProjectProgressSummary,
     StudentAnalysisResponse,
     StudentClassInfo,
     StudentDailyActivity,
@@ -224,3 +226,33 @@ async def get_student_analysis(
         ),
         daily_activity=daily_activity,
     )
+
+
+# === 项目维度进度聚合===
+
+async def get_project_progress_summary(
+    db: AsyncSession,
+    teacher_id: UUID,
+    class_id: UUID | None = None,
+) -> ProjectProgressResponse:
+    """
+    项目维度进度聚合（阶段分布 / 产出物完成）。
+
+    口径：学生 × 项目合并会话进度（跨会话累积的当前状态），**不限时间窗口**，
+    不随报告天数切换变化。班级解析与 get_dashboard 一致：
+    指定 class_id 时校验归属，否则聚合该教师全部班级。
+    """
+    if class_id:
+        single = await db.get(Class, class_id)
+        if not single or single.teacher_id != teacher_id or single.deleted_at is not None:
+            return ProjectProgressResponse(projects=[])
+        classes = [single]
+    else:
+        classes = await repos.list_classes_by_teacher(db, teacher_id)
+
+    if not classes:
+        return ProjectProgressResponse(projects=[])
+
+    class_ids = [c.id for c in classes]
+    raw = await repos.list_project_progress_summary(db, class_ids=class_ids)
+    return ProjectProgressResponse(projects=[ProjectProgressSummary(**p) for p in raw])

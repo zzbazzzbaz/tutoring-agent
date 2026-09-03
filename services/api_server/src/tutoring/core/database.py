@@ -44,3 +44,8 @@ async def init_db(engine: AsyncEngine) -> None:
         await conn.execute(
             text('ALTER TABLE "project" ADD COLUMN IF NOT EXISTS mainline JSONB')
         )
+        await conn.execute(
+            text(
+                "ALTER TABLE message ADD COLUMN IF NOT EXISTS knowledge_doc_ids JSONB"
+            )
+        )

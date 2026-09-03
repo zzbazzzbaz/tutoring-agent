@@ -10,6 +10,7 @@ from tutoring.analytics import summary as analytics_summary
 from tutoring.analytics.schemas import (
     DashboardResponse,
     DashboardSummaryResponse,
+    ProjectProgressResponse,
     StudentAnalysisResponse,
 )
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
@@ -66,3 +67,14 @@ async def get_student_analysis(
     """获取学生分析数据"""
     _require_teacher(user)
     return await analytics_service.get_student_analysis(db, user.id, user_id, days=days)
+
+# 项目维度进度聚合（阶段分布/产出物完成）——进度为跨会话累积的当前状态，不限时间窗口
+@router.get("/project-progress", response_model=ProjectProgressResponse)
+async def get_project_progress(
+    class_id: UUID | None = Query(None, description="班级ID,不传则返回该教师所有班级聚合"),
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectProgressResponse:
+    """项目维度进度聚合（阶段分布/产出物完成）。"""
+    _require_teacher(user)
+    return await analytics_service.get_project_progress_summary(db, user.id, class_id)

@@ -196,6 +196,8 @@ class Message(SQLModel, table=True):
     说明：
     - `role` 取值：student（学生发起）/ assistant（AI 回复）
     - `knowledge_hit`：本轮学生提问是否命中知识库（是否调用过检索知识工具）
+    - `knowledge_doc_ids`：本轮学生提问命中的知识库文档/知识点标识（优先 chunk.file_path，
+      缺省时用 entity.name，去重），用于"知识点覆盖广度"统计；仅 student 消息标记
     - 落库由 Agent Server 每回合结束写入，本表数据自启用后开始累积
     """
 
@@ -216,6 +218,8 @@ class Message(SQLModel, table=True):
     content: str = Field(sa_column=Column(Text))
     # 本轮学生提问是否命中知识库
     knowledge_hit: bool = Field(default=False)
+    # 本轮学生提问命中的知识库文档/知识点标识（JSONB 字符串数组，去重）
+    knowledge_doc_ids: list[str] = Field(default_factory=list, sa_column=Column(JSONB))
     created_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )
