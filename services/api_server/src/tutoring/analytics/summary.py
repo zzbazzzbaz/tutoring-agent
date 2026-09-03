@@ -15,7 +15,7 @@ _PLACEHOLDER_SUBSTR = "你的阿里云"
 _SUMMARY_SYSTEM_PROMPT = (
     "你是一名教育领域的统计分析助手。请根据给定的普通心理学班级学情统计数据，"
     "用简洁、专业、客观的中文写一段约 120~200 字的研究摘要。"
-    "要点：概括互动规模与活跃情况、点出趋势特征与峰值、说明对话模式偏好、"
+    "要点：概括互动规模与活跃情况、点出趋势特征与峰值、"
     "提及知识命中与待关注情况，并给出 1 条具体可执行的跟进建议。"
     "只使用给定数据，不得编造或外推任何数值。"
 )
@@ -55,12 +55,6 @@ def _build_user_prompt(dashboard: DashboardResponse) -> str:
             f"趋势：互动峰值 {peak.date}（{peak.session_count} 次）；"
             f"有互动天数 {active_days}；日均 {avg:.1f} 次。"
         )
-    total_mode = sum(m.count for m in dashboard.mode_distribution)
-    if total_mode > 0:
-        parts = []
-        for m in dashboard.mode_distribution:
-            parts.append(f"{m.mode}模式 {m.count} 次（{round(m.count / total_mode * 100)}%）")
-        lines.append("对话模式：" + "；".join(parts) + "。")
     ms = dashboard.message_stats
     lines.append(
         f"消息级互动：总 {ms.total_messages} 条（学生发起 {ms.student_messages}，"

@@ -14,7 +14,6 @@ import {
   RefreshCw,
   TrendingUp,
   Trophy,
-  PieChart as PieChartIcon,
   Printer,
   BarChart3,
   MessageSquare,
@@ -44,7 +43,6 @@ import type {
   KeyStudent,
   LearningTrendPoint,
   MessageStats,
-  ModeCount,
   ProjectProgressResponse,
   StudentRanking,
 } from "@/lib/types";
@@ -62,7 +60,6 @@ function ReportPageInner() {
   const [anomalies, setAnomalies] = useState<AnomalyStudent[]>([]);
   const [trend, setTrend] = useState<LearningTrendPoint[]>([]);
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
-  const [modeDistribution, setModeDistribution] = useState<ModeCount[]>([]);
   const [studentRanking, setStudentRanking] = useState<StudentRanking[]>([]);
   const [messageStats, setMessageStats] = useState<MessageStats | null>(null);
   const [keyStudents, setKeyStudents] = useState<KeyStudent[]>([]);
@@ -110,7 +107,6 @@ function ReportPageInner() {
       setAnomalies(data.anomalies || []);
       setTrend(data.trend || []);
       setClassComparison(data.class_comparison || []);
-      setModeDistribution(data.mode_distribution || []);
       setStudentRanking(data.student_ranking || []);
       setMessageStats(data.message_stats || null);
       setKeyStudents(data.key_students || []);
@@ -202,14 +198,6 @@ function ReportPageInner() {
   }, [selectedClassId, days]);
 
   const currentClass = classes.find((c) => c.id === selectedClassId);
-  const modeTotal = useMemo(
-    () => modeDistribution.reduce((s, m) => s + m.count, 0),
-    [modeDistribution]
-  );
-  const projectCount =
-    modeDistribution.find((m) => m.mode === "project")?.count ?? 0;
-  const freeCount =
-    modeDistribution.find((m) => m.mode === "free")?.count ?? 0;
 
   // 三日滑动均值（自然日滑动：当天+前2天窗口，开头第1/2天按已有天数平均）
   const trendRows = useMemo(() => {
@@ -298,11 +286,6 @@ function ReportPageInner() {
       );
     } else {
       parts.push("统计窗口内暂无对话记录。");
-    }
-    if (modeTotal > 0) {
-      const mainMode = projectCount >= freeCount ? "项目模式" : "自由模式";
-      const mainPct = Math.round((Math.max(projectCount, freeCount) / modeTotal) * 100);
-      parts.push(`对话以${mainMode}为主（占 ${mainPct}%）。`);
     }
     parts.push(
       overview!.pending_alert_count > 0
@@ -567,39 +550,11 @@ function ReportPageInner() {
           </p>
         </section>
 
-        {/* 6. 对话模式分布 */}
-        <section>
-          <div className="mb-2 flex items-center gap-2">
-            <PieChartIcon className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">六、对话模式分布</h2>
-          </div>
-          {modeTotal === 0 ? (
-            <p className="text-sm text-gray-400">暂无对话数据</p>
-          ) : (
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-20 text-gray-600">项目模式</span>
-                <span className="font-medium">{projectCount} 次</span>
-                <span className="text-gray-500">
-                  （{Math.round((projectCount / modeTotal) * 100)}%）
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-20 text-gray-600">自由模式</span>
-                <span className="font-medium">{freeCount} 次</span>
-                <span className="text-gray-500">
-                  （{Math.round((freeCount / modeTotal) * 100)}%）
-                </span>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* 7. 班级活跃率对比 */}
+        {/* 6. 班级活跃率对比 */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">七、班级活跃率对比</h2>
+            <h2 className="text-base font-semibold text-gray-900">六、班级活跃率对比</h2>
           </div>
           {classComparison.length === 0 ? (
             <p className="text-sm text-gray-400">暂无班级数据</p>
@@ -637,7 +592,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <Trophy className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">八、学生活跃度排行 TOP10</h2>
+            <h2 className="text-base font-semibold text-gray-900">七、学生活跃度排行 TOP10</h2>
           </div>
           {studentRanking.length === 0 ? (
             <p className="text-sm text-gray-400">暂无学生数据</p>
@@ -679,7 +634,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="size-4 text-red-500" />
-            <h2 className="text-base font-semibold text-gray-900">九、待关注学生</h2>
+            <h2 className="text-base font-semibold text-gray-900">八、待关注学生</h2>
           </div>
           {anomalies.length === 0 ? (
             <p className="text-sm text-gray-400">所有学生状态良好</p>
@@ -716,7 +671,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="size-4 text-amber-500" />
-            <h2 className="text-base font-semibold text-gray-900">十、重点学生</h2>
+            <h2 className="text-base font-semibold text-gray-900">九、重点学生</h2>
           </div>
           {keyStudents.length === 0 ? (
             <p className="text-sm text-gray-400">暂无重点学生</p>
@@ -761,7 +716,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">十一、班级评价</h2>
+            <h2 className="text-base font-semibold text-gray-900">十、班级评价</h2>
           </div>
           {!classEvaluation || classEvaluation.classes.length === 0 ? (
             <p className="text-sm text-gray-400">暂无班级评价数据</p>
