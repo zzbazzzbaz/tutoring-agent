@@ -73,7 +73,7 @@ export function MainlineEditor({
     return (
       <div className="flex flex-col gap-2 rounded-lg border border-dashed border-ink/15 p-4">
         <p className="text-sm text-ink/55">
-          配置结构化学习主线后，项目模式会话会按阶段引导学生学习，并在前端展示进度。
+          配置结构化学习主线后，案例模式会话会按阶段引导学生学习，并在前端展示进度。
         </p>
         <div>
           <Button

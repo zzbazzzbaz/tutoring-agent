@@ -38,10 +38,10 @@ export function ProjectTable() {
   }, [page]);
 
   async function handleDelete(project: Project) {
-    if (!confirm(`确定删除项目「${project.name}」吗？`)) return;
+    if (!confirm(`确定删除案例「${project.name}」吗？`)) return;
     try {
       await projectsApi.delete(project.id);
-      toast.success("项目已删除");
+      toast.success("案例已删除");
       refresh();
     } catch (err) {
       toast.error(
@@ -53,14 +53,14 @@ export function ProjectTable() {
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">项目管理</h1>
+        <h1 className="text-xl font-bold">案例管理</h1>
         <Button
           asChild
           className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] !text-emerald-50 hover:from-[#0b3d31] hover:to-[#064e3b]"
         >
           <Link href="/teacher/manage/projects/new">
             <Plus className="mr-2 size-4" />
-            新建项目
+            新建案例
           </Link>
         </Button>
       </div>
@@ -72,7 +72,7 @@ export function ProjectTable() {
             <thead className="bg-paper">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">
-                  项目名称
+                  案例名称
                 </th>
                 <th className="px-4 py-2 text-left font-medium">
                   状态

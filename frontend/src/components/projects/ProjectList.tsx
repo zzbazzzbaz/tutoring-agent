@@ -47,7 +47,7 @@ export function ProjectList({
 
   if (projects.length === 0) {
     return (
-      <div className="p-4 text-muted-foreground">暂无项目</div>
+      <div className="p-4 text-muted-foreground">暂无案例</div>
     );
   }
 

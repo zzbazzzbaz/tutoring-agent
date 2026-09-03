@@ -32,7 +32,7 @@ export function ProjectDetail({
   }, [id]);
 
   if (loading) return <SkeletonCard lines={5} className="m-4" />;
-  if (!project) return <div className="p-4">项目不存在</div>;
+  if (!project) return <div className="p-4">案例不存在</div>;
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -58,7 +58,7 @@ export function ProjectDetail({
         </div>
       </div>
       <div className="prose prose-sm max-w-none">
-        <h2 className="mb-3 text-lg font-semibold">项目背景</h2>
+        <h2 className="mb-3 text-lg font-semibold">案例背景</h2>
         <MarkdownText>{project.background_md}</MarkdownText>
       </div>
       {readOnly && (
@@ -68,7 +68,7 @@ export function ProjectDetail({
               router.push(`/student/chat?project=${project.id}`)
             }
           >
-            在对话中讨论此项目
+            在对话中讨论此案例
           </Button>
         </div>
       )}

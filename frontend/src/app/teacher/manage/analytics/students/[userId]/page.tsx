@@ -259,7 +259,7 @@ export default function StudentAnalysisPage() {
       <div className="rounded-lg border bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
           <Map className="size-4 text-muted-foreground" />
-          <h3 className="font-medium">项目学习主线进度</h3>
+          <h3 className="font-medium">案例学习主线进度</h3>
         </div>
         <StudentMainlineProgress userId={userId} />
       </div>
@@ -289,7 +289,7 @@ export default function StudentAnalysisPage() {
                       {s.title || "（无标题）"}
                     </span>
                     <Badge variant={s.mode === "project" ? "default" : "secondary"}>
-                      {s.mode === "project" ? "项目" : "自由"}
+                      {s.mode === "project" ? "案例" : "自由"}
                     </Badge>
                     {s.project_name && (
                       <span className="truncate text-xs text-muted-foreground">{s.project_name}</span>

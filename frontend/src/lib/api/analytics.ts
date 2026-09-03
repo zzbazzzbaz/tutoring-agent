@@ -25,7 +25,7 @@ export const analyticsApi = {
     const qs = params.toString();
     return api.get<DashboardSummaryResponse>(`/analytics/dashboard/summary${qs ? `?${qs}` : ""}`);
   },
-  // 获取项目维度进度聚合（阶段分布/产出物完成；进度为跨会话累积的当前状态，不限时间窗口）
+  // 获取案例维度进度聚合（阶段分布/产出物完成；进度为跨会话累积的当前状态，不限时间窗口）
   getProjectProgress: (classId?: string) => {
     const params = new URLSearchParams();
     if (classId) params.set("class_id", classId);

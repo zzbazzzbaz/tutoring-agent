@@ -42,32 +42,29 @@ export function ManagementLayout({
     role === "teacher"
       ? [
           {
-            label: "统计分析",
-            href: "/teacher/manage/analytics",
-            icon: BarChart3,
-          },
-          {
-            label: "项目",
-            href: "/teacher/manage/projects",
-            icon: FolderOpen,
-          },
-          /* {
-            label: "学生",
-            href: "/teacher/manage/students",
-            icon: Users,
-          }, */
-          { label: "班级",
-            href: "/teacher/manage/classes", 
-            icon: Users },
-          {
             label: "知识库",
             href: "/teacher/manage/knowledge",
             icon: Database,
           },
+          {
+            label: "案例管理",
+            href: "/teacher/manage/projects",
+            icon: FolderOpen,
+          },
+          {
+            label: "班级管理",
+            href: "/teacher/manage/classes",
+            icon: Users,
+          },
+          {
+            label: "统计分析",
+            href: "/teacher/manage/analytics",
+            icon: BarChart3,
+          },
         ]
       : [
           {
-            label: "项目",
+            label: "案例",
             href: "/student/manage/projects",
             icon: FolderOpen,
           },
@@ -90,7 +87,7 @@ export function ManagementLayout({
             <BackToChatButton role={role} />
           </Suspense>
           <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-base font-semibold tracking-[0.04em] text-ink">
-            {role === "teacher" ? "管理中心" : "项目中心"}
+            {role === "teacher" ? "管理中心" : "案例中心"}
           </h1>
         </div>
         <nav className="flex gap-2">

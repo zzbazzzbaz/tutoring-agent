@@ -44,7 +44,7 @@ import { toast } from "sonner";
 function sessionTitle(session: Session) {
   return (
     session.title ||
-    (session.mode === "free" ? "自由学习" : session.project_name || "项目模式")
+    (session.mode === "free" ? "自由学习" : session.project_name || "案例模式")
   );
 }
 
@@ -82,7 +82,7 @@ export function ChatWorkspaceSidebar({
     role === "teacher"
       ? "/teacher/manage/projects"
       : "/student/manage/projects";
-  const manageLabel = role === "teacher" ? "管理中心" : "项目中心";
+  const manageLabel = role === "teacher" ? "管理中心" : "案例中心";
 
   async function handleRenameSession(session: Session) {
     const nextTitle = prompt("请输入新的会话标题", sessionTitle(session));

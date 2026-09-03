@@ -322,7 +322,7 @@ export default function TeacherManageAnalyticsPage() {
                     </Pie>
                     <Tooltip
                       formatter={(value: number, name: string) => {
-                        const label = name === "project" ? "项目模式" : "自由模式";
+                        const label = name === "project" ? "案例模式" : "自由模式";
                         return [`${value} 次`, label];
                       }}
                     />
@@ -336,7 +336,7 @@ export default function TeacherManageAnalyticsPage() {
               <div className="space-y-3">
                 {modeDistribution.map((m) => {
                   const pct = modeTotal > 0 ? Math.round((m.count / modeTotal) * 100) : 0;
-                  const label = m.mode === "project" ? "项目模式" : "自由模式";
+                  const label = m.mode === "project" ? "案例模式" : "自由模式";
                   const color = m.mode === "project" ? "text-indigo-600" : "text-green-600";
                   const dotColor = m.mode === "project" ? "bg-indigo-500" : "bg-green-500";
                   return (

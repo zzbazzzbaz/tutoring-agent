@@ -105,7 +105,7 @@ export default function ClassSessionsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部模式</SelectItem>
-            <SelectItem value="project">项目模式</SelectItem>
+            <SelectItem value="project">案例模式</SelectItem>
             <SelectItem value="free">自由模式</SelectItem>
           </SelectContent>
         </Select>
@@ -129,7 +129,7 @@ export default function ClassSessionsPage() {
                 <th className="px-4 py-2 text-left font-medium">学生</th>
                 <th className="px-4 py-2 text-left font-medium">会话标题</th>
                 <th className="px-4 py-2 text-left font-medium">模式</th>
-                <th className="px-4 py-2 text-left font-medium">项目</th>
+                <th className="px-4 py-2 text-left font-medium">案例</th>
                 <th className="px-4 py-2 text-left font-medium">开始时间</th>
                 <th className="px-4 py-2 text-left font-medium">最后活跃</th>
                 <th className="px-4 py-2 text-left font-medium">操作</th>
@@ -152,7 +152,7 @@ export default function ClassSessionsPage() {
                   </td>
                   <td className="px-4 py-2">
                     <Badge variant={s.mode === "project" ? "default" : "secondary"}>
-                      {s.mode === "project" ? "项目模式" : "自由模式"}
+                      {s.mode === "project" ? "案例模式" : "自由模式"}
                     </Badge>
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">

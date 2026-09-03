@@ -105,7 +105,7 @@ export function Thread({
     message: Message;
     context?: Record<string, unknown>;
   } | null>(null);
-  // 新建对话时的会话类型（自由学习 / 项目模式）与所选项目
+  // 新建对话时的会话类型（自由学习 / 案例模式）与所选案例
   const [sessionMode, setSessionMode] = useState<"free" | "project">("free");
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -118,7 +118,7 @@ export function Thread({
   const currentSessionId =
     currentSession?.mode === "project" ? currentSession.id : undefined;
 
-  // 切到项目模式时拉取已发布项目
+  // 切到案例模式时拉取已发布案例
   useEffect(() => {
     if (sessionMode === "project" && projects.length === 0) {
       projectsApi
@@ -243,7 +243,7 @@ export function Thread({
     if (!threadId) {
       // 保持现状：新建对话弹窗仍然可用；但直接输入并发送时按所选类型创建会话
       if (sessionMode === "project" && !selectedProject) {
-        toast.error("请先选择一个项目");
+        toast.error("请先选择一个案例");
         return;
       }
       try {
@@ -428,26 +428,26 @@ export function Thread({
                                 />
                               )}
                               <span className="relative z-10">
-                                {mode === "free" ? "自由学习" : "项目模式"}
+                                {mode === "free" ? "自由学习" : "案例模式"}
                               </span>
                             </button>
                           );
                         })}
                       </div>
 
-                      {/* 项目模式下选择项目 */}
+                      {/* 案例模式下选择案例 */}
                       {sessionMode === "project" && (
                         <Select
                           value={selectedProject}
                           onValueChange={setSelectedProject}
                         >
                           <SelectTrigger className="w-[320px]">
-                            <SelectValue placeholder="请选择项目" />
+                            <SelectValue placeholder="请选择案例" />
                           </SelectTrigger>
                           <SelectContent>
                             {projects.length === 0 ? (
                               <div className="text-muted-foreground px-3 py-2 text-sm">
-                                暂无已发布项目
+                                暂无已发布案例
                               </div>
                             ) : (
                               projects.map((p) => (

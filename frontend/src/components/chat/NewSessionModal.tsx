@@ -58,7 +58,7 @@ export function NewSessionModal({
 
   async function handleCreate() {
     if (mode === "project" && !selectedProject) {
-      toast.error("请选择一个项目");
+      toast.error("请选择一个案例");
       return;
     }
     setLoading(true);
@@ -98,19 +98,19 @@ export function NewSessionModal({
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="project" id="project" />
-                <Label htmlFor="project">项目模式</Label>
+                <Label htmlFor="project">案例模式</Label>
               </div>
             </RadioGroup>
           </div>
           {mode === "project" && (
             <div className="flex flex-col gap-2">
-              <Label>选择项目</Label>
+              <Label>选择案例</Label>
               <Select
                 value={selectedProject}
                 onValueChange={setSelectedProject}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="请选择项目" />
+                  <SelectValue placeholder="请选择案例" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (

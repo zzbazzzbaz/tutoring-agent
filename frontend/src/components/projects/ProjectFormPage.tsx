@@ -43,7 +43,7 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
 
   async function handleSave() {
     if (!name.trim() || !backgroundMd.trim()) {
-      toast.error("项目名称和背景不能为空");
+      toast.error("案例名称和背景不能为空");
       return;
     }
     setSaving(true);
@@ -55,10 +55,10 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
           mainline,
           status,
         });
-        toast.success("项目已更新");
+        toast.success("案例已更新");
       } else {
         await projectsApi.create({ name, background_md: backgroundMd, mainline, status });
-        toast.success("项目已创建");
+        toast.success("案例已创建");
       }
       router.push("/teacher/manage/projects");
     } catch (err) {
@@ -79,10 +79,10 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 size-4" />
-        返回项目列表
+        返回案例列表
       </Button>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">{project ? "编辑项目" : "新建项目"}</h1>
+        <h1 className="text-xl font-bold">{project ? "编辑案例" : "新建案例"}</h1>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? "保存中..." : "保存"}
         </Button>
@@ -90,12 +90,12 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
 
       <div className="mb-4 grid gap-4 md:grid-cols-[1fr_240px]">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="name">项目名称</Label>
+          <Label htmlFor="name">案例名称</Label>
           <Input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="请输入项目名称"
+            placeholder="请输入案例名称"
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -119,11 +119,11 @@ export function ProjectFormPage({ projectId }: { projectId?: string }) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex min-h-[520px] flex-col gap-2">
-          <Label>项目背景 Markdown</Label>
+          <Label>案例背景 Markdown</Label>
           <Textarea
             value={backgroundMd}
             onChange={(e) => setBackgroundMd(e.target.value)}
-            placeholder={"## 项目描述\n请描述项目背景..."}
+            placeholder={"## 案例描述\n请描述案例背景..."}
             className="min-h-[520px] flex-1 font-mono text-sm"
           />
         </div>

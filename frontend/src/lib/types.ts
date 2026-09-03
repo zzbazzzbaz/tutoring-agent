@@ -318,7 +318,7 @@ export interface DashboardSummaryResponse {
   source: "llm";
 }
 
-// ===统计分析--> 项目维度进度聚合===
+// ===统计分析--> 案例维度进度聚合===
 
 export interface ProjectStageStat {
   stage_id: string;
