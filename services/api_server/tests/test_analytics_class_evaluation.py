@@ -99,7 +99,7 @@ def _subject(**overrides):
 
 def _make_class(teacher_id, classname="一班"):
     return SimpleNamespace(
-        id=uuid4(), grade="大一", classname=classname, deleted_at=None, teacher_id=teacher_id
+        id=uuid4(), grade="大一", classname=classname, deleted_at=None, status="active", teacher_id=teacher_id
     )
 
 

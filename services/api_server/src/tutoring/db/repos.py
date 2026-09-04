@@ -1253,8 +1253,10 @@ async def get_message_stats(
         .select_from(Message)
         .join(Session, Session.id == Message.session_id)# 消息→会话
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)# 会话→班级学生
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .where(
             ClassStudent.class_id.in_(class_ids),# 只算当前班级范围
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.deleted_at.is_(None),# 排除已删会话
             func.date(Message.created_at) >= since,# 只算时间窗口内
         )
@@ -1283,8 +1285,10 @@ async def count_sessions_in_window(
         .select_from(Message)
         .join(Session, Session.id == Message.session_id)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.deleted_at.is_(None),
             func.date(Message.created_at) >= since,
         )
@@ -1313,7 +1317,11 @@ async def get_class_participation_stats(
     total_stmt = (
         select(func.count(func.distinct(ClassStudent.user_id)))
         .select_from(ClassStudent)
-        .where(ClassStudent.class_id.in_(class_ids))
+        .join(User, User.id == ClassStudent.user_id)# 班级学生→学生（排除软删）
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
+        )
     )
     total_students = int((await session.execute(total_stmt)).scalar_one())
 
@@ -1326,8 +1334,10 @@ async def get_class_participation_stats(
         )
         .select_from(Session)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.deleted_at.is_(None),
             func.date(Session.last_active_at) >= since,
         )
@@ -1400,8 +1410,10 @@ async def get_class_thinking_stats(
         .select_from(Message)
         .join(Session, Session.id == Message.session_id)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.deleted_at.is_(None),
             func.date(Message.created_at) >= since,
         )
@@ -1418,8 +1430,10 @@ async def get_class_thinking_stats(
         .select_from(Message)
         .join(Session, Session.id == Message.session_id)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.deleted_at.is_(None),
             Message.role == "student",
             func.date(Message.created_at) >= since,
@@ -1462,8 +1476,10 @@ async def get_class_subject_stats(
         select(func.count(func.distinct(Session.user_id)))
         .select_from(Session)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.mode == "project",
             Session.deleted_at.is_(None),
             func.date(Session.last_active_at) >= since,
@@ -1486,9 +1502,11 @@ async def get_class_subject_stats(
         .select_from(Message)
         .join(Session, Session.id == Message.session_id)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .join(doc_series, true())
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.mode == "project",
             Session.deleted_at.is_(None),
             Message.role == "student",
@@ -1506,9 +1524,11 @@ async def get_class_subject_stats(
         .select_from(Message)
         .join(Session, Session.id == Message.session_id)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)# 会话→学生（排除软删）
         .join(doc_series, true())
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
             Session.mode == "project",
             Session.deleted_at.is_(None),
             Message.role == "student",

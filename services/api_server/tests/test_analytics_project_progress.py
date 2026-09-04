@@ -74,7 +74,7 @@ async def test_project_progress_summary_computed(monkeypatch):
     """指定班级：项目与阶段统计按 repos 结果透传组装。"""
     teacher_id = uuid4()
     cls = SimpleNamespace(
-        id=uuid4(), grade="大一", classname="一班", deleted_at=None, teacher_id=teacher_id
+        id=uuid4(), grade="大一", classname="一班", deleted_at=None, status="active", teacher_id=teacher_id
     )
     db = _FakeDB(cls)
 
@@ -99,8 +99,8 @@ async def test_project_progress_summary_computed(monkeypatch):
 async def test_project_progress_summary_all_classes(monkeypatch):
     """不指定班级时，聚合该教师全部班级（经 list_classes_by_teacher）。"""
     teacher_id = uuid4()
-    cls1 = SimpleNamespace(id=uuid4(), grade="大一", classname="一班", deleted_at=None, teacher_id=teacher_id)
-    cls2 = SimpleNamespace(id=uuid4(), grade="大二", classname="二班", deleted_at=None, teacher_id=teacher_id)
+    cls1 = SimpleNamespace(id=uuid4(), grade="大一", classname="一班", deleted_at=None, status="active", teacher_id=teacher_id)
+    cls2 = SimpleNamespace(id=uuid4(), grade="大二", classname="二班", deleted_at=None, status="active", teacher_id=teacher_id)
     db = _FakeDB(cls1)
 
     _patch_repos(monkeypatch, summary_raw=_fake_summary_raw(), classes=[cls1, cls2])
@@ -117,7 +117,7 @@ async def test_project_progress_summary_empty(monkeypatch):
     """班级内无项目进度时返回空 projects，不抛错。"""
     teacher_id = uuid4()
     cls = SimpleNamespace(
-        id=uuid4(), grade="大一", classname="一班", deleted_at=None, teacher_id=teacher_id
+        id=uuid4(), grade="大一", classname="一班", deleted_at=None, status="active", teacher_id=teacher_id
     )
     db = _FakeDB(cls)
 

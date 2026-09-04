@@ -80,7 +80,7 @@ async def test_dashboard_message_stats_computed(monkeypatch):
     """有消息数据时，avg_turns / knowledge_hit_rate 按口径计算并挂载。"""
     teacher_id = uuid4()
     cls = SimpleNamespace(
-        id=uuid4(), grade="大一", classname="一班", deleted_at=None, teacher_id=teacher_id
+        id=uuid4(), grade="大一", classname="一班", deleted_at=None, status="active", teacher_id=teacher_id
     )
     db = _FakeDB(cls)
 
@@ -113,7 +113,7 @@ async def test_dashboard_message_stats_empty(monkeypatch):
     """冷启动/无消息时指标归零，不抛除零错误。"""
     teacher_id = uuid4()
     cls = SimpleNamespace(
-        id=uuid4(), grade="大一", classname="一班", deleted_at=None, teacher_id=teacher_id
+        id=uuid4(), grade="大一", classname="一班", deleted_at=None, status="active", teacher_id=teacher_id
     )
     db = _FakeDB(cls)
 

@@ -44,7 +44,7 @@ async def get_dashboard(
     # 1. 获取教师的班级列表
     if class_id:
         single = await db.get(Class, class_id)
-        if not single or single.teacher_id != teacher_id or single.deleted_at is not None:
+        if not single or single.teacher_id != teacher_id or single.deleted_at is not None or single.status != "active":
             return _empty_dashboard(days=days)
         classes = [single]
     else:
@@ -187,7 +187,7 @@ async def get_student_analysis(
 
     # 3. 获取学生基本信息
     user = await repos.get_user_by_id(db, user_id)
-    if not user or user.role != "student":
+    if not user or user.role != "student" or user.deleted_at is not None:
         raise AppError(404, "STUDENT_NOT_FOUND", "学生不存在")
 
     # 4. 获取学生学习数据
@@ -244,7 +244,7 @@ async def get_project_progress_summary(
     """
     if class_id:
         single = await db.get(Class, class_id)
-        if not single or single.teacher_id != teacher_id or single.deleted_at is not None:
+        if not single or single.teacher_id != teacher_id or single.deleted_at is not None or single.status != "active":
             return ProjectProgressResponse(projects=[])
         classes = [single]
     else:
@@ -330,7 +330,7 @@ async def get_class_evaluation(
     """
     if class_id:
         single = await db.get(Class, class_id)
-        if not single or single.teacher_id != teacher_id or single.deleted_at is not None:
+        if not single or single.teacher_id != teacher_id or single.deleted_at is not None or single.status != "active":
             return ClassEvaluationResponse(days=days, classes=[])
         classes = [single]
     else:
