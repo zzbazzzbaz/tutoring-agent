@@ -52,26 +52,36 @@ function ChatShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0f172a]">
-      {/* 桌面端侧边栏：始终挂载，translateX 滑入滑出 */}
+      {/* 桌面端侧边栏：始终挂载，宽度同位移动画 → 收起时聊天区自动占满释放出的空间 */}
       {!readOnly && (
-        <motion.aside
-          className="fixed left-0 top-0 z-30 hidden h-screen w-[280px] lg:block"
-          animate={{ x: sidebarCollapsed ? -280 : 0 }}
+        <motion.div
+          className="relative z-30 hidden h-screen shrink-0 overflow-hidden lg:block"
+          initial={false}
+          animate={{ width: sidebarCollapsed ? 0 : 280 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          style={{ willChange: "transform" }}
           aria-hidden={sidebarCollapsed}
         >
-          <ChatWorkspaceSidebar
-            role={role}
-            onNewSession={() => {
-              setProjectPreselect(undefined);
-              setModalOpen(true);
-            }}
-            onCollapse={() => setSidebarCollapsed(true)}
-            mobileOpen={mobileSidebarOpen}
-            onMobileOpenChange={setMobileSidebarOpen}
-          />
-        </motion.aside>
+          <motion.div
+            className="h-full"
+            initial={false}
+            animate={{ x: sidebarCollapsed ? -280 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            style={{ willChange: "transform" }}
+          >
+            <div className="relative h-full w-[280px]">
+              <ChatWorkspaceSidebar
+                role={role}
+                onNewSession={() => {
+                  setProjectPreselect(undefined);
+                  setModalOpen(true);
+                }}
+                onCollapse={() => setSidebarCollapsed(true)}
+                mobileOpen={mobileSidebarOpen}
+                onMobileOpenChange={setMobileSidebarOpen}
+              />
+            </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* 展开按钮：侧边栏收起时淡入 */}

@@ -305,16 +305,16 @@ export default function TeacherManageAnalyticsPage() {
               暂无对话数据
             </div>
           ) : (
-            <div className="flex items-center gap-8">
-              <div className="relative h-55 w-50 shrink-0">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative h-48 w-48 shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={modeDistribution}
                       dataKey="count"
                       nameKey="mode"
-                      innerRadius={40}
-                      outerRadius={62}
+                      innerRadius={50}
+                      outerRadius={74}
                       paddingAngle={2}
                     >
                       <Cell fill="#6366f1" />
@@ -328,12 +328,12 @@ export default function TeacherManageAnalyticsPage() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xl font-semibold">{modeTotal}</span>
                   <span className="text-xs text-muted-foreground">总对话</span>
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
                 {modeDistribution.map((m) => {
                   const pct = modeTotal > 0 ? Math.round((m.count / modeTotal) * 100) : 0;
                   const label = m.mode === "project" ? "案例模式" : "自由模式";
@@ -342,7 +342,7 @@ export default function TeacherManageAnalyticsPage() {
                   return (
                     <div key={m.mode} className="flex items-center gap-2">
                       <span className={`size-3 rounded-full ${dotColor}`} />
-                      <span className="w-16 text-sm text-muted-foreground">{label}</span>
+                      <span className="text-sm text-muted-foreground">{label}</span>
                       <span className={`text-sm font-medium ${color}`}>{m.count} 次</span>
                       <span className="text-sm text-muted-foreground">({pct}%)</span>
                     </div>
