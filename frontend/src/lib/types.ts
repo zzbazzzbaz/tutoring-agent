@@ -100,6 +100,7 @@ export interface ProjectUpdate {
 export interface ImportResult {
   total: number;
   created: number;
+  joined_existing: number;
   skipped: number;
   errors: string[];
 }
@@ -235,7 +236,6 @@ export interface DashboardOverview {
   total_students: number;
   active_today: number;
   total_sessions: number;
-  weekly_avg_sessions: number;
   pending_alert_count: number;
 }
 

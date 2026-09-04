@@ -122,6 +122,7 @@ async def get_class(
     _require_teacher(user)
     
     obj = await class_service.ensure_class_teacher(db_session, class_id, user.id)
+    student_count = await repos.count_class_students(db_session, class_id)
     return ClassOut(
         id=obj.id,
         grade=obj.grade,
@@ -130,7 +131,7 @@ async def get_class(
         status=obj.status,
         created_at=obj.created_at,
         updated_at=obj.updated_at,
-        student_count=len(obj.students) if obj.students else 0,
+        student_count=student_count,
         teacher_name=obj.teacher.name if obj.teacher else None,
     )
 
@@ -150,6 +151,7 @@ async def update_class(
     obj = await repos.update_class(db_session, class_id, **fields)
     if not obj:
         raise AppError(404, "CLASS_NOT_FOUND", f"Class {class_id} not found")
+    student_count = await repos.count_class_students(db_session, class_id)
     return ClassOut(
         id=obj.id,
         grade=obj.grade,
@@ -158,7 +160,7 @@ async def update_class(
         status=obj.status,
         created_at=obj.created_at,
         updated_at=obj.updated_at,
-        student_count=len(obj.students) if obj.students else 0,
+        student_count=student_count,
         teacher_name=obj.teacher.name if obj.teacher else None,
     )
 

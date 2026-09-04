@@ -28,7 +28,6 @@ def _dashboard_stub() -> DashboardResponse:
             total_students=10,
             active_today=3,
             total_sessions=20,
-            weekly_avg_sessions=2.9,
             pending_alert_count=1,
         ),
         anomalies=[],

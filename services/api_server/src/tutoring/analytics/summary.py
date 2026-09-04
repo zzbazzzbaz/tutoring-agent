@@ -45,7 +45,7 @@ def _build_user_prompt(dashboard: DashboardResponse) -> str:
     lines = [
         f"统计窗口：{len(dashboard.trend)} 天；学生总数 {o.total_students}；"
         f"今日活跃 {o.active_today}；累计对话 {o.total_sessions}；"
-        f"周均对话 {o.weekly_avg_sessions}；待关注学生 {o.pending_alert_count}。"
+        f"待关注学生 {o.pending_alert_count}。"
     ]
     if dashboard.trend:
         peak = max(dashboard.trend, key=lambda t: t.session_count)

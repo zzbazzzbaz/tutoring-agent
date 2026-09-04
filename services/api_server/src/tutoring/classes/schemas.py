@@ -34,6 +34,8 @@ class ClassOut(BaseModel):
 class ImportResult(BaseModel):
     total: int
     created: int
+    # 导入文件中已存在且未删除的学生账号，已并入当前班级的数量
+    joined_existing: int = 0
     skipped: int
     errors: list[str]
 

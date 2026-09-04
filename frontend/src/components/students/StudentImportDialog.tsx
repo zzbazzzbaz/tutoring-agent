@@ -118,6 +118,11 @@ export function StudentImportDialog({
                 <span className="text-green-600">
                   ✅ 成功: {result.created}
                 </span>
+                {result.joined_existing > 0 && (
+                  <span className="text-blue-600">
+                    🔗 已存在并入班: {result.joined_existing}
+                  </span>
+                )}
                 <span className="text-yellow-600">
                   ⏭️ 跳过: {result.skipped}
                 </span>

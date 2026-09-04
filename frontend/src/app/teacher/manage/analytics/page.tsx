@@ -8,7 +8,6 @@ import {
   BarChart3,
   Activity,
   Users,
-  Clock,
   TrendingUp,
   GraduationCap,
   RefreshCw,
@@ -214,13 +213,6 @@ export default function TeacherManageAnalyticsPage() {
           label="今日活跃"
           value={`${overview.active_today}/${overview.total_students}`}
           color="text-green-600"
-        />
-        <StatCard
-          icon={<Clock className="size-5" />}
-          label="周均对话"
-          value={overview.weekly_avg_sessions}
-          suffix="次"
-          color="text-purple-600"
         />
         <StatCard
           icon={<GraduationCap className="size-5" />}

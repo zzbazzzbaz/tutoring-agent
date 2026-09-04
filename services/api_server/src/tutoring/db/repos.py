@@ -626,10 +626,14 @@ async def list_class_students(
     stmt = (
         select(ClassStudent)
         .options(selectinload(ClassStudent.user))
-        .where(ClassStudent.class_id == class_id)
+        .join(User, User.id == ClassStudent.user_id)
+        .where(
+            ClassStudent.class_id == class_id,
+            User.deleted_at.is_(None),  # 排除已软删学生
+        )
     )
     if keyword:
-        stmt = stmt.join(User).where(
+        stmt = stmt.where(
             (User.name.ilike(f"%{keyword}%")) | (User.username.ilike(f"%{keyword}%"))
         )
     stmt = stmt.order_by(ClassStudent.joined_at.desc()).limit(limit).offset(offset)
@@ -645,11 +649,18 @@ async def count_class_students(
 ) -> int:
     # 统一转为列表处理
     class_ids = class_id if isinstance(class_id, list) else [class_id]
-    base = select(func.count()).select_from(ClassStudent).where(
-        ClassStudent.class_id.in_(class_ids)
+    # 多班学生按 user_id 去重计数，避免跨班重复统计（如学生同时在多班） 
+    base = (
+        select(func.count(func.distinct(ClassStudent.user_id)))
+        .select_from(ClassStudent)
+        .join(User, User.id == ClassStudent.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
+        )
     )
     if keyword:
-        base = base.join(User).where(
+        base = base.where(
             (User.name.ilike(f"%{keyword}%")) | (User.username.ilike(f"%{keyword}%"))
         )
     result = await session.execute(base)
@@ -685,6 +696,7 @@ async def list_class_sessions(
         .where(
             ClassStudent.class_id.in_(class_ids),
             Session.deleted_at.is_(None),
+            User.deleted_at.is_(None),  # 排除已软删学生的会话
         )
     )
     if mode:
@@ -707,12 +719,21 @@ async def count_class_sessions(
     keyword: str | None = None,
 ) -> int:
     class_ids = class_id if isinstance(class_id, list) else [class_id]
+    # 先取班级范围内【去重后】的学生集合，再按 user_id 直接计数；
+    class_student_subq = (
+        select(ClassStudent.user_id)
+        .join(User, User.id == ClassStudent.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
+        )
+        .distinct()
+    )
     base = (
         select(func.count())
         .select_from(Session)
-        .join(ClassStudent, ClassStudent.user_id == Session.user_id)
         .where(
-            ClassStudent.class_id.in_(class_ids),
+            Session.user_id.in_(class_student_subq),
             Session.deleted_at.is_(None),
         )
     )
@@ -742,8 +763,10 @@ async def get_class_stats(
         select(func.count(func.distinct(Session.user_id)))
         .select_from(Session)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)
         .where(
             ClassStudent.class_id == class_id,
+            User.deleted_at.is_(None),  # 排除已软删学生
             Session.deleted_at.is_(None),
             func.date(Session.last_active_at) == today,
         )
@@ -765,12 +788,13 @@ async def list_classes_by_teacher(
     session: AsyncSession,
     teacher_id: UUID,
 ) -> list[Class]:
-    """获取某教师的所有活跃班级。"""
+    """获取某教师的所有活跃班级（排除归档班级，归档班不参与统计聚合）。"""
     stmt = (
         select(Class)
         .where(
             Class.teacher_id == teacher_id,
             Class.deleted_at.is_(None),
+            Class.status == "active",
         )
         .order_by(Class.created_at.desc())
     )
@@ -787,8 +811,10 @@ async def count_active_students_in_classes(
         select(func.count(func.distinct(Session.user_id)))
         .select_from(Session)
         .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+        .join(User, User.id == Session.user_id)
         .where(
             ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),  # 排除已软删学生
             Session.deleted_at.is_(None),
             func.date(Session.last_active_at) == target_date,
         )
@@ -811,12 +837,17 @@ async def list_anomaly_students(
         select(ClassStudent, User, Class)
         .join(User, User.id == ClassStudent.user_id)
         .join(Class, Class.id == ClassStudent.class_id)
-        .where(ClassStudent.class_id.in_(class_ids))
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),  # 排除已软删学生
+        )
     )
     result = await session.execute(students_stmt)
     all_rows = result.all()
 
-    anomalies = []
+    # 按 user_id 去重，多班学生只出现一次（inactive_days 按学生整体计算，
+    # 与班级无关，任取一条即可，避免待关注列表重复）
+    anomalies_by_user: dict[UUID, dict] = {}
     for cs, user, cls in all_rows:
         # 获取该学生最近一次会话活动时间
         last_active_stmt = (
@@ -838,8 +869,8 @@ async def list_anomaly_students(
             inactive_days = delta.days
             last_active_display = last_active
 
-        if inactive_days >= inactive_threshold_days:
-            anomalies.append({
+        if inactive_days >= inactive_threshold_days and user.id not in anomalies_by_user:
+            anomalies_by_user[user.id] = {
                 "user_id": user.id,
                 "name": user.name,
                 "username": user.username,
@@ -848,9 +879,13 @@ async def list_anomaly_students(
                 "alert_type": "inactive",
                 "class_id": cls.id,
                 "class_name": f"{cls.grade} {cls.classname}",
-            })
+            }
     # 按未活跃天数降序排列
-    anomalies.sort(key=lambda x: x["inactive_days"], reverse=True)
+    anomalies = sorted(
+        anomalies_by_user.values(),
+        key=lambda x: x["inactive_days"],
+        reverse=True,
+    )
     return anomalies
 
 # 学习趋势
@@ -864,6 +899,16 @@ async def get_daily_trend(
     """
     today = datetime.now(UTC).date()
     trend = []
+    # 班级范围内去重后的学生集合，会话按 user_id 直接计数避免多班翻倍
+    class_student_subq = (
+        select(ClassStudent.user_id)
+        .join(User, User.id == ClassStudent.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),# 排除已软删学生
+        )
+        .distinct()
+    )
 
     for i in range(days - 1, -1, -1):
         target_date = today - timedelta(days=i)
@@ -872,9 +917,8 @@ async def get_daily_trend(
         session_stmt = (
             select(func.count())
             .select_from(Session)
-            .join(ClassStudent, ClassStudent.user_id == Session.user_id)
             .where(
-                ClassStudent.class_id.in_(class_ids),
+                Session.user_id.in_(class_student_subq),
                 Session.deleted_at.is_(None),
                 func.date(Session.last_active_at) >= target_date,
                 func.date(Session.last_active_at) < next_date,
@@ -886,8 +930,10 @@ async def get_daily_trend(
             select(func.count(func.distinct(Session.user_id)))
             .select_from(Session)
             .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+            .join(User, User.id == Session.user_id)
             .where(
                 ClassStudent.class_id.in_(class_ids),
+                User.deleted_at.is_(None),  # 排除已软删学生
                 Session.deleted_at.is_(None),
                 func.date(Session.last_active_at) >= target_date,
                 func.date(Session.last_active_at) < next_date,
@@ -915,20 +961,26 @@ async def get_class_comparison(
     comparison = []
 
     for cls in classes:
-        # 该班级学生总数
+        # 该班级学生总数（排除已软删学生）
         total_stmt = (
             select(func.count())
             .select_from(ClassStudent)
-            .where(ClassStudent.class_id == cls.id)
+            .join(User, User.id == ClassStudent.user_id)
+            .where(
+                ClassStudent.class_id == cls.id,
+                User.deleted_at.is_(None),
+            )
         )
         total = int((await session.execute(total_stmt)).scalar_one())
-        # 该班级今日活跃学生数
+        # 该班级今日活跃学生数（排除已软删学生）
         active_stmt = (
             select(func.count(func.distinct(Session.user_id)))
             .select_from(Session)
             .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+            .join(User, User.id == Session.user_id)
             .where(
                 ClassStudent.class_id == cls.id,
+                User.deleted_at.is_(None),
                 Session.deleted_at.is_(None),
                 func.date(Session.last_active_at) == today,
             )
@@ -956,17 +1008,23 @@ async def get_student_learning_data(
     """
     获取学生的基本学习数据：总对话数、总活跃天数、最后活跃时间。
     如果指定 class_ids 则只统计该班级范围内的数据。
+    先校验该生属于 class_ids 中任一班级，属于则按 user_id 直接统计。
     """
-    # 总对话数
+    if class_ids:
+        is_member = False
+        for cid in class_ids:
+            if await check_class_member(session, cid, user_id):
+                is_member = True
+                break
+        if not is_member:
+            return {"total_sessions": 0, "last_active_at": None, "active_days": 0}
+
+    # 总对话数（会话归属学生个人，按 user_id 直接统计）
     sessions_stmt = (
         select(func.count())
         .select_from(Session)
         .where(Session.user_id == user_id, Session.deleted_at.is_(None))
     )
-    if class_ids:
-        sessions_stmt = sessions_stmt.join(
-            ClassStudent, ClassStudent.user_id == Session.user_id
-        ).where(ClassStudent.class_id.in_(class_ids))
     total_sessions = int((await session.execute(sessions_stmt)).scalar_one())
 
     # 最后活跃时间
@@ -983,10 +1041,6 @@ async def get_student_learning_data(
         .select_from(Session)
         .where(Session.user_id == user_id, Session.deleted_at.is_(None))
     )
-    if class_ids:
-        active_days_stmt = active_days_stmt.join(
-            ClassStudent, ClassStudent.user_id == Session.user_id
-        ).where(ClassStudent.class_id.in_(class_ids))
     active_days = int((await session.execute(active_days_stmt)).scalar_one())
 
     return {
@@ -1022,7 +1076,11 @@ async def list_student_activity_ranking(
     if class_ids:
         class_student_subq = (
             select(ClassStudent.user_id)
-            .where(ClassStudent.class_id.in_(class_ids))
+            .join(User, User.id == ClassStudent.user_id)
+            .where(
+                ClassStudent.class_id.in_(class_ids),
+                User.deleted_at.is_(None),  # 排除已软删学生
+            )
             .distinct()
         )
         stmt = stmt.where(Session.user_id.in_(class_student_subq))
@@ -1456,17 +1514,24 @@ async def list_key_students(
     )
     total_ai = int((await session.execute(total_ai_stmt)).scalar_one())
 
-    # 2. 班级学生列表
+    # 2. 班级学生列表（排除已软删学生）
     students_stmt = (
         select(ClassStudent, User, Class)
         .join(User, User.id == ClassStudent.user_id)
         .join(Class, Class.id == ClassStudent.class_id)
-        .where(ClassStudent.class_id.in_(class_ids))
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),
+        )
     )
     rows = (await session.execute(students_stmt)).all()
 
     results: list[dict] = []
+    # 按 user_id 去重，多班学生只出现一次（level/计数均按学生整体计算，与班级无关）
+    seen: set[UUID] = set()
     for cs, user, cls in rows:
+        if user.id in seen:
+            continue
         # 窗口内会话数（该学生整体，未删除）
         session_stmt = (
             select(func.count())
@@ -1515,6 +1580,7 @@ async def list_key_students(
             reason = "长时间未活跃，需跟进"
         if level is None:
             continue
+        seen.add(user.id)
 
         results.append({
             "user_id": user.id,

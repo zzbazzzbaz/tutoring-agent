@@ -43,6 +43,8 @@ async def import_students(db: AsyncSession, class_id: UUID, file_bytes: bytes) -
 
     total = len(rows)
     created = 0
+    # 已存在且未删除的学生账号，并入当前班级的数量
+    joined_existing = 0
     skipped = 0
     errors: list[str] = []
     seen: set[str] = set()
@@ -74,7 +76,14 @@ async def import_students(db: AsyncSession, class_id: UUID, file_bytes: bytes) -
 
         existing = await repos.get_user_by_username(db, username)
         if existing:
-            skipped += 1
+            # 已存在账号若是【未删除学生】→ 幂等并入当前班级
+            # （add_students_to_class 忽略已在班成员），不再静默跳过；
+            # 教师账号 / 已软删账号仍按跳过处理，不复活、不入班。
+            if existing.role == "student" and existing.deleted_at is None:
+                await repos.add_students_to_class(db, class_id, [existing.id])
+                joined_existing += 1
+            else:
+                skipped += 1
             continue
 
         password = username[-6:]
@@ -88,7 +97,13 @@ async def import_students(db: AsyncSession, class_id: UUID, file_bytes: bytes) -
         await repos.add_students_to_class(db, class_id, [user.id])
         created += 1
 
-    return ImportResult(total=total, created=created, skipped=skipped, errors=errors)
+    return ImportResult(
+        total=total,
+        created=created,
+        joined_existing=joined_existing,
+        skipped=skipped,
+        errors=errors,
+    )
 
 # 批量添加班级学生
 async def add_students(

@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Activity,
   Users,
-  Clock,
   GraduationCap,
   RefreshCw,
   TrendingUp,
@@ -275,7 +274,7 @@ function ReportPageInner() {
       }。`
     );
     parts.push(
-      `期间累计对话 ${overview!.total_sessions} 次，日均 ${dailyAvg.toFixed(1)} 次，周均 ${overview!.weekly_avg_sessions} 次。`
+      `期间累计对话 ${overview!.total_sessions} 次，日均 ${dailyAvg.toFixed(1)} 次。`
     );
     if (peak && peak.session_count > 0) {
       parts.push(
@@ -381,10 +380,9 @@ function ReportPageInner() {
         {/* 2. 核心指标 */}
         <section>
           <h2 className="mb-3 text-base font-semibold text-gray-900">一、核心指标</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard icon={<Users className="size-4" />} label="学生总数" value={overview.total_students} />
             <StatCard icon={<Activity className="size-4" />} label="今日活跃" value={`${overview.active_today}/${overview.total_students}`} />
-            <StatCard icon={<Clock className="size-4" />} label="周均对话" value={`${overview.weekly_avg_sessions} 次`} />
             <StatCard icon={<GraduationCap className="size-4" />} label="累计对话" value={`${overview.total_sessions} 次`} />
             <StatCard
               icon={<AlertTriangle className="size-4" />}

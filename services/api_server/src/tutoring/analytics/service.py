@@ -55,14 +55,11 @@ async def get_dashboard(
 
     class_ids = [c.id for c in classes]
     today = datetime.now(UTC).date()
-    seven_days_ago = today - timedelta(days=6)
 
     # 2. 概览指标
     total_students = await repos.count_class_students(db, class_ids)
     active_today = await repos.count_active_students_in_classes(db, class_ids, today)
     total_sessions = await repos.count_class_sessions(db, class_ids)
-    weekly_total = await repos.count_class_sessions(db, class_ids, since=seven_days_ago)
-    weekly_avg = round(weekly_total / 7.0, 1)
 
     # 3. 异常学生列表
     anomalies_raw = await repos.list_anomaly_students(db, class_ids, inactive_threshold_days=7)
@@ -115,7 +112,6 @@ async def get_dashboard(
             total_students=total_students,
             active_today=active_today,
             total_sessions=total_sessions,
-            weekly_avg_sessions=weekly_avg,
             pending_alert_count=len(anomalies),
         ),
         anomalies=anomalies,
@@ -136,7 +132,6 @@ def _empty_dashboard(days: int = 30) -> DashboardResponse:
             total_students=0,
             active_today=0,
             total_sessions=0,
-            weekly_avg_sessions=0.0,
             pending_alert_count=0,
         ),
         anomalies=[],

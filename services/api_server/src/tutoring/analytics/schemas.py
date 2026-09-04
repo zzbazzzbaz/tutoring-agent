@@ -10,7 +10,6 @@ class DashboardOverview(BaseModel):
     total_students: int = Field(description="班级总学生数")
     active_today: int = Field(description="今日活跃学生数")
     total_sessions: int = Field(description="累计对话总数")
-    weekly_avg_sessions: float = Field(description="周均对话次数(所有学生)")
     pending_alert_count: int = Field(description="待关注学生数")
 
 class AnomalyStudent(BaseModel):
