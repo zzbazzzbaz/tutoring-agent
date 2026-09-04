@@ -95,6 +95,11 @@ async def list_classes(
         keyword=keyword,
     )
 
+    # 批量统计各班级学生数
+    student_counts = await repos.count_class_students_by_ids(
+        db_session, [c.id for c in classes]
+    )
+
     items = []
     for c in classes:
         items.append(
@@ -106,7 +111,7 @@ async def list_classes(
                 status=c.status,
                 created_at=c.created_at,
                 updated_at=c.updated_at,
-                student_count=len(c.students) if c.students else 0,
+                student_count=student_counts.get(c.id, 0),
                 teacher_name=c.teacher.name if c.teacher else None,
             )
         )
@@ -144,10 +149,21 @@ async def update_class(
     db_session: AsyncSession = Depends(get_db),
 ) -> ClassOut:
     _require_teacher(user)
-    await class_service.ensure_class_teacher(db_session, class_id, user.id)
+    obj = await class_service.ensure_class_teacher(db_session, class_id, user.id)
     fields = body.model_dump(exclude_unset=True)
     if not fields:
         raise AppError(422, "VALIDATION_ERROR", "No fields to update")
+    # 若本次修改涉及年级或班级名，校验同教师下「年级+班级名」唯一（排除自身）
+    if "grade" in fields or "classname" in fields:
+        new_grade = fields.get("grade", obj.grade)
+        new_classname = fields.get("classname", obj.classname)
+        await class_service.ensure_class_name_unique(
+            db_session,
+            teacher_id=user.id,
+            grade=new_grade,
+            classname=new_classname,
+            exclude_id=class_id,
+        )
     obj = await repos.update_class(db_session, class_id, **fields)
     if not obj:
         raise AppError(404, "CLASS_NOT_FOUND", f"Class {class_id} not found")

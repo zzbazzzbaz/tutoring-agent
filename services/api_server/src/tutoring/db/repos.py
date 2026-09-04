@@ -458,6 +458,23 @@ async def create_class(
     await session.refresh(obj)
     return obj
 
+# 按 教师+年级+班级名 查询未删除班级
+async def get_class_by_teacher_grade_name(
+    session: AsyncSession,
+    *,
+    teacher_id: UUID,
+    grade: str,
+    classname: str,
+) -> Class | None:
+    stmt = select(Class).where(
+        Class.teacher_id == teacher_id,
+        Class.grade == grade,
+        Class.classname == classname,
+        Class.deleted_at.is_(None),
+    )
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
 # 查询班级信息
 async def get_class(session: AsyncSession, class_id: UUID) -> Class | None:
     stmt = select(Class).options(
@@ -479,7 +496,6 @@ async def list_classes(
 ) -> list[Class]:
     stmt = select(Class).options(
         selectinload(Class.teacher),
-        selectinload(Class.students),
     ).where(
         Class.deleted_at.is_(None)
     )
@@ -488,7 +504,10 @@ async def list_classes(
     if status:
         stmt = stmt.where(Class.status == status)
     if keyword:
-        stmt = stmt.where(Class.classname.ilike(f"%{keyword}%"))
+        stmt = stmt.where(
+            (Class.classname.ilike(f"%{keyword}%"))
+            | (Class.grade.ilike(f"%{keyword}%"))
+        )
     stmt = stmt.order_by(Class.created_at.desc()).limit(limit).offset(offset)
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -507,7 +526,10 @@ async def count_classes(
     if status:
         stmt = stmt.where(Class.status == status)
     if keyword:
-        stmt = stmt.where(Class.classname.ilike(f"%{keyword}%"))
+        stmt = stmt.where(
+            (Class.classname.ilike(f"%{keyword}%"))
+            | (Class.grade.ilike(f"%{keyword}%"))
+        )
     result = await session.execute(stmt)
     return int(result.scalar_one())
 
@@ -665,6 +687,26 @@ async def count_class_students(
         )
     result = await session.execute(base)
     return int(result.scalar_one())
+
+# 批量统计各班级未删除学生数（班级列表用）
+async def count_class_students_by_ids(
+    session: AsyncSession, class_ids: list[UUID]
+) -> dict[UUID, int]:
+    """与 count_class_students 同口径：JOIN user 过滤软删 + 按 user_id 去重，按班级分组计数。"""
+    if not class_ids:
+        return {}
+    stmt = (
+        select(ClassStudent.class_id, func.count(func.distinct(ClassStudent.user_id)))
+        .select_from(ClassStudent)
+        .join(User, User.id == ClassStudent.user_id)
+        .where(
+            ClassStudent.class_id.in_(class_ids),
+            User.deleted_at.is_(None),
+        )
+        .group_by(ClassStudent.class_id)
+    )
+    result = await session.execute(stmt)
+    return {class_id: count for class_id, count in result.all()}
 
 # 判断某个用户是否是班级成员
 async def check_class_member(

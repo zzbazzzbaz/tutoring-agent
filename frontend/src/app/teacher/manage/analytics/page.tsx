@@ -546,7 +546,9 @@ function AnomalyRow({ student }: { student: AnomalyStudent }) {
       </div>
       <div className="text-right">
         <div className="text-sm font-medium text-red-600">
-          {student.inactive_days}天未登录
+          {student.last_active_at
+            ? `${student.inactive_days}天未登录`
+            : "从未登录"}
         </div>
         {student.last_active_at && (
           <div className="text-xs text-muted-foreground">

@@ -153,8 +153,8 @@ export default function StudentAnalysisPage() {
         <InfoCard
           icon={<Clock className="size-5 text-purple-600" />}
           label="未活跃"
-          value={overview.inactive_days}
-          suffix="天"
+          value={overview.last_active_at === null ? "从未登录" : overview.inactive_days}
+          suffix={overview.last_active_at === null ? undefined : "天"}
           highlight={overview.inactive_days >= 7}
         />
         <InfoCard
@@ -319,7 +319,7 @@ function InfoCard({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: number;
+  value: string | number;
   suffix?: string;
   highlight?: boolean;
   highlightColor?: "red" | "yellow";

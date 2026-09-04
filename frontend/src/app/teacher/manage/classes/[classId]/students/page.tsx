@@ -255,14 +255,30 @@ function AddStudentsDialog({ open, onOpenChange, classId, onAdded }: AddStudents
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const [searching, setSearching] = useState(false);
 
+  // 打开弹窗时重置搜索与选择
   useEffect(() => {
     if (open) {
-      classesApi.listUnassignedStudents(1, 100).then((data) => {
-        setAllStudents(data.items);
-      }).catch(console.error);
+      setKeyword("");
+      setSelected(new Set());
     }
   }, [open]);
+
+  // 加载未分配学生：支持关键字搜索（防抖 300ms）
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      setSearching(true);
+      classesApi
+        .listUnassignedStudents(1, 100, keyword || undefined)
+        .then((data) => setAllStudents(data.items))
+        .catch(console.error)
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [open, keyword]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -294,20 +310,39 @@ function AddStudentsDialog({ open, onOpenChange, classId, onAdded }: AddStudents
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-md rounded-lg bg-background p-6">
         <h2 className="mb-4 text-lg font-semibold">添加学生到班级</h2>
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder="搜索学号或姓名..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+        </div>
         <div className="mb-4 max-h-64 overflow-y-auto border rounded">
-          {allStudents.map((s) => (
-            <label
-              key={s.id}
-              className="flex cursor-pointer items-center gap-2 border-b px-3 py-2 hover:bg-muted"
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(s.id)}
-                onChange={() => toggle(s.id)}
-              />
-              <span>{s.username} - {s.name}</span>
-            </label>
-          ))}
+          {searching ? (
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+              加载中...
+            </div>
+          ) : allStudents.length === 0 ? (
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+              {keyword ? "未找到匹配的未分配学生" : "暂无未分配学生"}
+            </div>
+          ) : (
+            allStudents.map((s) => (
+              <label
+                key={s.id}
+                className="flex cursor-pointer items-center gap-2 border-b px-3 py-2 hover:bg-muted"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(s.id)}
+                  onChange={() => toggle(s.id)}
+                />
+                <span>{s.username} - {s.name}</span>
+              </label>
+            ))
+          )}
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

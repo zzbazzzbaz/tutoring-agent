@@ -14,10 +14,35 @@ from tutoring.auth.service import hash_password
 async def create_class(
     db: AsyncSession, *, grade: str, classname: str, teacher_id: UUID
 ) -> Class:
+    # 同教师 + 同年级 + 同班级名 不得重复（排除已软删班级）
+    await ensure_class_name_unique(
+        db, teacher_id=teacher_id, grade=grade, classname=classname
+    )
     obj = await repos.create_class(
         db, grade=grade, classname=classname, teacher_id=teacher_id
     )
     return obj
+
+# 校验班级名唯一
+async def ensure_class_name_unique(
+    db: AsyncSession,
+    *,
+    teacher_id: UUID,
+    grade: str,
+    classname: str,
+    exclude_id: UUID | None = None,
+) -> None:
+    """校验「同教师+同年级+同班级名」唯一（排除已软删班级），冲突抛 409。
+    exclude_id 用于编辑场景：排除当前班级自身。"""
+    existing = await repos.get_class_by_teacher_grade_name(
+        db, teacher_id=teacher_id, grade=grade, classname=classname
+    )
+    if existing and (exclude_id is None or existing.id != exclude_id):
+        raise AppError(
+            409,
+            "CLASS_NAME_EXISTS",
+            f"同年级已存在班级「{classname}」，请勿重复创建",
+        )
 
 # 获取班级
 async def get_class_or_404(db: AsyncSession, class_id: UUID) -> Class:
