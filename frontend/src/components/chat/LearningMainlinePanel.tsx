@@ -43,7 +43,7 @@ function StageNode({
           className={cn(
             "flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
             status === "completed" &&
-              "border-emerald-500 bg-emerald-500 text-white",
+              "border-blue-500 bg-blue-500 text-white",
             status === "in_progress" &&
               "border-brand bg-brand/10 text-brand",
             status === "pending" && "border-ink/15 bg-paper-card text-ink/25",
@@ -59,7 +59,7 @@ function StageNode({
           <div
             className={cn(
               "w-px flex-1",
-              status === "completed" ? "bg-emerald-400" : "bg-ink/10",
+              status === "completed" ? "bg-blue-400" : "bg-ink/10",
             )}
           />
         )}
@@ -82,7 +82,7 @@ function StageNode({
             </span>
           )}
           {status === "completed" && (
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
+            <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-600">
               已完成
             </span>
           )}
@@ -103,7 +103,7 @@ function StageNode({
             <span
               className={cn(
                 "shrink-0 text-[11px]",
-                deliverableDone ? "text-emerald-600" : "text-amber-600",
+                deliverableDone ? "text-blue-600" : "text-amber-600",
               )}
             >
               {deliverableDone ? "· 已达标" : "· 待完成"}

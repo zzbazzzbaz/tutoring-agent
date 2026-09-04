@@ -25,7 +25,7 @@ import { EdgeRectangleProgram } from "sigma/rendering";
 import { NodeBorderProgram } from "@sigma/node-border";
 import "@react-sigma/core/lib/style.css";
 
-const NODE_COLOR = "#0b3d31";
+const NODE_COLOR = "#2d59df";
 const NODE_BORDER = "#e5e7eb";
 const NODE_SELECTED = "#f57f17";
 const EDGE_COLOR = "#d3d3d3";

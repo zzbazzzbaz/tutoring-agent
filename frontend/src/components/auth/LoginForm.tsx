@@ -168,7 +168,7 @@ function FormInput({
         {children}
         {/* 墨痕扫描线 — 聚焦时的书写暗示 */}
         <motion.div
-          className="absolute right-0 -bottom-px left-0 h-px rounded-full bg-gradient-to-r from-transparent via-emerald-600 to-transparent"
+          className="absolute right-0 -bottom-px left-0 h-px rounded-full bg-gradient-to-r from-transparent via-blue-600 to-transparent"
           initial={false}
           animate={{
             opacity: focused ? 1 : 0,
@@ -207,7 +207,7 @@ function FocusableInput({
       className={cn(
         "flex h-11 w-full rounded-lg border bg-paper/50 px-3.5 py-2.5 text-base text-ink shadow-sm transition-[background-color,border-color,box-shadow] duration-200 ease-out file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-ink/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         focused
-          ? "border-emerald-600/30 bg-white ring-[3px] ring-emerald-600/10 dark:bg-paper-card"
+          ? "border-blue-600/30 bg-white ring-[3px] ring-blue-600/10 dark:bg-paper-card"
           : error && show
             ? "border-destructive/50 ring-[3px] ring-destructive/8"
             : "border-ink/10 hover:border-ink/20",
@@ -242,7 +242,7 @@ function FocusablePasswordInput({
       className={cn(
         "h-11 bg-paper/50 text-ink transition-[background-color,border-color,box-shadow] duration-200 ease-out",
         focused
-          ? "border-emerald-600/30 bg-white !ring-[3px] !ring-emerald-600/10 dark:bg-paper-card"
+          ? "border-blue-600/30 bg-white !ring-[3px] !ring-blue-600/10 dark:bg-paper-card"
           : error && show
             ? "!border-destructive/50 !ring-[3px] !ring-destructive/8"
             : "border-ink/10 hover:border-ink/20",
@@ -260,9 +260,28 @@ function FocusablePasswordInput({
  * ────────────────────────────────────────────────────────────────────────────── */
 function InkBrand() {
   return (
-    <div className="relative hidden w-[46%] overflow-hidden bg-[#06271f] lg:flex">
-      {/* 墨色渐变底 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0b3d31] via-[#062e25] to-black" />
+    <div className="relative hidden w-[46%] overflow-hidden lg:flex">
+      {/* 深蓝渐变底 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1e40af] to-[#143a7a]" />
+
+      {/* 装饰光斑 — 供毛玻璃透出柔和色彩 */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <motion.div
+          className="absolute -top-24 -left-16 size-96 rounded-full bg-blue-400/40 blur-3xl"
+          animate={{ opacity: [0.5, 0.85, 0.5] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -right-24 bottom-0 size-[26rem] rounded-full bg-indigo-400/30 blur-3xl"
+          animate={{ opacity: [0.4, 0.75, 0.4] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute top-1/3 left-1/2 size-72 rounded-full bg-cyan-300/25 blur-3xl"
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
 
       {/* 点阵纹理 — 谜样网格 */}
       <svg
@@ -276,7 +295,7 @@ function InkBrand() {
             height="30"
             patternUnits="userSpaceOnUse"
           >
-            <circle cx="2" cy="2" r="1" fill="#e7fcf5" />
+            <circle cx="2" cy="2" r="1" fill="#e3edfd" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#dot-grid-ink)" />
@@ -287,7 +306,7 @@ function InkBrand() {
         {PARTICLES.map((p) => (
           <motion.div
             key={p.id}
-            className="absolute rounded-full bg-emerald-100/30"
+            className="absolute rounded-full bg-blue-100/30"
             style={{
               left: `${p.x}%`,
               top: `${p.y}%`,
@@ -311,7 +330,7 @@ function InkBrand() {
 
       {/* 微弱呼吸光 */}
       <motion.div
-        className="absolute top-[-12%] left-[-6%] size-[420px] rounded-full bg-emerald-400/[0.06] blur-3xl"
+        className="absolute top-[-12%] left-[-6%] size-[420px] rounded-full bg-blue-400/[0.06] blur-3xl"
         animate={{
           scale: [1, 1.08, 1],
           opacity: [0.4, 0.7, 0.4],
@@ -320,24 +339,24 @@ function InkBrand() {
       />
 
       <motion.div
-        className="relative z-10 flex flex-1 flex-col justify-between px-14 py-16"
+        className="relative z-10 m-8 flex flex-1 flex-col justify-between gap-8 overflow-hidden rounded-3xl border border-white/20 bg-white/10 px-10 py-12 shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
         initial="hidden"
         animate="visible"
         variants={stagger}
       >
         {/* 顶部 · 标识与刊头 */}
         <motion.div variants={fadeUp} className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-300/5 backdrop-blur-sm">
+          <div className="flex size-11 items-center justify-center rounded-xl border border-blue-300/20 bg-blue-300/5 backdrop-blur-sm">
             <BrainCircuit
-              className="size-6 text-emerald-200/90"
+              className="size-6 text-blue-200/90"
               strokeWidth={1.4}
             />
           </div>
           <div className="leading-tight">
-            <p className="text-[13px] font-semibold tracking-[0.3em] text-emerald-100/90 uppercase">
+            <p className="text-[13px] font-semibold tracking-[0.3em] text-blue-100/90 uppercase">
               Psych · Tutor
             </p>
-            <p className="text-[11px] tracking-[0.18em] text-emerald-200/40">
+            <p className="text-[11px] tracking-[0.18em] text-blue-200/40">
               基础心理学教学代理
             </p>
           </div>
@@ -349,15 +368,15 @@ function InkBrand() {
           className="my-auto w-full max-w-[400px]"
         >
           <motion.div variants={fadeUp} className="mb-6 flex items-center gap-3">
-            <span className="h-px w-10 bg-emerald-300/30" />
-            <span className="text-[11px] uppercase tracking-[0.35em] text-emerald-200/45">
+            <span className="h-px w-10 bg-blue-300/30" />
+            <span className="text-[11px] uppercase tracking-[0.35em] text-blue-200/45">
               The Study Series
             </span>
           </motion.div>
 
           <motion.h1
             variants={fadeUp}
-            className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-[42px] font-semibold leading-[1.25] tracking-[0.04em] text-[#f2faf6]"
+            className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-[42px] font-semibold leading-[1.25] tracking-[0.04em] text-white"
           >
             以思考
             <br />
@@ -366,7 +385,7 @@ function InkBrand() {
 
           <motion.p
             variants={fadeUp}
-            className="mt-6 font-serif text-[13px] italic tracking-[0.08em] text-emerald-100/40"
+            className="mt-6 font-serif text-[13px] italic tracking-[0.08em] text-blue-100/40"
           >
             Thought · Reflection · Growth
           </motion.p>
@@ -387,10 +406,10 @@ function InkBrand() {
                   x2="1"
                   y2="0"
                 >
-                  <stop offset="0%" stopColor="#34d399" stopOpacity="0" />
-                  <stop offset="25%" stopColor="#6ee7b7" stopOpacity="0.9" />
-                  <stop offset="75%" stopColor="#34d399" stopOpacity="0.7" />
-                  <stop offset="100%" stopColor="#a7f3d0" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0" />
+                  <stop offset="25%" stopColor="#93c5fd" stopOpacity="0.9" />
+                  <stop offset="75%" stopColor="#60a5fa" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#bfdbfe" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <motion.path
@@ -409,7 +428,7 @@ function InkBrand() {
                 }}
               />
             </svg>
-            <p className="mt-3 text-[11px] tracking-[0.2em] text-emerald-200/30">
+            <p className="mt-3 text-[11px] tracking-[0.2em] text-blue-200/30">
               引导思考，而非给予答案
             </p>
           </motion.div>
@@ -420,13 +439,13 @@ function InkBrand() {
           variants={fadeUp}
           className="flex items-center justify-between"
         >
-          <p className="text-[11px] tracking-[0.12em] text-emerald-200/35">
+          <p className="text-[11px] tracking-[0.12em] text-blue-200/35">
             © 2026 心理学教学 Agent
           </p>
-          <div className="flex items-center gap-2 text-[11px] tracking-[0.12em] text-emerald-200/35">
+          <div className="flex items-center gap-2 text-[11px] tracking-[0.12em] text-blue-200/35">
             <span className="relative flex size-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400/60" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-blue-400" />
             </span>
             在线课堂
           </div>
@@ -467,9 +486,9 @@ function MobileFeatures() {
         <motion.div
           key={f.title}
           variants={fadeUp}
-          className="flex flex-col items-center gap-1.5 rounded-xl border border-emerald-800/15 bg-paper/70 px-2 py-3.5 text-center"
+          className="flex flex-col items-center gap-1.5 rounded-xl border border-blue-800/15 bg-paper/70 px-2 py-3.5 text-center"
         >
-          <f.icon className="size-4 text-emerald-800/70" strokeWidth={1.5} />
+          <f.icon className="size-4 text-blue-800/70" strokeWidth={1.5} />
           <p className="text-[12px] font-medium text-ink/80">{f.title}</p>
           <p className="text-[10px] text-ink/40">{f.desc}</p>
         </motion.div>
@@ -489,7 +508,7 @@ function SubmitButton({ loading }: { loading: boolean }) {
         disabled={loading}
         size="lg"
         variant="brand"
-        className="login-button group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-[15px] font-medium text-emerald-50 shadow-lg shadow-emerald-900/20 transition-[box-shadow] duration-200 hover:shadow-[0_8px_28px_-8px_rgba(6,78,59,0.5)]"
+        className="login-button group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#2d59df] to-[#2249c4] text-[15px] font-medium text-blue-50 shadow-lg shadow-blue-900/20 transition-[box-shadow] duration-200 hover:shadow-[0_8px_28px_-8px_rgba(34,73,196,0.5)]"
         asChild
       >
         <motion.button
@@ -498,7 +517,7 @@ function SubmitButton({ loading }: { loading: boolean }) {
           transition={spring.fast}
         >
           {/* Shimmer 光扫 */}
-          <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-200/15 to-transparent transition-transform duration-500 ease-out group-hover:translate-x-full" />
+          <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-blue-200/15 to-transparent transition-transform duration-500 ease-out group-hover:translate-x-full" />
 
           <AnimatePresence mode="wait">
             {loading ? (
@@ -511,7 +530,7 @@ function SubmitButton({ loading }: { loading: boolean }) {
                 className="inline-flex items-center gap-2"
               >
                 <motion.span
-                  className="size-4 rounded-full border-2 border-emerald-200/30 border-t-emerald-100"
+                  className="size-4 rounded-full border-2 border-blue-200/30 border-t-blue-100"
                   animate={{ rotate: 360 }}
                   transition={{
                     duration: 0.8,
@@ -650,7 +669,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-dvh overflow-x-clip bg-[#efece3] dark:bg-[#091611]">
+    <div className="flex min-h-dvh overflow-x-clip bg-[#f0f2f5] dark:bg-[#0f172a]">
       {/* ═══════ 左「墨卷」— 品牌与氛围 ═══════ */}
       <InkBrand />
 
@@ -658,9 +677,9 @@ export function LoginForm() {
       <div className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-12">
         {/* 纸面肌理 */}
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 opacity-[0.5] [background-image:radial-gradient(rgba(6,39,31,0.05)_1px,transparent_1px)] [background-size:22px_22px]" />
+          <div className="absolute inset-0 opacity-[0.5] [background-image:radial-gradient(rgba(15,23,42,0.05)_1px,transparent_1px)] [background-size:22px_22px]" />
           <motion.div
-            className="absolute -top-24 -right-24 size-80 rounded-full bg-emerald-800/5 blur-3xl"
+            className="absolute -top-24 -right-24 size-80 rounded-full bg-blue-800/5 blur-3xl"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
@@ -677,8 +696,8 @@ export function LoginForm() {
             variants={fadeIn}
             className="mb-8 flex flex-col items-center gap-3 text-center lg:hidden"
           >
-            <div className="flex size-14 items-center justify-center rounded-2xl border border-emerald-800/15 bg-gradient-to-br from-[#0b3d31] to-[#064e3b] shadow-lg shadow-emerald-900/20">
-              <BrainCircuit className="size-7 text-emerald-50" strokeWidth={1.5} />
+            <div className="flex size-14 items-center justify-center rounded-2xl border border-blue-800/15 bg-gradient-to-br from-[#2d59df] to-[#2249c4] shadow-lg shadow-blue-900/20">
+              <BrainCircuit className="size-7 text-blue-50" strokeWidth={1.5} />
             </div>
             <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-xl font-semibold tracking-[0.08em] text-ink">
               心理学教学 Agent
@@ -688,10 +707,10 @@ export function LoginForm() {
           {/* ── 「素笺」信笺卡片 ── */}
           <motion.div
             variants={fadeUp}
-            className="relative rounded-2xl border border-ink/8 bg-paper-card px-8 py-9 shadow-[0_2px_6px_rgba(6,39,31,0.06),0_18px_44px_-18px_rgba(6,39,31,0.28)]"
+            className="relative rounded-2xl border border-ink/8 bg-paper-card px-8 py-9 shadow-[0_2px_6px_rgba(15,23,42,0.06),0_18px_44px_-18px_rgba(15,23,42,0.28)]"
           >
             {/* 笺头细线 */}
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-700/30 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-blue-700/30 to-transparent" />
 
             {/* 笺首 */}
             <motion.div variants={fadeUp} className="mb-7">

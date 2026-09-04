@@ -299,7 +299,7 @@ export function Thread({
     !!currentProjectId && !!currentSessionId && !artifactOpen;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#efece3] dark:bg-[#091611]">
+    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#0f172a]">
       <div
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-[grid-template-columns] duration-500",
@@ -389,7 +389,7 @@ export function Thread({
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-[#efece3] via-[#efece3]/95 to-[#efece3]/0 backdrop-blur-sm dark:from-[#0a1410] dark:via-[#0a1410]/95 dark:to-[#0a1410]/0">
+                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-white via-white/95 to-white/0 backdrop-blur-sm dark:from-[#0f172a] dark:via-[#0f172a]/95 dark:to-[#0f172a]/0">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
                       <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-2xl font-semibold tracking-[0.04em] text-ink">
@@ -470,7 +470,7 @@ export function Thread({
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(6,39,31,0.06),0_8px_24px_-8px_rgba(6,39,31,0.12)] transition-[border-color] bg-paper-card border border-ink/8",
+                      "relative z-10 mx-auto mb-8 w-full max-w-4xl rounded-2xl shadow-[0_2px_6px_rgba(15,23,42,0.06),0_8px_24px_-8px_rgba(15,23,42,0.12)] transition-[border-color] bg-paper-card border border-ink/8",
                       dragOver
                         ? "border-brand/40 border-2 border-dotted"
                         : "",
@@ -555,7 +555,7 @@ export function Thread({
                         ) : (
                           <Button
                             type="submit"
-                            className="ml-auto bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 hover:from-[#0a362b] hover:to-[#054333] shadow-lg shadow-emerald-900/20 rounded-xl px-5 font-medium"
+                            className="ml-auto bg-gradient-to-r from-[#2d59df] to-[#2249c4] text-blue-50 hover:from-[#0a362b] hover:to-[#054333] shadow-lg shadow-blue-900/20 rounded-xl px-5 font-medium"
                             disabled={
                               isLoading ||
                               (!input.trim() && contentBlocks.length === 0)

@@ -43,7 +43,7 @@ export function KnowledgeUpload({ onUploaded }: { onUploaded: () => void }) {
         <Button
           onClick={handleUpload}
           disabled={loading}
-          className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] !text-emerald-50 hover:from-[#0b3d31] hover:to-[#064e3b]"
+          className="bg-gradient-to-br from-[#2d59df] to-[#2249c4] !text-blue-50 hover:from-[#2d59df] hover:to-[#2249c4]"
         >
           <Upload className="mr-2 size-4" />
           {loading ? "上传中..." : "上传文件"}

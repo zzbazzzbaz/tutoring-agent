@@ -372,7 +372,7 @@ export function ThreadActionsView({
                 className={cn(
                   "h-2 flex-1 rounded-full border transition-colors",
                   "border-gray-300 bg-gray-200",
-                  status === "approve" && "border-emerald-500 bg-emerald-200",
+                  status === "approve" && "border-blue-500 bg-blue-200",
                   status === "reject" && "border-red-500 bg-red-200",
                   status === "edit" && "border-amber-500 bg-amber-200",
                   index === currentIndex &&

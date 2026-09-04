@@ -120,20 +120,20 @@ export function ChatWorkspaceSidebar({
   };
 
   const content = (
-    <div className="flex h-full w-full flex-col bg-gradient-to-b from-[#f7f4ec] to-[#f0ede4] dark:from-[#0a1812] dark:to-[#0e2118]">
+    <div className="flex h-full w-full flex-col bg-[#0b2139]">
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between gap-3">
           <button
-            className="hover:text-primary flex min-w-0 cursor-pointer items-center gap-2 rounded-lg text-left transition-colors"
+            className="hover:text-white flex min-w-0 cursor-pointer items-center gap-2 rounded-lg text-left transition-colors"
             onClick={() => {
               setSessionId(null);
               onMobileOpenChange?.(false);
             }}
           >
-            <span className="bg-gradient-to-br from-[#0b3d31] to-[#064e3b] text-emerald-50 flex size-8 shrink-0 items-center justify-center rounded-xl shadow-sm shadow-emerald-900/20">
+            <span className="bg-gradient-to-br from-[#2d59df] to-[#2249c4] text-white flex size-8 shrink-0 items-center justify-center rounded-xl shadow-sm shadow-blue-900/30">
               <GraduationCap className="size-4" />
             </span>
-            <span className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] truncate text-sm font-semibold text-ink">
+            <span className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] truncate text-sm font-semibold text-white">
               基础心理学教学Agent
             </span>
           </button>
@@ -142,7 +142,7 @@ export function ChatWorkspaceSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-foreground size-8 cursor-pointer rounded-lg"
+              className="text-gray-400 hover:text-white size-8 cursor-pointer rounded-lg"
               onClick={() => {
                 onCollapse?.();
                 onMobileOpenChange?.(false);
@@ -156,23 +156,23 @@ export function ChatWorkspaceSidebar({
 
         <div className="mt-5 space-y-1">
           <button
-            className="text-ink flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-ink/[0.05]"
+            className="text-gray-300 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-white/10"
             onClick={handleNewSession}
           >
-            <MessageCircle className="text-ink/35 size-4" />
+            <MessageCircle className="text-gray-400 size-4" />
             新建对话
           </button>
           <button
-            className="text-ink flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-ink/[0.05]"
+            className="text-gray-300 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-white/10"
             onClick={() => setProfileOpen(true)}
           >
-            <UserCircle className="text-ink/35 size-4" />
+            <UserCircle className="text-gray-400 size-4" />
             个人中心
           </button>
           <Button
             asChild
             variant="ghost"
-            className="flex h-auto w-full cursor-pointer justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal text-ink hover:bg-ink/[0.05]"
+            className="flex h-auto w-full cursor-pointer justify-start gap-3 rounded-xl px-3 py-2 text-sm font-normal text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
           >
             <Link
               href={
@@ -181,9 +181,9 @@ export function ChatWorkspaceSidebar({
               onClick={() => onMobileOpenChange?.(false)}
             >
               {role === "teacher" ? (
-                <Settings className="text-ink/35 size-4" />
+                <Settings className="text-gray-400 size-4" />
               ) : (
-                <FolderOpen className="text-ink/35 size-4" />
+                <FolderOpen className="text-gray-400 size-4" />
               )}
               {manageLabel}
             </Link>
@@ -192,7 +192,7 @@ export function ChatWorkspaceSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        <p className="text-ink/35 px-3 pt-3 pb-2 text-xs font-medium">
+        <p className="text-gray-400 px-3 pt-3 pb-2 text-xs font-medium">
           历史对话
         </p>
         {sessionsLoading ? (
@@ -215,8 +215,8 @@ export function ChatWorkspaceSidebar({
                 <div
                   key={session.id}
                   className={cn(
-                    "group flex items-center rounded-xl hover:bg-ink/[0.04]",
-                    active && "text-ink bg-paper-card font-medium shadow-sm ring-1 ring-ink/8",
+                    "group flex items-center rounded-xl hover:bg-white/5",
+                    active && "bg-[#2d59df] text-white font-medium shadow-sm ring-1 ring-[#2d59df]",
                   )}
                 >
                   <button
@@ -226,8 +226,8 @@ export function ChatWorkspaceSidebar({
                       onMobileOpenChange?.(false);
                     }}
                   >
-                    <MessageCircle className="text-ink/25 size-4 shrink-0" />
-                    <span className="block min-w-0 truncate">
+                    <MessageCircle className="size-4 shrink-0 text-white" />
+                    <span className="block min-w-0 truncate text-white">
                       {sessionTitle(session)}
                     </span>
                   </button>
@@ -236,7 +236,7 @@ export function ChatWorkspaceSidebar({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="mr-1 size-7 shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
+                        className="mr-1 size-7 shrink-0 cursor-pointer text-gray-300 opacity-0 group-hover:opacity-100 hover:text-white data-[state=open]:opacity-100"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="size-4" />
@@ -264,10 +264,10 @@ export function ChatWorkspaceSidebar({
           </div>
         )}
       </div>
-      <div className="border-t border-ink/8 px-3 py-3">
+      <div className="border-t border-white/10 px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <button
-            className="hover:text-primary flex min-w-0 cursor-pointer items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors"
+            className="hover:text-white flex min-w-0 cursor-pointer items-center gap-2 rounded-xl px-1 py-1 text-left transition-colors"
             onClick={() => setProfileOpen(true)}
           >
             <Avatar className="size-8">
@@ -280,10 +280,10 @@ export function ChatWorkspaceSidebar({
               </AvatarFallback>
             </Avatar>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-medium text-ink">
+              <span className="block truncate text-sm font-medium text-white">
                 {user?.name}
               </span>
-              <span className="text-ink/40 block truncate text-xs">
+              <span className="text-gray-400 block truncate text-xs">
                 {user?.username}
               </span>
             </span>
@@ -304,7 +304,7 @@ export function ChatWorkspaceSidebar({
 
   return (
     <>
-      <aside className="bg-paper-card/80 backdrop-blur-sm hidden h-screen w-[280px] shrink-0 border-r border-ink/8 lg:block">
+      <aside className="bg-[#0b2139] backdrop-blur-sm hidden h-screen w-[280px] shrink-0 border-r border-white/10 lg:block">
         {content}
       </aside>
       <Sheet

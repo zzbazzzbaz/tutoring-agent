@@ -16,7 +16,7 @@ export function KnowledgeBasePage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#efece3] dark:bg-[#091611]">
+    <div className="flex h-full flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#0f172a]">
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 bg-paper-card px-4">
         <h1 className="text-base font-semibold">知识库</h1>
         <div className="flex rounded-lg bg-paper p-1">

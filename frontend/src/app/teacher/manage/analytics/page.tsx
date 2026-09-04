@@ -193,7 +193,7 @@ export default function TeacherManageAnalyticsPage() {
           </div>
           <Link
             href={`/teacher/manage/analytics/report?class_id=${selectedClassId}&days=${trendDays}`}
-            className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+            className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
           >
             <FileDown className="size-4" />
             导出报告

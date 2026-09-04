@@ -352,7 +352,7 @@ function ReportPageInner() {
         </div>
         <button
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
         >
           <Printer className="size-4" />
           导出 PDF
@@ -362,7 +362,7 @@ function ReportPageInner() {
       {/* 报告正文：始终白底黑字，打印友好 */}
       <div className="mx-auto max-w-4xl space-y-6 bg-white p-6 text-gray-900 shadow-sm print:max-w-none print:space-y-5 print:p-0 print:shadow-none">
         {/* 1. 报告头 */}
-        <header className="border-b-2 border-emerald-700 pb-4">
+        <header className="border-b-2 border-blue-700 pb-4">
           <h1 className="text-2xl font-bold text-gray-900">使用统计报告</h1>
           <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
             <span>
@@ -457,7 +457,7 @@ function ReportPageInner() {
                               {st.deliverable_submitted_count}
                             </td>
                             <td className="px-3 py-1.5 text-right">
-                              <span className="inline-flex items-center gap-1 text-emerald-700">
+                              <span className="inline-flex items-center gap-1 text-blue-700">
                                 {st.deliverable_done_count > 0 && (
                                   <CheckCircle2 className="size-3.5" />
                                 )}
@@ -782,7 +782,7 @@ function LevelBadge({ level }: { level: string }) {
   return (
     <span
       className={`inline-block rounded px-1.5 py-0.5 text-xs text-white ${
-        level === "高" ? "bg-emerald-600" : level === "中" ? "bg-amber-500" : "bg-red-500"
+        level === "高" ? "bg-blue-600" : level === "中" ? "bg-amber-500" : "bg-red-500"
       }`}
     >
       {level}

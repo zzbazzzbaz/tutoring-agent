@@ -25,7 +25,7 @@ export function DeliverableCard({
     <div
       className={cn(
         "border-ink/10 bg-paper-card overflow-hidden rounded-lg border",
-        done && "border-emerald-500/20",
+        done && "border-blue-500/20",
       )}
     >
       <button
@@ -36,7 +36,7 @@ export function DeliverableCard({
         <FileText
           className={cn(
             "size-4 shrink-0",
-            done ? "text-emerald-600" : "text-ink/35",
+            done ? "text-blue-600" : "text-ink/35",
           )}
         />
         <span className="text-ink flex min-w-0 flex-1 flex-col gap-0.5">
@@ -59,7 +59,7 @@ export function DeliverableCard({
           className={cn(
             "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
             done
-              ? "bg-emerald-500/10 text-emerald-600"
+              ? "bg-blue-500/10 text-blue-600"
               : "bg-amber-500/10 text-amber-600",
           )}
         >
@@ -84,7 +84,7 @@ export function DeliverableCard({
             <div className="border-ink/10 text-ink border-t px-4 py-3">
               <div className="flex items-start gap-2">
                 {done && (
-                  <Check className="text-emerald-600 mt-1 size-4 shrink-0" />
+                  <Check className="text-blue-600 mt-1 size-4 shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
                   <MarkdownText>{content}</MarkdownText>

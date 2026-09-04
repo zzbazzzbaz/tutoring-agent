@@ -110,7 +110,7 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                 )}
                 <div className="bg-muted h-1.5 w-24 overflow-hidden rounded-full">
                   <div
-                    className="h-full rounded-full bg-emerald-500"
+                    className="h-full rounded-full bg-blue-500"
                     style={{ width: `${percent}%` }}
                   />
                 </div>
@@ -143,7 +143,7 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                         className={cn(
                           "flex size-7 shrink-0 items-center justify-center rounded-full border-2",
                           status === "completed" &&
-                            "border-emerald-500 bg-emerald-500 text-white",
+                            "border-blue-500 bg-blue-500 text-white",
                           status === "in_progress" &&
                             "border-blue-500 bg-blue-500/10 text-blue-600",
                           status === "pending" &&
@@ -175,7 +175,7 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                           className={cn(
                             "mt-1 flex items-center gap-1 text-[10px]",
                             sp?.deliverable_done
-                              ? "text-emerald-600"
+                              ? "text-blue-600"
                               : "text-amber-600",
                           )}
                         >
@@ -189,7 +189,7 @@ export function StudentMainlineProgress({ userId }: { userId: string }) {
                         className={cn(
                           "mx-2 mt-3.5 h-0.5 flex-1",
                           status === "completed"
-                            ? "bg-emerald-400"
+                            ? "bg-blue-400"
                             : "bg-muted-foreground/20",
                         )}
                       />

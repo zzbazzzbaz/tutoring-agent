@@ -35,8 +35,8 @@ export function AnsweredQuizCard({
               {studentAnswer}
             </div>
             {correctAnswer && (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-gray-900">
-                <span className="font-medium text-emerald-700">参考答案：</span>
+              <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-gray-900">
+                <span className="font-medium text-blue-700">参考答案：</span>
                 {correctAnswer}
               </div>
             )}
@@ -59,9 +59,9 @@ export function AnsweredQuizCard({
                   className={cn(
                     "flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm",
                     selected && isCorrect
-                      ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+                      ? "border-blue-500 bg-blue-100 text-blue-900"
                       : isCorrect
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                        ? "border-blue-300 bg-blue-50 text-blue-800"
                         : isWrong
                           ? "border-red-300 bg-red-50 text-red-900"
                           : "border-gray-200",
@@ -70,7 +70,7 @@ export function AnsweredQuizCard({
                   <span>{option}</span>
                   <span className="flex shrink-0 items-center gap-2">
                     {isCorrect && (
-                      <span className="text-xs font-medium text-emerald-600">
+                      <span className="text-xs font-medium text-blue-600">
                         正确答案
                       </span>
                     )}

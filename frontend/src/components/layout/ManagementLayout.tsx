@@ -20,7 +20,7 @@ function BackToChatButton({ role }: { role: UserRole }) {
       asChild
       variant="ghost"
       size="sm"
-      className="text-ink/70 hover:bg-ink/10 hover:text-ink"
+      className="text-gray-300 hover:bg-white/10 hover:text-white"
     >
       <Link href={chatHref}>
         <ArrowLeft className="mr-2 size-4" />
@@ -71,14 +71,14 @@ export function ManagementLayout({
         ];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#efece3] dark:bg-[#091611]">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-ink/10 px-4 print:hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#0f172a]">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-[#0b2139] px-4 print:hidden">
         <div className="flex items-center gap-3">
           <Suspense fallback={
             <Button
               variant="ghost"
               size="sm"
-              className="text-ink/70 hover:bg-ink/10 hover:text-ink"
+              className="text-gray-300 hover:bg-white/10 hover:text-white"
             >
               <ArrowLeft className="mr-2 size-4" />
               返回对话
@@ -86,7 +86,7 @@ export function ManagementLayout({
           }>
             <BackToChatButton role={role} />
           </Suspense>
-          <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-base font-semibold tracking-[0.04em] text-ink">
+          <h1 className="[font-family:'Songti_SC','STSong','SimSun','Noto_Serif_SC',serif] text-base font-semibold tracking-[0.04em] text-white">
             {role === "teacher" ? "管理中心" : "案例中心"}
           </h1>
         </div>
@@ -102,8 +102,8 @@ export function ManagementLayout({
                 className={cn(
                   "gap-2 transition-[opacity,transform] duration-150 hover:opacity-80 active:scale-[0.97]",
                   active
-                    ? "bg-gradient-to-r from-[#0b3d31] to-[#064e3b] text-emerald-50 shadow-sm hover:from-[#0b3d31] hover:to-[#064e3b]"
-                    : "text-ink/70 hover:bg-ink/10 hover:text-ink",
+                    ? "bg-gradient-to-r from-[#2d59df] to-[#2249c4] text-blue-50 shadow-sm hover:from-[#2d59df] hover:to-[#2249c4]"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white",
                 )}
               >
                 <Link href={item.href} className={cn("gap-2")}>
@@ -115,7 +115,7 @@ export function ManagementLayout({
           })}
         </nav>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto bg-[#efece3] dark:bg-[#091611]">
+      <main className="min-h-0 flex-1 overflow-y-auto bg-[#f0f2f5] dark:bg-[#0f172a]">
         <motion.div
           key={pathname}
           initial={{ opacity: 0 }}

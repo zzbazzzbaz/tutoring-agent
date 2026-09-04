@@ -51,7 +51,7 @@ function ChatShell({
   }, [projectParam, setProjectParam]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#efece3] dark:bg-[#091611]">
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0f172a]">
       {/* 桌面端侧边栏：始终挂载，translateX 滑入滑出 */}
       {!readOnly && (
         <motion.aside

@@ -80,7 +80,7 @@ function QuizInterruptView({ interrupt }: { interrupt: QuizInterrupt }) {
                 className={cn(
                   "rounded-md border px-3 py-2 text-left text-sm transition-colors",
                   selected.includes(option)
-                    ? "border-[#0b3d31] bg-[#0b3d31] text-emerald-50"
+                    ? "border-[#2d59df] bg-[#2d59df] text-blue-50"
                     : "border-ink/10 hover:bg-paper",
                 )}
                 onClick={() => chooseOption(option)}
