@@ -201,7 +201,7 @@ export default function TeacherManageAnalyticsPage() {
       </div>
 
       {/* 指标卡片 */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           icon={<Users className="size-5" />}
           label="学生总数"
@@ -388,6 +388,7 @@ export default function TeacherManageAnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="class_name" tick={{ fontSize: 11 }} />
                   <YAxis
+                    domain={[0, 1]}
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v) => `${Math.round(v * 100)}%`}
                   />

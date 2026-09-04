@@ -189,7 +189,7 @@ export default function StudentAnalysisPage() {
         </div>
 
         {/* 所属班级 */}
-        <div className="col-span-3 lg:col-span-2 rounded-lg border bg-card p-4">
+        <div className="col-span-2 lg:col-span-2 rounded-lg border bg-card p-4">
           <h3 className="mb-3 font-medium">所属班级</h3>
           <div className="space-y-2">
             {overview.classes.map((cls) => (
