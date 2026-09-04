@@ -281,14 +281,17 @@ async def list_class_students(
         page_size=page_size,
     )
 # 重置班级学生密码
-@router.post("/students/{user_id}/reset-password")
+@router.post("/{class_id}/students/{user_id}/reset-password")
 async def reset_password(
+    class_id: UUID,
     user_id: UUID,
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> dict:
     _require_teacher(user)
-    await class_service.reset_password(db_session, user_id)
+    # 先校验调用者是该班授课教师
+    await class_service.ensure_class_teacher(db_session, class_id, user.id)
+    await class_service.reset_password(db_session, class_id, user_id)
     return {"message": "密码已重置为学号后六位"}
 
 # 获取未分配班级的学生列表
@@ -314,15 +317,18 @@ async def list_unassigned_students(
     )
 
 # 批量软删除学生账号
-@router.post("/students/bulk-delete")
+@router.post("/{class_id}/students/bulk-delete")
 async def bulk_delete_students(
+    class_id: UUID,
     body: SoftDeleteRequest,
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> dict:
     _require_teacher(user)
-    count = await repos.soft_delete_users(
-        db_session, body.user_ids, reason=body.reason, deleted_by=user.id
+    #先校验调用者是该班授课教师，再由 service 逐个校验目标为本班未删除学生
+    await class_service.ensure_class_teacher(db_session, class_id, user.id)
+    count = await class_service.bulk_delete_students(
+        db_session, class_id, body.user_ids, reason=body.reason, deleted_by=user.id
     )
     return {"deleted": count}
 

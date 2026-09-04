@@ -109,10 +109,42 @@ async def bulk_remove_students(
 ) -> int:
     return await repos.bulk_remove_students_from_class(db, class_id, user_ids)
 
+# 批量软删除学生账号
+async def bulk_delete_students(
+    db: AsyncSession,
+    class_id: UUID,
+    user_ids: list[UUID],
+    *,
+    reason: str,
+    deleted_by: UUID,
+) -> int:
+    """批量软删学生账号：仅删除【本班级】的【未删除学生】账号，
+    教师/其他班学生/已删除账号一律跳过，防止任一教师封禁任意账号。"""
+    allowed: list[UUID] = []
+    for uid in user_ids:
+        user = await repos.get_user_by_id(db, uid)
+        if not user or user.deleted_at is not None:
+            continue  # 不存在或已删除
+        if user.role != "student":
+            continue  # 非学生账号（如教师）不得删除
+        if not await repos.check_class_member(db, class_id, uid):
+            continue  # 不属于当前班级
+        allowed.append(uid)
+    if not allowed:
+        return 0
+    return await repos.soft_delete_users(
+        db, allowed, reason=reason, deleted_by=deleted_by
+    )
+
 # 重置班级学生密码
-async def reset_password(db: AsyncSession, user_id) -> None:
+async def reset_password(db: AsyncSession, class_id: UUID, user_id: UUID) -> None:
+    """重置密码：仅允许授课教师重置【本班级】的【未删除学生】账号。"""
     user = await repos.get_user_by_id(db, user_id)
-    if not user:
+    if not user or user.deleted_at is not None:
         raise AppError(404, "USER_NOT_FOUND", f"User {user_id} not found")
+    if user.role != "student":
+        raise AppError(403, "NOT_STUDENT", "只能重置学生账号的密码")
+    if not await repos.check_class_member(db, class_id, user_id):
+        raise AppError(403, "NOT_CLASS_MEMBER", "该学生不属于此班级")
     new_password = user.username[-6:]
     await repos.update_password(db, user_id, hash_password(new_password))

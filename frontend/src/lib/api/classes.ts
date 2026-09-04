@@ -73,8 +73,8 @@ export const classesApi = {
 
   getStats: (classId: string) => api.get<ClassStats>(`/classes/${classId}/stats`),
 
-  resetPassword: (userId: string) =>
-    api.post<void>(`/classes/students/${userId}/reset-password`),
+  resetPassword: (classId: string, userId: string) =>
+    api.post<void>(`/classes/${classId}/students/${userId}/reset-password`),
 
   listUnassignedStudents: (page = 1, pageSize = 100, keyword?: string) => {
     const params = new URLSearchParams({
@@ -90,8 +90,8 @@ export const classesApi = {
 
   downloadTemplate: () => api.getBlob("/classes/students/template"),
 
-  bulkDeleteStudents: (userIds: string[], reason: string) =>
-    api.post<{ deleted: number }>("/classes/students/bulk-delete", {
+  bulkDeleteStudents: (classId: string, userIds: string[], reason: string) =>
+    api.post<{ deleted: number }>(`/classes/${classId}/students/bulk-delete`, {
       user_ids: userIds,
       reason,
     }),

@@ -519,7 +519,7 @@ async def update_class(
         update(Class).where(Class.id == class_id).values(**fields)
     )
     await session.commit()
-    return await session.get(Class, class_id)
+    return await get_class(session, class_id)
 
 # 软删除
 async def delete_class(session: AsyncSession, class_id: UUID) -> None:

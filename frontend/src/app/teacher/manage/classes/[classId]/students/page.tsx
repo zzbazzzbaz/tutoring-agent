@@ -72,7 +72,7 @@ export default function ClassStudentsPage() {
     if (!confirm(`确定重置「${name}」的密码为学号后六位吗？`))
       return;
     try {
-      await classesApi.resetPassword(userId);
+      await classesApi.resetPassword(classId, userId);
       toast.success(`已重置 ${name} 的密码为学号后六位`);
     } catch (err) {
       toast.error(
@@ -387,7 +387,7 @@ function BulkDeleteDialog({ open, onOpenChange, classId, students, onDone }: Bul
     }
     setLoading(true);
     try {
-      await classesApi.bulkDeleteStudents(Array.from(selected), reason.trim());
+      await classesApi.bulkDeleteStudents(classId, Array.from(selected), reason.trim());
       toast.success(`已删除 ${selected.size} 个学生账号`);
       onDone();
       onOpenChange(false);
