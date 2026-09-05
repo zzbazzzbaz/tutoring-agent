@@ -298,10 +298,10 @@ def build_report_docx(
     else:
         _add_body(doc, "暂无项目进度数据。")
 
-    # 四、数据摘要（多行要点，每行加粗深色）
-    _add_heading(doc, "数据摘要")
-    for line in _build_rule_summary_lines(dashboard, days, scope_label):
-        _add_body(doc, line, bold=True, color=_COLOR_BODY)
+    # [临时注释 2026-09-06] 四、数据摘要——功能暂未完善，调用 LLM 未给报告带来实质性升级，待优化后恢复。
+    # _add_heading(doc, "数据摘要")
+    # for line in _build_rule_summary_lines(dashboard, days, scope_label):
+    #     _add_body(doc, line, bold=True, color=_COLOR_BODY)
 
     # 五、趋势概览（三日滑动均值与前端口径一致：当天 + 前 2 天）
     _add_heading(doc, "趋势概览")

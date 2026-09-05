@@ -184,31 +184,33 @@ function ReportPageInner() {
   }, [selectedClassId, days]);
 
   // LLM 研究摘要：独立请求，失败(503/异常)时回退规则摘要，不影响报告主体
-  useEffect(() => {
-    let cancelled = false;
-    setSummaryLoading(true);
-    analyticsApi
-      .getDashboardSummary(selectedClassId === "all" ? undefined : selectedClassId, days)
-      .then((data) => {
-        if (!cancelled) {
-          setAiSummary(data.summary);
-          setSummaryUnavailable(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAiSummary(null);
-          setSummaryUnavailable(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSummaryLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClassId, days]);
+  // [临时注释 2026-09-06] 数据摘要功能暂未完善，调用 LLM 未给报告带来实质性升级，
+  // 待优化后恢复。相关状态变量 aiSummary / summaryLoading / summaryUnavailable 保留。
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   setSummaryLoading(true);
+  //   analyticsApi
+  //     .getDashboardSummary(selectedClassId === "all" ? undefined : selectedClassId, days)
+  //     .then((data) => {
+  //       if (!cancelled) {
+  //         setAiSummary(data.summary);
+  //         setSummaryUnavailable(false);
+  //       }
+  //     })
+  //     .catch(() => {
+  //       if (!cancelled) {
+  //         setAiSummary(null);
+  //         setSummaryUnavailable(true);
+  //       }
+  //     })
+  //     .finally(() => {
+  //       if (!cancelled) setSummaryLoading(false);
+  //     });
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [selectedClassId, days]);
 
   const currentClass = classes.find((c) => c.id === selectedClassId);
 
@@ -496,7 +498,7 @@ function ReportPageInner() {
           </p>
         </section>
 
-        {/* 4. 数据摘要 */}
+        {/* [临时注释 2026-09-06] 四、数据摘要——功能暂未完善，调用 LLM 未给报告带来实质性升级，待优化后恢复。
         <section>
           <h2 className="mb-2 text-base font-semibold text-gray-900">四、数据摘要</h2>
           {summaryLoading ? (
@@ -516,12 +518,13 @@ function ReportPageInner() {
             </p>
           )}
         </section>
+        */}
 
         {/* 5. 趋势概览(若后端将该密集日序列改为稀疏数组，本均值将静默退化为「滚动 N 条」，需同步前端。) */}
         <section>
           <div className="mb-2 flex items-center gap-2">
             <TrendingUp className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">五、趋势概览</h2>
+            <h2 className="text-base font-semibold text-gray-900">四、趋势概览</h2>
           </div>
           <div className="mb-3 grid grid-cols-3 gap-3 text-sm">
             <MiniStat label="互动峰值" value={peak && peak.session_count > 0 ? `${peak.date} · ${peak.session_count} 次` : "暂无"} />
@@ -566,7 +569,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">六、班级活跃率对比</h2>
+            <h2 className="text-base font-semibold text-gray-900">五、班级活跃率对比</h2>
           </div>
           {classComparison.length === 0 ? (
             <p className="text-sm text-gray-400">暂无班级数据</p>
@@ -604,7 +607,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <Trophy className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">七、学生活跃度排行 TOP10</h2>
+            <h2 className="text-base font-semibold text-gray-900">六、学生活跃度排行 TOP10</h2>
           </div>
           {studentRanking.length === 0 ? (
             <p className="text-sm text-gray-400">暂无学生数据</p>
@@ -646,7 +649,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="size-4 text-amber-500" />
-            <h2 className="text-base font-semibold text-gray-900">八、重点学生</h2>
+            <h2 className="text-base font-semibold text-gray-900">七、重点学生</h2>
           </div>
           {keyStudents.length === 0 ? (
             <p className="text-sm text-gray-400">暂无重点学生</p>
@@ -691,7 +694,7 @@ function ReportPageInner() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-4 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">九、班级评价</h2>
+            <h2 className="text-base font-semibold text-gray-900">八、班级评价</h2>
           </div>
           {!classEvaluation || classEvaluation.classes.length === 0 ? (
             <p className="text-sm text-gray-400">暂无班级评价数据</p>
