@@ -1,8 +1,9 @@
 # 统计分析--业务逻辑
 # analytics/service.py
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,7 +55,7 @@ async def get_dashboard(
         return _empty_dashboard(days=days)
 
     class_ids = [c.id for c in classes]
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
 
     # 2. 概览指标
     total_students = await repos.count_class_students(db, class_ids)
@@ -126,7 +127,7 @@ async def get_dashboard(
 
 def _empty_dashboard(days: int = 30) -> DashboardResponse:
     """空数据兜底"""
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     return DashboardResponse(
         overview=DashboardOverview(
             total_students=0,
@@ -202,10 +203,10 @@ async def get_student_analysis(
     if last_active is None:
         inactive_days = 999
     else:
-        inactive_days = (datetime.now(UTC) - last_active).days
+        inactive_days = (datetime.now(ZoneInfo("Asia/Shanghai")) - last_active).days
 
     # 7 最近7天对话数（今天+前6天）
-    seven_days_ago = datetime.now(UTC).date() - timedelta(days=6)
+    seven_days_ago = datetime.now(ZoneInfo("Asia/Shanghai")).date() - timedelta(days=6)
     weekly_sessions = await repos.count_student_sessions_since(db, user_id, seven_days_ago)
 
     # 8. 获取每日活动趋势
@@ -338,7 +339,7 @@ async def get_class_evaluation(
         if not classes:
             return ClassEvaluationResponse(days=days, classes=[])
 
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     since = today - timedelta(days=days - 1)
 
     items: list[ClassEvaluationItem] = []

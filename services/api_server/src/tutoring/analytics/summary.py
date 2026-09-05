@@ -42,15 +42,17 @@ def _key_available() -> bool:
 def _build_user_prompt(dashboard: DashboardResponse) -> str:
     """把 Dashboard 数据转成给 LLM 的结构化文本（只喂关键指标）。"""
     o = dashboard.overview
+    # 日均:「窗口内对话 ÷ 窗口天数」
+    window_sessions = sum(t.session_count for t in dashboard.trend)
     lines = [
         f"统计窗口：{len(dashboard.trend)} 天；学生总数 {o.total_students}；"
-        f"今日活跃 {o.active_today}；累计对话 {o.total_sessions}；"
-        f"待关注学生 {o.pending_alert_count}。"
+        f"今日活跃 {o.active_today}；累计对话（全历史）{o.total_sessions}；"
+        f"窗口内对话 {window_sessions}；待关注学生 {o.pending_alert_count}。"
     ]
     if dashboard.trend:
         peak = max(dashboard.trend, key=lambda t: t.session_count)
         active_days = sum(1 for t in dashboard.trend if t.session_count > 0)
-        avg = o.total_sessions / len(dashboard.trend)
+        avg = window_sessions / len(dashboard.trend)
         lines.append(
             f"趋势：互动峰值 {peak.date}（{peak.session_count} 次）；"
             f"有互动天数 {active_days}；日均 {avg:.1f} 次。"

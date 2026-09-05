@@ -1,6 +1,7 @@
 import uuid
-from datetime import UTC, datetime,date, timedelta
+from datetime import datetime, date, timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, case, func, select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,7 +82,7 @@ async def soft_delete_users(
         update(User)
         .where(User.id.in_(user_ids), User.deleted_at.is_(None))
         .values(
-            deleted_at=datetime.now(UTC),
+            deleted_at=datetime.now(ZoneInfo("Asia/Shanghai")),
             deleted_reason=reason,
             deleted_by=deleted_by,
         )
@@ -187,14 +188,14 @@ async def update_session_title(
 
 async def touch_session(session: AsyncSession, session_id: UUID) -> None:
     await session.execute(
-        update(Session).where(Session.id == session_id).values(last_active_at=datetime.now(UTC))
+        update(Session).where(Session.id == session_id).values(last_active_at=datetime.now(ZoneInfo("Asia/Shanghai")))
     )
     await session.commit()
 
 
 async def delete_session(session: AsyncSession, session_id: UUID) -> None:
     await session.execute(
-        update(Session).where(Session.id == session_id).values(deleted_at=datetime.now(UTC))
+        update(Session).where(Session.id == session_id).values(deleted_at=datetime.now(ZoneInfo("Asia/Shanghai")))
     )
     await session.commit()
 
@@ -254,7 +255,7 @@ async def update_project(session: AsyncSession, project_id: UUID, **fields) -> P
 
 async def delete_project(session: AsyncSession, project_id: UUID) -> None:
     await session.execute(
-        update(Project).where(Project.id == project_id).values(deleted_at=datetime.now(UTC))
+        update(Project).where(Project.id == project_id).values(deleted_at=datetime.now(ZoneInfo("Asia/Shanghai")))
     )
     await session.commit()
 
@@ -273,7 +274,7 @@ async def upsert_session_progress(
     merged: dict = {**(existing.progress if existing else {}), **progress}
     if existing:
         existing.progress = merged
-        existing.updated_at = datetime.now(UTC)
+        existing.updated_at = datetime.now(ZoneInfo("Asia/Shanghai"))
         obj = existing
     else:
         obj = SessionProgress(session_id=session_id, progress=merged)
@@ -548,7 +549,7 @@ async def delete_class(session: AsyncSession, class_id: UUID) -> None:
     await session.execute(
         update(Class)
         .where(Class.id == class_id)
-        .values(deleted_at=datetime.now(UTC))
+        .values(deleted_at=datetime.now(ZoneInfo("Asia/Shanghai")))
     )
     await session.commit()
 
@@ -800,7 +801,7 @@ async def get_class_stats(
     total_sessions = await count_class_sessions(session, class_id)
 
     # 今日活跃学生数（今天有会话活动的学生）
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     active_stmt = (
         select(func.count(func.distinct(Session.user_id)))
         .select_from(Session)
@@ -872,7 +873,7 @@ async def list_anomaly_students(
     """
     列出未活跃超过阈值天数的学生。
     """
-    threshold_dt = datetime.now(UTC) - timedelta(days=inactive_threshold_days)
+    threshold_dt = datetime.now(ZoneInfo("Asia/Shanghai")) - timedelta(days=inactive_threshold_days)
 
     # 查询所有班级学生及其最后活跃时间
     students_stmt = (
@@ -907,7 +908,7 @@ async def list_anomaly_students(
             inactive_days = 999
             last_active_display = None
         else:
-            delta = datetime.now(UTC) - last_active
+            delta = datetime.now(ZoneInfo("Asia/Shanghai")) - last_active
             inactive_days = delta.days
             last_active_display = last_active
 
@@ -939,7 +940,7 @@ async def get_daily_trend(
     """
     获取最近 N 天每天的对话数和活跃学生数。
     """
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     trend = []
     # 班级范围内去重后的学生集合，会话按 user_id 直接计数避免多班翻倍
     class_student_subq = (
@@ -999,7 +1000,7 @@ async def get_class_comparison(
     """
     班级间活跃率对比。
     """
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     comparison = []
 
     for cls in classes:
@@ -1157,7 +1158,7 @@ async def get_student_daily_activity(
     days: int = 30,
 ) -> list[dict]:
     """获取学生最近N天每天的对话数。"""
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     activity = []
 
     for i in range(days - 1, -1, -1):
@@ -1630,7 +1631,7 @@ async def list_key_students(
         if last_active is None:
             inactive_days = 999
         else:
-            inactive_days = (datetime.now(UTC) - last_active).days
+            inactive_days = (datetime.now(ZoneInfo("Asia/Shanghai")) - last_active).days
 
         level: str | None = None
         reason = ""

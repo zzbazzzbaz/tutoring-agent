@@ -216,7 +216,9 @@ function ReportPageInner() {
     () => trend.filter((t) => t.session_count > 0).length,
     [trend]
   );
-  const dailyAvg = trend.length > 0 ? overview!.total_sessions / trend.length : 0;
+  // 日均对话 = 窗口内对话数（趋势序列求和）÷ 窗口天数；
+  const windowSessions = trend.reduce((sum, t) => sum + t.session_count, 0);
+  const dailyAvg = trend.length > 0 ? windowSessions / trend.length : 0;
 
   if (loading) {
     return (
@@ -274,7 +276,7 @@ function ReportPageInner() {
       }。`
     );
     parts.push(
-      `期间累计对话 ${overview!.total_sessions} 次，日均 ${dailyAvg.toFixed(1)} 次。`
+      `统计窗口内对话 ${windowSessions} 次，日均 ${dailyAvg.toFixed(1)} 次；历史累计对话 ${overview!.total_sessions} 次。`
     );
     if (peak && peak.session_count > 0) {
       parts.push(

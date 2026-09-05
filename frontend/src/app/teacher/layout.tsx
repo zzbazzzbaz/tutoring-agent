@@ -9,7 +9,7 @@ export default function TeacherLayout({
 }) {
   return (
     <RoleGuard role="teacher">
-      <div className="h-screen overflow-hidden">{children}</div>
+      <div className="h-screen overflow-hidden print:h-auto print:overflow-visible">{children}</div>
     </RoleGuard>
   );
 }

@@ -71,7 +71,7 @@ export function ManagementLayout({
         ];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#0f172a]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#0f172a] print:h-auto print:overflow-visible">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-[#0b2139] px-4 print:hidden">
         <div className="flex items-center gap-3">
           <Suspense fallback={
@@ -115,7 +115,7 @@ export function ManagementLayout({
           })}
         </nav>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto bg-[#f0f2f5] dark:bg-[#0f172a]">
+      <main className="min-h-0 flex-1 overflow-y-auto bg-[#f0f2f5] dark:bg-[#0f172a] print:overflow-visible">
         <motion.div
           key={pathname}
           initial={{ opacity: 0 }}
