@@ -21,9 +21,7 @@ function clearAuth() {
   localStorage.removeItem(STORAGE_KEYS.USER);
   document.cookie = `${COOKIE_KEYS.AUTH}=; path=/; max-age=0`;
   document.cookie = `${COOKIE_KEYS.ROLE}=; path=/; max-age=0`;
-  // [调试模式] 路由拦截已临时禁用，见 docs/route-guard-debug.md
-  // 恢复方法：取消下行注释
-  // window.location.href = "/login";
+  window.location.href = "/login";
 }
 
 export async function apiFetch<T>(
