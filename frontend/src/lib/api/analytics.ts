@@ -44,4 +44,21 @@ export const analyticsApi = {
   getStudentAnalysis: (userId: string, days = 30) => {
     return api.get<StudentAnalysisResponse>(`/analytics/students/${userId}?days=${days}`);
   },
+  // 导出使用统计报告（Word 文档下载）
+  exportReport: async (classId?: string, days?: number) => {
+    const params = new URLSearchParams();
+    if (classId) params.set("class_id", classId);
+    if (days) params.set("days", String(days));
+    const qs = params.toString();
+    const blob = await api.getBlob(`/analytics/export-report${qs ? `?${qs}` : ""}`);
+    // 触发浏览器下载
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `使用统计报告_${new Date().toISOString().slice(0, 10)}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
 };

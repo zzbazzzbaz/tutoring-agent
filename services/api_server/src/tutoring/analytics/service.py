@@ -345,11 +345,11 @@ async def get_class_evaluation(
     items: list[ClassEvaluationItem] = []
     for cls in classes:
         class_ids = [cls.id]
-        participation_stats = await repos.get_class_participation_stats(
-            db, class_ids=class_ids, since=since
-        )
-        # 消息级统计同时喂给「思考质量」与「知识运用」两个维度（同一查询，不重复取数）
+        # 消息级统计一次查出，同时喂给「参与度」「思考质量」「知识运用」三个维度（避免重复扫描 message 表）
         msg_stats = await repos.get_class_thinking_stats(db, class_ids=class_ids, since=since)
+        participation_stats = await repos.get_class_participation_stats(
+            db, class_ids=class_ids, since=since, message_stats=msg_stats
+        )
         # 产出物完成/阶段覆盖：复用项目维度进度聚合（跨会话累积、不限时间窗口，与报告「三」板块口径一致）
         project_progress_raw = await repos.list_project_progress_summary(
             db, class_ids=class_ids

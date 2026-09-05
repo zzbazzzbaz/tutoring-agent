@@ -29,7 +29,7 @@ def _patch_repos(monkeypatch, *, stats=None, thinking=None, classes=None, progre
     async def fake_list_classes_by_teacher(_db, _teacher_id):
         return classes or []
 
-    async def fake_get_class_participation_stats(_db, class_ids, since):
+    async def fake_get_class_participation_stats(_db, class_ids, since, message_stats=None):
         if callable(stats):
             return stats(class_ids, since)
         return stats if stats is not None else {}

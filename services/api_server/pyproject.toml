@@ -20,7 +20,8 @@ dependencies = [
     "bcrypt>=4.0",
     # ---- 文件处理 ----
     "openpyxl>=3.1.5",
-]
+    "python-docx>=1.2.0",
+    ]
 
 [build-system]
 requires = ["hatchling"]

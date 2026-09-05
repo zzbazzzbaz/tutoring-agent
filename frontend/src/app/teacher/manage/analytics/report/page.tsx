@@ -13,7 +13,7 @@ import {
   RefreshCw,
   TrendingUp,
   Trophy,
-  Printer,
+  FileDown,
   BarChart3,
   MessageSquare,
   Bot,
@@ -22,6 +22,7 @@ import {
   ListChecks,
   CheckCircle2,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -71,6 +72,7 @@ function ReportPageInner() {
     return (DAYS_OPTIONS as readonly number[]).includes(raw) ? (raw as DaysOption) : 30;
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   // LLM 研究摘要：成功则为 AI 摘要文本；失败(null)回退规则摘要
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -99,33 +101,31 @@ function ReportPageInner() {
   async function load(classId?: string, d: number = 30) {
     try {
       setError(null);
-      const data = await analyticsApi.getDashboard(classId, d);
+      // 主报告 / 案例进度 / 班级评价三个独立请求并行发起；
+      // 进度与评价失败时独立降级为 null，不影响主报告（Promise.all 中由 .catch 兜住）
+      const [data, progress, evaluation] = await Promise.all([
+        analyticsApi.getDashboard(classId, d),
+        analyticsApi.getProjectProgress(classId).catch((err: any) => {
+          console.error("加载案例进度聚合失败:", err);
+          return null;
+        }),
+        analyticsApi.getClassEvaluation(classId, d).catch((err: any) => {
+          console.error("加载班级评价失败:", err);
+          return null;
+        }),
+      ]);
       setOverview(data.overview);
       setTrend(data.trend || []);
       setClassComparison(data.class_comparison || []);
       setStudentRanking(data.student_ranking || []);
       setMessageStats(data.message_stats || null);
       setKeyStudents(data.key_students || []);
+      setProjectProgress(progress);
+      setClassEvaluation(evaluation);
     } catch (err: any) {
       console.error("加载报告数据失败:", err);
       setError(err?.message || "加载失败，请重试");
       throw err;
-    }
-    // 案例维度进度聚合：进度为跨会话累积的当前状态，不限时间窗口（不随 days 切换），独立请求不拖累主报告
-    try {
-      const progress = await analyticsApi.getProjectProgress(classId);
-      setProjectProgress(progress);
-    } catch (err: any) {
-      console.error("加载案例进度聚合失败:", err);
-      setProjectProgress(null);
-    }
-    // 班级评价：随班级与 days 窗口切换
-    try {
-      const evaluation = await analyticsApi.getClassEvaluation(classId, d);
-      setClassEvaluation(evaluation);
-    } catch (err: any) {
-      console.error("加载班级评价失败:", err);
-      setClassEvaluation(null);
     }
   }
 
@@ -138,6 +138,23 @@ function ReportPageInner() {
       // 刷新失败保留旧数据，错误已在 load 中记录
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await analyticsApi.exportReport(
+        selectedClassId === "all" ? undefined : selectedClassId,
+        days
+      );
+      toast.success("报告导出成功");
+    } catch (err) {
+      console.error("导出报告失败:", err);
+      toast.error("导出失败，请稍后重试");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -259,13 +276,12 @@ function ReportPageInner() {
 
   const startDate = trend.length > 0 ? trend[0].date : "";
   const endDate = trend.length > 0 ? trend[trend.length - 1].date : "";
-  const generatedAt = new Date().toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // 生成时间：YYYY-MM-DD HH:MM
+  const generatedAt = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  })();
 
   // 规则版数据摘要
   function buildSummary() {
@@ -352,11 +368,13 @@ function ReportPageInner() {
           </button>
         </div>
         <button
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+          onClick={handleExport}
+          disabled={exporting}
+          title="导出当前报告为 Word 文档"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-50"
         >
-          <Printer className="size-4" />
-          导出 PDF
+          <FileDown className="size-4" />
+          {exporting ? "导出中..." : "导出 报告"}
         </button>
       </div>
 

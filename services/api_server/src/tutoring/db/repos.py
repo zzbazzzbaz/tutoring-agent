@@ -887,21 +887,33 @@ async def list_anomaly_students(
     )
     result = await session.execute(students_stmt)
     all_rows = result.all()
+    if not all_rows:
+        return []
+
+    # 一次查询批量获取本班所有学生的最后活跃时间
+    user_ids = [user.id for _, user, _ in all_rows]
+    last_active_stmt = (
+        select(
+            Session.user_id,
+            func.max(Session.last_active_at).label("last_active"),
+        )
+        .select_from(Session)
+        .where(
+            Session.user_id.in_(user_ids),
+            Session.deleted_at.is_(None),
+        )
+        .group_by(Session.user_id)
+    )
+    last_active_map = {
+        row.user_id: row.last_active
+        for row in (await session.execute(last_active_stmt)).all()
+    }
 
     # 按 user_id 去重，多班学生只出现一次（inactive_days 按学生整体计算，
     # 与班级无关，任取一条即可，避免待关注列表重复）
     anomalies_by_user: dict[UUID, dict] = {}
     for cs, user, cls in all_rows:
-        # 获取该学生最近一次会话活动时间
-        last_active_stmt = (
-            select(func.max(Session.last_active_at))
-            .select_from(Session)
-            .where(
-                Session.user_id == user.id,
-                Session.deleted_at.is_(None),
-            )
-        )
-        last_active = (await session.execute(last_active_stmt)).scalar_one_or_none()
+        last_active = last_active_map.get(user.id)
 
         if last_active is None:
             # 从未有过会话记录
@@ -941,7 +953,7 @@ async def get_daily_trend(
     获取最近 N 天每天的对话数和活跃学生数。
     """
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
-    trend = []
+    start_date = today - timedelta(days=days - 1)
     # 班级范围内去重后的学生集合，会话按 user_id 直接计数避免多班翻倍
     class_student_subq = (
         select(ClassStudent.user_id)
@@ -953,41 +965,39 @@ async def get_daily_trend(
         .distinct()
     )
 
+    trend_stmt = (
+        select(
+            func.date(Session.last_active_at).label("day"),
+            func.count(Session.id).label("session_count"),
+            func.count(func.distinct(Session.user_id)).label("active_student_count"),
+        )
+        .select_from(Session)
+        .where(
+            Session.user_id.in_(class_student_subq),
+            Session.deleted_at.is_(None),
+            func.date(Session.last_active_at) >= start_date,
+            func.date(Session.last_active_at) <= today,
+        )
+        .group_by(func.date(Session.last_active_at))
+    )
+    trend_map = {
+        str(row.day): {
+            "session_count": int(row.session_count),
+            "active_student_count": int(row.active_student_count),
+        }
+        for row in (await session.execute(trend_stmt)).all()
+    }
+
+    # Python 层补全缺失日期（无数据日期填 0），保持从早到晚的顺序
+    trend = []
     for i in range(days - 1, -1, -1):
         target_date = today - timedelta(days=i)
-        next_date = target_date + timedelta(days=1)
-        # 当日对话数
-        session_stmt = (
-            select(func.count())
-            .select_from(Session)
-            .where(
-                Session.user_id.in_(class_student_subq),
-                Session.deleted_at.is_(None),
-                func.date(Session.last_active_at) >= target_date,
-                func.date(Session.last_active_at) < next_date,
-            )
-        )
-        session_count = int((await session.execute(session_stmt)).scalar_one())
-        # 当日活跃学生数
-        active_stmt = (
-            select(func.count(func.distinct(Session.user_id)))
-            .select_from(Session)
-            .join(ClassStudent, ClassStudent.user_id == Session.user_id)
-            .join(User, User.id == Session.user_id)
-            .where(
-                ClassStudent.class_id.in_(class_ids),
-                User.deleted_at.is_(None),  # 排除已软删学生
-                Session.deleted_at.is_(None),
-                func.date(Session.last_active_at) >= target_date,
-                func.date(Session.last_active_at) < next_date,
-            )
-        )
-        active_count = int((await session.execute(active_stmt)).scalar_one())
-
+        date_str = target_date.strftime("%Y-%m-%d")
+        item = trend_map.get(date_str, {"session_count": 0, "active_student_count": 0})
         trend.append({
-            "date": target_date.strftime("%Y-%m-%d"),
-            "session_count": session_count,
-            "active_student_count": active_count,
+            "date": date_str,
+            "session_count": item["session_count"],
+            "active_student_count": item["active_student_count"],
         })
 
     return trend
@@ -1303,6 +1313,7 @@ async def get_class_participation_stats(
     *,
     class_ids: list[UUID],
     since: date,
+    message_stats: dict | None = None,
 ) -> dict:
     """班级参与度统计（「参与度」维度的数据源）。
 
@@ -1345,10 +1356,13 @@ async def get_class_participation_stats(
     )
     act_row = (await session.execute(act_stmt)).one()
 
-    # 3. 学生发起消息数（message 表）
-    student_messages = (await get_message_stats(session, class_ids, since=since))[
-        "student_messages"
-    ]
+    # 3. 学生发起消息数（message 表；调用方已查过消息级统计时可传入复用，避免重复扫描）
+    if message_stats is not None:
+        student_messages = message_stats.get("student_messages", 0)
+    else:
+        student_messages = (await get_message_stats(session, class_ids, since=since))[
+            "student_messages"
+        ]
 
     return {
         "total_students": total_students,
@@ -1588,6 +1602,66 @@ async def list_key_students(
         )
     )
     rows = (await session.execute(students_stmt)).all()
+    if not rows:
+        return []
+
+    # 批量聚合：窗口内会话数 / 窗口内 AI 回复数 / 全局最后活跃时间
+    user_ids = [user.id for _, user, _ in rows]
+    # 窗口内会话数（该学生整体，未删除）
+    session_count_stmt = (
+        select(
+            Session.user_id,
+            func.count().label("session_count"),
+        )
+        .select_from(Session)
+        .where(
+            Session.user_id.in_(user_ids),
+            Session.deleted_at.is_(None),
+            func.date(Session.last_active_at) >= since,
+        )
+        .group_by(Session.user_id)
+    )
+    session_count_map = {
+        row.user_id: int(row.session_count)
+        for row in (await session.execute(session_count_stmt)).all()
+    }
+    # 窗口内 AI 回复数（该学生）
+    ai_count_stmt = (
+        select(
+            Session.user_id,
+            func.count().label("ai_count"),
+        )
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .where(
+            Session.user_id.in_(user_ids),
+            Session.deleted_at.is_(None),
+            Message.role == "assistant",
+            func.date(Message.created_at) >= since,
+        )
+        .group_by(Session.user_id)
+    )
+    ai_count_map = {
+        row.user_id: int(row.ai_count)
+        for row in (await session.execute(ai_count_stmt)).all()
+    }
+    # 最后活跃时间（该学生；无会话 = 不在 map 中）
+    last_active_stmt = (
+        select(
+            Session.user_id,
+            func.max(Session.last_active_at).label("last_active"),
+        )
+        .select_from(Session)
+        .where(
+            Session.user_id.in_(user_ids),
+            Session.deleted_at.is_(None),
+        )
+        .group_by(Session.user_id)
+    )
+    last_active_map = {
+        row.user_id: row.last_active
+        for row in (await session.execute(last_active_stmt)).all()
+    }
 
     results: list[dict] = []
     # 按 user_id 去重，多班学生只出现一次（level/计数均按学生整体计算，与班级无关）
@@ -1595,39 +1669,9 @@ async def list_key_students(
     for cs, user, cls in rows:
         if user.id in seen:
             continue
-        # 窗口内会话数（该学生整体，未删除）
-        session_stmt = (
-            select(func.count())
-            .select_from(Session)
-            .where(
-                Session.user_id == user.id,
-                Session.deleted_at.is_(None),
-                func.date(Session.last_active_at) >= since,
-            )
-        )
-        session_count = int((await session.execute(session_stmt)).scalar_one())
-
-        # 窗口内 AI 回复数（该学生）
-        ai_stmt = (
-            select(func.count())
-            .select_from(Message)
-            .join(Session, Session.id == Message.session_id)
-            .where(
-                Session.user_id == user.id,
-                Session.deleted_at.is_(None),
-                Message.role == "assistant",
-                func.date(Message.created_at) >= since,
-            )
-        )
-        ai_count = int((await session.execute(ai_stmt)).scalar_one())
-
-        # 未活跃天数（最后活跃时间距今；无会话 = 999）
-        last_active_stmt = (
-            select(func.max(Session.last_active_at))
-            .select_from(Session)
-            .where(Session.user_id == user.id, Session.deleted_at.is_(None))
-        )
-        last_active = (await session.execute(last_active_stmt)).scalar_one_or_none()
+        session_count = session_count_map.get(user.id, 0)
+        ai_count = ai_count_map.get(user.id, 0)
+        last_active = last_active_map.get(user.id)
         if last_active is None:
             inactive_days = 999
         else:
