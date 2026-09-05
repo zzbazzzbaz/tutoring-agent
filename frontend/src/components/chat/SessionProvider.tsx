@@ -60,7 +60,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         });
       } catch (err) {
         await sessionsApi.delete(session.id).catch(console.error);
-        throw err;
+        // 原始错误仅记录到控制台，不向用户暴露
+        console.error("Failed to create agent thread:", err);
+        throw new Error("创建会话失败，请稍后重试");
       }
       setSessions((prev) => [session, ...prev]);
       return session;

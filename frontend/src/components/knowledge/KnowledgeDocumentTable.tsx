@@ -53,7 +53,9 @@ export function KnowledgeDocumentTable({
       setDocuments(result.items);
       setTotal(result.total);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载文档失败");
+      // 原始错误仅记录到控制台，不向用户暴露
+      console.error("Failed to load documents:", err);
+      toast.error("加载文档失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,9 @@ export function KnowledgeDocumentTable({
       toast.success("删除任务已提交");
       onChanged();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "删除失败");
+      // 原始错误仅记录到控制台，不向用户暴露
+      console.error("Failed to delete document:", err);
+      toast.error("删除失败，请稍后重试");
     }
   }
 

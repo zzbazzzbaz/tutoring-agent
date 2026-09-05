@@ -43,6 +43,9 @@ async def list_projects(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> Page[ProjectOut]:
+    # 学生仅可见已发布项目（草稿仅教师可见）；强制覆盖查询参数，防止 ?status=draft 绕过
+    if user.role == "student":
+        status = "published"
     offset = (page - 1) * page_size
     projects = await repos.list_projects(
         db_session, status=status, limit=page_size, offset=offset
@@ -63,6 +66,9 @@ async def get_project(
     db_session: AsyncSession = Depends(get_db),
 ) -> ProjectOut:
     proj = await project_service.get_project_or_404(db_session, project_id)
+    # 学生仅可查看已发布项目；draft 视为不存在（不泄露项目存在性）
+    if user.role == "student" and proj.status != "published":
+        raise AppError(404, "PROJECT_NOT_FOUND", f"Project {project_id} not found")
     return ProjectOut.model_validate(proj)
 
 

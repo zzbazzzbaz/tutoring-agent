@@ -169,12 +169,9 @@ export function Thread({
 
       // Message is defined, and it has not been logged yet. Save it, and send the error
       lastError.current = message;
-      toast.error("An error occurred. Please try again.", {
-        description: (
-          <p>
-            <strong>Error:</strong> <code>{message}</code>
-          </p>
-        ),
+      // 原始错误仅记录到控制台，不向用户暴露
+      console.error("Stream error:", message);
+      toast.error("消息发送失败，请稍后重试", {
         richColors: true,
         closeButton: true,
       });
@@ -256,9 +253,9 @@ export function Thread({
         setThreadId(session.id);
         setPendingSubmit({ message: newHumanMessage, context });
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "创建会话失败，请重试",
-        );
+        // 原始错误仅记录到控制台，不向用户暴露
+        console.error("Failed to create session:", err);
+        toast.error("创建会话失败，请稍后重试");
       }
       return;
     }
