@@ -1,11 +1,5 @@
 name: teaching-agent
 
-# 共享 LLM 底座（lightrag / agent_server 复用，仅模型名各自不同）
-x-llm-base: &llm-base
-  LLM_BINDING: openai
-  LLM_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
-  LLM_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
-
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -68,7 +62,9 @@ services:
     restart: unless-stopped
     mem_limit: 640m
     environment:
-      <<: *llm-base
+      LLM_BINDING: openai
+      LLM_BINDING_HOST: ${DASHSCOPE_BASE_URL}
+      LLM_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
       WORKSPACE: workspace-1
       LIGHTRAG_KV_STORAGE: PGKVStorage
       LIGHTRAG_VECTOR_STORAGE: PGVectorStorage
@@ -87,13 +83,13 @@ services:
       EMBEDDING_BINDING: openai
       EMBEDDING_MODEL: ${EMBEDDING_MODEL}
       EMBEDDING_DIM: ${EMBEDDING_DIM}
-      EMBEDDING_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
+      EMBEDDING_BINDING_HOST: ${DASHSCOPE_BASE_URL}
       EMBEDDING_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
       SUMMARY_LANGUAGE: Chinese
       VLM_PROCESS_ENABLE: "true"
       VLM_LLM_BINDING: openai
       VLM_LLM_MODEL: ${LIGHTRAG_LLM_MODEL}
-      VLM_LLM_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
+      VLM_LLM_BINDING_HOST: ${DASHSCOPE_BASE_URL}
       VLM_LLM_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
       LIGHTRAG_PARSER: "*:native-iteP,*:legacy-R"
     ports:
@@ -130,7 +126,8 @@ services:
     restart: unless-stopped
     mem_limit: 512m
     environment:
-      <<: *llm-base
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      DASHSCOPE_BASE_URL: ${DASHSCOPE_BASE_URL}
       POSTGRES_URI: postgresql://tutoring:${POSTGRES_PASSWORD}@postgres:5432/tutoring_agent_server_db?sslmode=disable
       REDIS_URI: redis://redis:6379
       LLM_MODEL: ${AGENT_LLM_MODEL}
