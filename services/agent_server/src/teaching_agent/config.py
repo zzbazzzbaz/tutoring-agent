@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     agent_context_trigger_tokens: int
     agent_context_keep_messages: int
 
+    # === 输入防护 ===
+    agent_max_input_chars: int = 8000
+
 
 @lru_cache
 def get_settings() -> Settings:
