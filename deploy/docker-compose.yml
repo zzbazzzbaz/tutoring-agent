@@ -1,57 +1,75 @@
+name: teaching-agent
+
+# 共享 LLM 底座（lightrag / agent_server 复用，仅模型名各自不同）
+x-llm-base: &llm-base
+  LLM_BINDING: openai
+  LLM_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
+  LLM_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
+
 services:
   postgres:
     image: pgvector/pgvector:pg17
-    container_name: teaching-postgres
     restart: unless-stopped
+    mem_limit: 384m
     environment:
       POSTGRES_USER: tutoring
-      POSTGRES_PASSWORD: tutoring123456
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: tutoring_db
     ports:
-      - "15423:5432"
+      - "10000:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tutoring -d tutoring_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   neo4j:
     image: neo4j:5.26-community
-    container_name: teaching-neo4j
     restart: unless-stopped
+    mem_limit: 640m
     environment:
-      NEO4J_AUTH: neo4j/tutoring123456
-      NEO4J_server_memory_heap_initial__size: 512m
-      NEO4J_server_memory_heap_max__size: 1G
-      NEO4J_server_memory_pagecache_size: 512m
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 256m
+      NEO4J_server_memory_pagecache_size: 256m
     ports:
-      - "17457:7474"
-      - "17864:7687"
+      - "10001:7474"
+      - "10002:7687"
     volumes:
-      - neo4jdata:/data
+      - ./data/neo4j:/data
     healthcheck:
-      test: ["CMD-SHELL", "cypher-shell -u neo4j -p tutoring123456 'RETURN 1' || exit 1"]
+      test:
+        ["CMD-SHELL", "cypher-shell -u neo4j -p \"$$(printf %s \"$$NEO4J_AUTH\" | cut -d/ -f2)\" 'RETURN 1' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "10003:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 1s
+      retries: 5
+
   lightrag:
     image: ghcr.io/hkuds/lightrag:v1.4.10
-    container_name: teaching-lightrag
     restart: unless-stopped
+    mem_limit: 640m
     environment:
-      HTTP_PROXY: ""
-      HTTPS_PROXY: ""
-      http_proxy: ""
-      https_proxy: ""
-      ALL_PROXY: ""
-      all_proxy: ""
-      NO_PROXY: "*"
-      WORKSPACE: "workspace-1"
+      <<: *llm-base
+      WORKSPACE: workspace-1
       LIGHTRAG_KV_STORAGE: PGKVStorage
       LIGHTRAG_VECTOR_STORAGE: PGVectorStorage
       LIGHTRAG_GRAPH_STORAGE: Neo4JStorage
@@ -59,30 +77,148 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: tutoring
-      POSTGRES_PASSWORD: tutoring123456
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DATABASE: tutoring_db
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: tutoring123456
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
       NEO4J_DATABASE: neo4j
-      LLM_BINDING: openai
-      LLM_MODEL: qwen3.6-flash
-      LLM_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
-      LLM_BINDING_API_KEY: sk-cad2e2400e384fc7aa08846770dac9e1
+      LLM_MODEL: ${LIGHTRAG_LLM_MODEL}
       EMBEDDING_BINDING: openai
-      EMBEDDING_MODEL: text-embedding-v4
-      EMBEDDING_DIM: 1024
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
+      EMBEDDING_DIM: ${EMBEDDING_DIM}
       EMBEDDING_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
-      EMBEDDING_BINDING_API_KEY: sk-cad2e2400e384fc7aa08846770dac9e1
+      EMBEDDING_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
       SUMMARY_LANGUAGE: Chinese
+      VLM_PROCESS_ENABLE: "true"
+      VLM_LLM_BINDING: openai
+      VLM_LLM_MODEL: ${LIGHTRAG_LLM_MODEL}
+      VLM_LLM_BINDING_HOST: https://dashscope.aliyuncs.com/compatible-mode/v1
+      VLM_LLM_BINDING_API_KEY: ${DASHSCOPE_API_KEY}
+      LIGHTRAG_PARSER: "*:native-iteP,*:legacy-R"
     ports:
-      - "19621:9621"
+      - "10004:9621"
     depends_on:
       postgres:
         condition: service_healthy
       neo4j:
         condition: service_healthy
 
-volumes:
-  pgdata:
-  neo4jdata:
+  api_server:
+    image: git.gqt.plus/gqt/tutoring-api-server:latest
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      DATABASE_URL: postgresql+asyncpg://tutoring:${POSTGRES_PASSWORD}@postgres:5432/tutoring_db
+      AGENT_SERVER_SECRET: ${AGENT_SERVER_SECRET}
+      LIGHTRAG_BASE_URL: http://lightrag:9621
+    ports:
+      - "10005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import json, urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/health'))['status'] == 'healthy'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  agent_server:
+    image: git.gqt.plus/gqt/tutoring-agent-server:latest
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      <<: *llm-base
+      POSTGRES_URI: postgresql://tutoring:${POSTGRES_PASSWORD}@postgres:5432/tutoring_agent_server_db?sslmode=disable
+      REDIS_URI: redis://redis:6379
+      LLM_MODEL: ${AGENT_LLM_MODEL}
+      BACKEND_INTERNAL_URL: http://api_server:8000
+      AGENT_SERVER_SECRET: ${AGENT_SERVER_SECRET}
+      LIGHTRAG_QUERY_URL: http://lightrag:9621/query
+      CORS_ALLOW_ORIGINS: https://tutoring.chatgqt.top
+      LANGSMITH_TRACING: "true"
+      LANGSMITH_ENDPOINT: https://api.smith.langchain.com
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGSMITH_PROJECT: teaching-agent
+      AGENT_TOOL_MAX_RETRIES: 2
+      AGENT_CONTEXT_TRIGGER_TOKENS: 256000
+      AGENT_CONTEXT_KEEP_MESSAGES: 30
+    ports:
+      - "10006:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api_server:
+        condition: service_healthy
+      lightrag:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ok')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    image: git.gqt.plus/gqt/tutoring-frontend:latest
+    restart: unless-stopped
+    mem_limit: 192m
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "10007:3000"
+    depends_on:
+      api_server:
+        condition: service_healthy
+      agent_server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---- 监控组件 ----
+  dozzle:
+    image: amir20/dozzle:latest
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    ports:
+      - "127.0.0.1:15623:8080"
+    environment:
+      DOZZLE_BASE: /dozzle
+      DOZZLE_NO_ANALYTICS: "true"
+      TZ: Asia/Shanghai
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  glances:
+    image: nicolargo/glances:latest-full
+    restart: always
+    pid: host
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    ports:
+      - "127.0.0.1:15624:61208"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/os-release:/etc/os-release:ro
+      - ./glances.conf:/glances/conf/glances.conf:ro
+    environment:
+      GLANCES_OPT: "-w -C /glances/conf/glances.conf"
