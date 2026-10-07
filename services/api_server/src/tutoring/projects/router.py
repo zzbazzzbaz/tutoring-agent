@@ -3,12 +3,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from tutoring.auth.router import require_agent_server
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
 from tutoring.core.schemas import Page
 from tutoring.db import repos
 from tutoring.projects import service as project_service
-from tutoring.projects.schemas import ProjectCreate, ProjectOut, ProjectUpdate
+from tutoring.projects.schemas import (
+    AgentCaseDraftIn,
+    AgentCaseDraftOut,
+    ProjectCreate,
+    ProjectOut,
+    ProjectUpdate,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -33,6 +40,33 @@ async def create_project_endpoint(
         mainline=body.mainline,
     )
     return ProjectOut.model_validate(proj)
+
+
+@router.post(
+    "/internal/agent",
+    response_model=AgentCaseDraftOut,
+    dependencies=[Depends(require_agent_server)],
+    tags=["internal-agent"],
+)
+async def save_agent_case_draft(
+    body: AgentCaseDraftIn,
+    db_session: AsyncSession = Depends(get_db),
+) -> AgentCaseDraftOut:
+    """Agent Server 保存 AI 生成的案例草稿（内部端点，需 X-Agent-Server-Secret）。"""
+    proj, created = await project_service.save_agent_draft(
+        db_session,
+        project_id=body.project_id,
+        name=body.name,
+        background_md=body.background_md,
+        objective=body.objective,
+        stages=body.stages,
+    )
+    return AgentCaseDraftOut(
+        project_id=proj.id,
+        project_name=proj.name,
+        stage_count=len(body.stages),
+        created=created,
+    )
 
 
 @router.get("", response_model=Page[ProjectOut])

@@ -12,6 +12,8 @@ def _load(name: str) -> str:
 
 
 def render_system_prompt(context: AgentContextV1) -> str:
+    if context.mode == "case_design":
+        return _load("case_design_template.md").format(tools=_load("tools_case_design.md"))
     core_principles = _load("core_principles.md")
     tools = _load("tools_project.md" if context.mode == "project" else "tools_free.md")
 

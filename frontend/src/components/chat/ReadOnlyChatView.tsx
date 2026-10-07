@@ -118,7 +118,9 @@ export function ReadOnlyChatView({
     sessionInfo?.title ||
     (sessionInfo?.mode === "free"
       ? "自由学习"
-      : sessionInfo?.project_name || "案例模式");
+      : sessionInfo?.mode === "case_design"
+        ? "案例设计"
+        : sessionInfo?.project_name || "案例模式");
 
   const deliverableStages =
     deliverables?.mainline?.stages.filter((s) => s.deliverable) ?? [];

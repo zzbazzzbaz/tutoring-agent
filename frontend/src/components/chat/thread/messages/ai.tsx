@@ -9,6 +9,8 @@ import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { AnsweredQuizCard } from "./answered-quiz-card";
+import { CaseDraftCard } from "./case-draft-card";
+import { parseCaseDraftResult } from "@/lib/case-draft";
 import {
   coerceQuizOptions,
   findPresentQuestionToolCall,
@@ -170,12 +172,18 @@ export function AssistantMessage({
     ? parseKnowledgeSearchResult(message?.content)
     : null;
   const showKnowledgeCard = !!knowledgeResult;
+  const caseDraftResult =
+    isToolResult && message.name === "save_case_draft"
+      ? parseCaseDraftResult(message.content)
+      : null;
+  const showCaseDraftCard = !!caseDraftResult;
 
   if (
     isToolResult &&
     hideToolCalls &&
     !showAnsweredQuiz &&
-    !showKnowledgeCard
+    !showKnowledgeCard &&
+    !showCaseDraftCard
   ) {
     return null;
   }
@@ -197,6 +205,8 @@ export function AssistantMessage({
               />
             ) : showKnowledgeCard && knowledgeResult ? (
               <KnowledgeSearchCard result={knowledgeResult} />
+            ) : showCaseDraftCard && caseDraftResult ? (
+              <CaseDraftCard result={caseDraftResult} />
             ) : (
               <ToolResult message={message} />
             )}

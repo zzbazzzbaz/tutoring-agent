@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Pencil,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,15 +55,23 @@ export function ProjectTable() {
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">案例管理</h1>
-        <Button
-          asChild
-          className="bg-gradient-to-br from-[#2d59df] to-[#2249c4] !text-blue-50 hover:from-[#2d59df] hover:to-[#2249c4]"
-        >
-          <Link href="/teacher/manage/projects/new">
-            <Plus className="mr-2 size-4" />
-            新建案例
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/teacher/manage/projects/ai">
+              <Sparkles className="mr-2 size-4" />
+              AI 创建案例
+            </Link>
+          </Button>
+          <Button
+            asChild
+            className="bg-gradient-to-br from-[#2d59df] to-[#2249c4] !text-blue-50 hover:from-[#2d59df] hover:to-[#2249c4]"
+          >
+            <Link href="/teacher/manage/projects/new">
+              <Plus className="mr-2 size-4" />
+              新建案例
+            </Link>
+          </Button>
+        </div>
       </div>
       {loading ? (
         <SkeletonTable rows={5} columns={["2fr", "1fr", "1fr", "1fr"]} />

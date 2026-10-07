@@ -8,6 +8,7 @@ from teaching_agent.agent.factory import build_agent
 from teaching_agent.auth.context import get_trusted_agent_context
 from teaching_agent.infrastructure.lightrag import lightrag_client
 from teaching_agent.tools import create_tools
+from teaching_agent.tools.case_design import create_save_case_draft_tool
 from teaching_agent.tools.progress import create_report_stage_progress_tool
 
 
@@ -18,4 +19,6 @@ async def get_graph(runtime: ServerRuntime) -> AsyncIterator[CompiledStateGraph]
         tools = create_tools(client)
         if context.mode == "project":
             tools = [*tools, create_report_stage_progress_tool()]
+        elif context.mode == "case_design":
+            tools = [create_save_case_draft_tool()]
         yield build_agent(context, tools=tools)

@@ -6,13 +6,15 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SessionCreate(BaseModel):
-    mode: Literal["free", "project"]
+    mode: Literal["free", "project", "case_design"]
     project_id: UUID | None = None
 
     @model_validator(mode="after")
     def check_project_id(self) -> Self:
         if self.mode == "project" and not self.project_id:
             raise ValueError("project_id is required when mode='project'")
+        if self.mode == "case_design" and self.project_id:
+            raise ValueError("project_id is not allowed when mode='case_design'")
         return self
 
 

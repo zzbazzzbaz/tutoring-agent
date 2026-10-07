@@ -53,7 +53,7 @@ class AgentContextV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = 1
-    mode: Literal["free", "project"]
+    mode: Literal["free", "project", "case_design"]
     project_name: str = ""
     project_id: str = ""
     project_background_md: str = ""

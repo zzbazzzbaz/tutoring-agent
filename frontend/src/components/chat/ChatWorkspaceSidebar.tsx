@@ -42,10 +42,10 @@ import type { Session, UserRole } from "@/lib/types";
 import { toast } from "sonner";
 
 function sessionTitle(session: Session) {
-  return (
-    session.title ||
-    (session.mode === "free" ? "自由学习" : session.project_name || "案例模式")
-  );
+  if (session.title) return session.title;
+  if (session.mode === "free") return "自由学习";
+  if (session.mode === "case_design") return "案例设计";
+  return session.project_name || "案例模式";
 }
 
 export function ChatWorkspaceSidebar({

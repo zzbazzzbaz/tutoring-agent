@@ -13,7 +13,7 @@ export interface LoginResponse {
   user: User;
 }
 
-export type SessionMode = "free" | "project";
+export type SessionMode = "free" | "project" | "case_design";
 
 export interface Session {
   id: string;

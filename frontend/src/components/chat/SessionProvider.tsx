@@ -10,7 +10,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { sessionsApi } from "@/lib/api/sessions";
 import { ASSISTANT_ID } from "@/lib/constants";
-import type { Session } from "@/lib/types";
+import type { Session, SessionMode } from "@/lib/types";
 import { createClient } from "./client";
 
 interface SessionContextValue {
@@ -18,7 +18,7 @@ interface SessionContextValue {
   sessionsLoading: boolean;
   refreshSessions: () => Promise<void>;
   createSession: (
-    mode: "free" | "project",
+    mode: SessionMode,
     projectId?: string,
   ) => Promise<Session>;
   updateSession: (id: string, title: string | null) => Promise<Session>;
@@ -47,7 +47,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createSession = useCallback(
-    async (mode: "free" | "project", projectId?: string) => {
+    async (mode: SessionMode, projectId?: string) => {
       const session = await sessionsApi.create({
         mode,
         project_id: projectId,

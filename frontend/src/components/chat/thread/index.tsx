@@ -88,8 +88,14 @@ function ScrollToBottom(props: { className?: string }) {
 
 export function Thread({
   onOpenSessions,
+  fixedMode,
+  embedded = false,
+  emptyHint,
 }: {
   onOpenSessions?: () => void;
+  fixedMode?: "case_design";
+  embedded?: boolean;
+  emptyHint?: string;
 } = {}) {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
@@ -105,8 +111,10 @@ export function Thread({
     message: Message;
     context?: Record<string, unknown>;
   } | null>(null);
-  // 新建对话时的会话类型（自由学习 / 案例模式）与所选案例
-  const [sessionMode, setSessionMode] = useState<"free" | "project">("free");
+  // 新建对话时的会话类型（自由学习 / 案例模式 / 案例设计）与所选案例
+  const [sessionMode, setSessionMode] = useState<"free" | "project" | "case_design">(
+    fixedMode ?? "free",
+  );
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -296,7 +304,12 @@ export function Thread({
     !!currentProjectId && !!currentSessionId && !artifactOpen;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#0f172a]">
+    <div
+      className={cn(
+        "flex w-full overflow-hidden bg-white dark:bg-[#0f172a]",
+        embedded ? "h-full" : "h-screen",
+      )}
+    >
       <div
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-[grid-template-columns] duration-500",
@@ -395,7 +408,7 @@ export function Thread({
                     </div>
                   )}
 
-                  {!chatStarted && (
+                  {!chatStarted && !fixedMode && (
                     <div className="flex flex-col items-center gap-4">
                       {/* 新建对话类型切换：滑动切换（仿 deepseek） */}
                       <div className="relative flex items-center gap-1 rounded-full bg-ink/[0.06] p-1 text-sm font-medium backdrop-blur-sm">
@@ -460,6 +473,12 @@ export function Thread({
                         </Select>
                       )}
                     </div>
+                  )}
+
+                  {!chatStarted && fixedMode && emptyHint && (
+                    <p className="max-w-md text-center text-sm text-ink/55">
+                      {emptyHint}
+                    </p>
                   )}
 
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />

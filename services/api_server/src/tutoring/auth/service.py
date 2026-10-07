@@ -47,6 +47,8 @@ async def change_password(
 
 async def build_agent_context(db: AsyncSession, sess: Session) -> dict:
     """构造传给 Server 的 context dict（与 AgentContext 字段一致，Server 侧再强转）。"""
+    if sess.mode == "case_design":
+        return {"mode": "case_design"}
     if sess.mode == "project" and sess.project_id:
         proj = await repos.get_project(db, sess.project_id)
         return {

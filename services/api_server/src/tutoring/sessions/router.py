@@ -19,6 +19,8 @@ async def create_session(
     user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db),
 ) -> SessionOut:
+    if body.mode == "case_design" and user.role != "teacher":
+        raise AppError(403, "TEACHER_ONLY", "仅教师可创建案例设计会话")
     project_obj = None
     if body.mode == "project":
         project_obj = await project_service.get_published_project(db_session, body.project_id)

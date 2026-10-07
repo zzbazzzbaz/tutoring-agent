@@ -42,3 +42,13 @@ def test_free_prompt_does_not_list_project_tool():
 
     assert "report_stage_progress" not in prompt
     assert "进度管理" not in prompt
+
+
+def test_case_design_prompt_contains_rules_and_tool():
+    prompt = render_system_prompt(AgentContextV1(mode="case_design"))
+
+    assert "案例设计助手" in prompt
+    assert "save_case_draft" in prompt
+    assert "确认" in prompt
+    assert "report_stage_progress" not in prompt
+
