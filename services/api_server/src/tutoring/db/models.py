@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import ForeignKey, Text, func
+from sqlalchemy import Date, ForeignKey, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlmodel import Column, Field, Relationship, SQLModel
@@ -249,3 +249,61 @@ class SessionProgress(SQLModel, table=True):
     )
 
     session: Session | None = Relationship()
+
+
+class ScoringPrompt(SQLModel, table=True):
+    """平时分评分提示词（每位教师一份，可编辑）。"""
+
+    __tablename__ = "scoring_prompt"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        sa_column=Column(PG_UUID(as_uuid=True), primary_key=True),
+    )
+    teacher_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("user.id", ondelete="CASCADE"),
+            unique=True,
+            index=True,
+        ),
+    )
+    prompt: str = Field(sa_column=Column(Text))
+    updated_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
+
+
+class StudentScore(SQLModel, table=True):
+    """学生平时分（AI 评分结果，每班每人一行最新）。"""
+
+    __tablename__ = "student_score"
+    __table_args__ = (
+        UniqueConstraint("class_id", "student_id", name="uq_student_score_class_student"),
+    )
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        sa_column=Column(PG_UUID(as_uuid=True), primary_key=True),
+    )
+    class_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("class.id", ondelete="CASCADE"),
+            index=True,
+        ),
+    )
+    student_id: uuid.UUID = Field(
+        sa_column=Column(
+            PG_UUID(as_uuid=True),
+            ForeignKey("user.id", ondelete="CASCADE"),
+            index=True,
+        ),
+    )
+    score: int = Field(ge=0, le=100)
+    reason: str = Field(default="", sa_column=Column(Text))
+    metrics: dict = Field(default_factory=dict, sa_column=Column(JSONB))
+    since: date | None = Field(default=None, sa_column=Column(Date))
+    generated_at: datetime = Field(
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    )

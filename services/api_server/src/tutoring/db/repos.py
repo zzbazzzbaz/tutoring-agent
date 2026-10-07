@@ -3,7 +3,7 @@ from datetime import datetime, date, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import and_, case, func, select, true, update
+from sqlalchemy import and_, case, delete, func, select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,8 +13,10 @@ from tutoring.db.models import (
     ClassStudent,
     Message,
     Project,
+    ScoringPrompt,
     Session,
     SessionProgress,
+    StudentScore,
     User,
 )
 
@@ -1705,3 +1707,213 @@ async def list_key_students(
     order = {"high_risk": 0, "high_priority": 1}
     results.sort(key=lambda x: (order[x["level"]], x["name"]))
     return results
+
+
+# === 平时分（AI 评分） ===
+
+
+async def get_scoring_prompt(session: AsyncSession, teacher_id: UUID) -> ScoringPrompt | None:
+    """读取教师的评分提示词（未自定义返回 None）。"""
+    stmt = select(ScoringPrompt).where(ScoringPrompt.teacher_id == teacher_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def upsert_scoring_prompt(
+    session: AsyncSession, teacher_id: UUID, prompt: str
+) -> ScoringPrompt:
+    """插入或更新教师的评分提示词（每位教师一份）。"""
+    row = await get_scoring_prompt(session, teacher_id)
+    if row is None:
+        row = ScoringPrompt(teacher_id=teacher_id, prompt=prompt)
+        session.add(row)
+    else:
+        row.prompt = prompt
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def list_class_student_scores(session: AsyncSession, class_id: UUID) -> list[dict]:
+    """班级平时分结果（join 学生姓名/学号），按分数降序。"""
+    stmt = (
+        select(StudentScore, User.name, User.username)
+        .join(User, User.id == StudentScore.student_id)
+        .where(StudentScore.class_id == class_id)
+        .order_by(StudentScore.score.desc())
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {
+            "student_id": s.student_id,
+            "name": name,
+            "username": username,
+            "score": s.score,
+            "reason": s.reason,
+            "metrics": s.metrics,
+            "since": s.since,
+            "generated_at": s.generated_at,
+        }
+        for s, name, username in rows
+    ]
+
+
+async def replace_class_student_scores(
+    session: AsyncSession, class_id: UUID, rows: list[StudentScore]
+) -> None:
+    """覆盖该班全部旧结果：先删除再批量插入（重新生成幂等）。"""
+    await session.execute(delete(StudentScore).where(StudentScore.class_id == class_id))
+    session.add_all(rows)
+    await session.commit()
+
+
+async def list_class_student_usage(
+    session: AsyncSession,
+    *,
+    class_id: UUID,
+    since: date | None = None,
+) -> list[dict]:
+    """班级每个学生的使用基础指标（窗口口径见 spec §4）。
+
+    - 会话数 = 窗口内学生发过言的会话数（去重）
+    - 学生消息数 / 知识命中数 = 窗口内 role=student 消息
+    - 活跃天数 = 窗口内学生消息 distinct 自然日
+    - last_active_at = 窗口内最后一条学生消息时间
+    返回顺序按姓名（生成数据的行号即此顺序）。
+    """
+    students = (
+        await session.execute(
+            select(User.id, User.name, User.username)
+            .join(ClassStudent, ClassStudent.user_id == User.id)
+            .where(ClassStudent.class_id == class_id, User.deleted_at.is_(None))
+            .order_by(User.name, User.username)
+        )
+    ).all()
+    if not students:
+        return []
+
+    stmt = (
+        select(
+            Session.user_id,
+            func.count(func.distinct(Session.id)).label("sessions"),
+            func.count(Message.id).label("student_messages"),
+            func.count(func.distinct(func.date(Message.created_at))).label("active_days"),
+            func.sum(case((Message.knowledge_hit.is_(True), 1), else_=0)).label("knowledge_hits"),
+            func.max(Message.created_at).label("last_active_at"),
+        )
+        .select_from(Message)
+        .join(Session, Session.id == Message.session_id)
+        .where(
+            Session.user_id.in_([uid for uid, _, _ in students]),
+            Session.deleted_at.is_(None),
+            Message.role == "student",
+        )
+        .group_by(Session.user_id)
+    )
+    if since is not None:
+        stmt = stmt.where(func.date(Message.created_at) >= since)
+    stats = {row.user_id: row for row in (await session.execute(stmt)).all()}
+
+    results: list[dict] = []
+    for uid, name, username in students:
+        s = stats.get(uid)
+        results.append(
+            {
+                "user_id": uid,
+                "name": name,
+                "username": username,
+                "sessions": int(s.sessions) if s else 0,
+                "student_messages": int(s.student_messages) if s else 0,
+                "active_days": int(s.active_days) if s else 0,
+                "knowledge_hits": int(s.knowledge_hits or 0) if s else 0,
+                "last_active_at": s.last_active_at if s else None,
+            }
+        )
+    return results
+
+
+async def get_class_student_project_stats(
+    session: AsyncSession, *, class_id: UUID
+) -> dict[UUID, dict]:
+    """学生级项目进度聚合（不限窗口，口径同报告「阶段分布/产出物完成」）。
+
+    - 会话范围：班级学生、未删除、mode=project 且有 project_id 的会话
+    - 进度合并：同一 (学生, 项目) 多会话按阶段取最高状态，复用 _merge_stage_progress
+    - stages_total / deliverables_total：该学生参与的每个项目的阶段定义汇总
+      （参与以有 project 会话为准，与班级报告口径一致）
+    返回 {student_id: {project_sessions, stages_completed, stages_total,
+                       deliverables_done, deliverables_total}}
+    """
+    session_rows = (
+        await session.execute(
+            select(Session.id, Session.user_id, Session.project_id)
+            .join(ClassStudent, ClassStudent.user_id == Session.user_id)
+            .where(
+                ClassStudent.class_id == class_id,
+                Session.mode == "project",
+                Session.project_id.is_not(None),
+                Session.deleted_at.is_(None),
+            )
+        )
+    ).all()
+    if not session_rows:
+        return {}
+
+    project_ids = {pid for _, _, pid in session_rows}
+    projects = (
+        await session.execute(select(Project).where(Project.id.in_(project_ids)))
+    ).scalars().all()
+    proj_by_id = {p.id: p for p in projects}
+
+    progress_rows = (
+        await session.execute(
+            select(SessionProgress).where(
+                SessionProgress.session_id.in_([sid for sid, _, _ in session_rows])
+            )
+        )
+    ).scalars().all()
+    meta = {sid: (uid, pid) for sid, uid, pid in session_rows}
+    merged: dict[tuple[UUID, UUID], dict[str, dict]] = {}
+    for sp in progress_rows:
+        key = meta.get(sp.session_id)
+        if key is None:
+            continue
+        per_stage = merged.setdefault(key, {})
+        for stage_id, stage_prog in (sp.progress or {}).items():
+            per_stage[stage_id] = _merge_stage_progress(
+                per_stage.get(stage_id), dict(stage_prog)
+            )
+
+    stats: dict[UUID, dict] = {}
+    pairs: set[tuple[UUID, UUID]] = set()
+    for _sid, uid, pid in session_rows:
+        stat = stats.setdefault(
+            uid,
+            {
+                "project_sessions": 0,
+                "stages_completed": 0,
+                "stages_total": 0,
+                "deliverables_done": 0,
+                "deliverables_total": 0,
+            },
+        )
+        stat["project_sessions"] += 1
+        pairs.add((uid, pid))
+
+    for uid, pid in pairs:
+        proj = proj_by_id.get(pid)
+        if proj is None:
+            continue
+        stages_def = (proj.mainline or {}).get("stages") or []
+        per_stage = merged.get((uid, pid), {})
+        stat = stats[uid]
+        for sd in stages_def:
+            stat["stages_total"] += 1
+            has_deliverable = isinstance(sd.get("deliverable"), dict)
+            if has_deliverable:
+                stat["deliverables_total"] += 1
+            prog = per_stage.get(sd.get("id")) or {}
+            if prog.get("status") == "completed":
+                stat["stages_completed"] += 1
+            if has_deliverable and prog.get("deliverable_done"):
+                stat["deliverables_done"] += 1
+    return stats

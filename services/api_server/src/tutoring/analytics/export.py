@@ -32,6 +32,7 @@ from tutoring.analytics.schemas import (
     ClassEvaluationResponse,
     DashboardResponse,
     ProjectProgressResponse,
+    ScoringResultResponse,
 )
 
 # ===== 样式常量（对齐参考稿） =====
@@ -398,6 +399,58 @@ def build_report_docx(
         _add_table(doc, headers, rows)
     else:
         _add_body(doc, "暂无班级评价数据。")
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def build_scoring_docx(
+    *,
+    result: ScoringResultResponse,
+    generated_at: datetime,
+) -> io.BytesIO:
+    """构建平时分成绩表 Word 文档，返回 BytesIO（docx 文件流）。"""
+    doc = Document()
+
+    # 页面：横向 A4，边距 1.27cm（与使用统计报告一致）
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width = Cm(29.7)
+    section.page_height = Cm(21.0)
+    section.top_margin = Cm(1.27)
+    section.bottom_margin = Cm(1.27)
+    section.left_margin = Cm(1.27)
+    section.right_margin = Cm(1.27)
+
+    normal = doc.styles["Normal"]
+    normal.font.name = _FONT
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), _FONT)
+    normal.font.size = Pt(10.5)
+
+    # 大标题 + 报告头
+    title_p = doc.add_paragraph()
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run = title_p.add_run("平时分成绩表")
+    _set_run_font(title_run, size=20, bold=True, color=_COLOR_PRIMARY)
+
+    scope = result.since.isoformat() + " 起" if result.since else "全部历史"
+    gen_str = generated_at.strftime("%Y-%m-%d %H:%M")
+    head_p = doc.add_paragraph()
+    head_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    head_run = head_p.add_run(
+        f"统计范围：{scope}    生成时间：{gen_str}    班级：{result.class_name}"
+    )
+    _set_run_font(head_run, size=11, color=_COLOR_MUTED)
+
+    _add_heading(doc, f"成绩明细（共 {len(result.items)} 人）")
+    headers = ["排名", "姓名", "学号", "分数", "理由"]
+    rows = [
+        [str(i), item.name, item.username, str(item.score), item.reason or "-"]
+        for i, item in enumerate(result.items, start=1)
+    ]
+    _add_table(doc, headers, rows, col_widths_cm=[2.0, 3.5, 4.5, 2.0, 15.0])
 
     buf = io.BytesIO()
     doc.save(buf)

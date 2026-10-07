@@ -14,6 +14,7 @@ import {
   Trophy,
   PieChart as PieChartIcon,
   FileDown,
+  Award,
 } from "lucide-react";
 import {
   LineChart,
@@ -58,7 +59,9 @@ export default function TeacherManageAnalyticsPage() {
   const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
   const [modeDistribution, setModeDistribution] = useState<ModeCount[]>([]);
   const [studentRanking, setStudentRanking] = useState<StudentRanking[]>([]);
-  const [rankingSort, setRankingSort] = useState<"total_sessions" | "active_days">("total_sessions");
+  const [rankingSort, setRankingSort] = useState<
+    "total_sessions" | "active_days"
+  >("total_sessions");
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("all");
   const [trendDays, setTrendDays] = useState(30);
@@ -84,7 +87,10 @@ export default function TeacherManageAnalyticsPage() {
     if (refreshing || loading) return;
     setRefreshing(true);
     try {
-      await load(selectedClassId === "all" ? undefined : selectedClassId, trendDays);
+      await load(
+        selectedClassId === "all" ? undefined : selectedClassId,
+        trendDays,
+      );
     } catch {
       // 刷新失败保留旧数据，错误已在 load 中记录
     } finally {
@@ -97,7 +103,7 @@ export default function TeacherManageAnalyticsPage() {
     classesApi
       .list(undefined, "active", undefined, 1, 100)
       .then((data) =>
-        setClasses((data.items || []).filter((c) => c.status === "active"))
+        setClasses((data.items || []).filter((c) => c.status === "active")),
       )
       .catch(() => setClasses([]));
   }, []);
@@ -118,7 +124,7 @@ export default function TeacherManageAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex h-full items-center justify-center">
         <div className="flex items-center gap-2">
           <RefreshCw className="size-4 animate-spin" />
           加载中...
@@ -130,13 +136,13 @@ export default function TeacherManageAnalyticsPage() {
   if (!overview && error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
-        <div className="text-red-500 text-center">
+        <div className="text-center text-red-500">
           <p className="font-medium">加载失败</p>
-          <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{error}</p>
         </div>
         <button
           onClick={handleRefresh}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium"
         >
           <RefreshCw className="size-4" />
           重新加载
@@ -147,7 +153,7 @@ export default function TeacherManageAnalyticsPage() {
 
   if (!overview) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex h-full items-center justify-center">
         暂无数据
       </div>
     );
@@ -161,15 +167,21 @@ export default function TeacherManageAnalyticsPage() {
       {/* 班级筛选栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">班级</span>
-          <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+          <span className="text-muted-foreground text-sm">班级</span>
+          <Select
+            value={selectedClassId}
+            onValueChange={setSelectedClassId}
+          >
             <SelectTrigger className="w-[220px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部班级</SelectItem>
               {classes.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
+                <SelectItem
+                  key={c.id}
+                  value={c.id}
+                >
                   {c.grade} {c.classname}
                 </SelectItem>
               ))}
@@ -178,18 +190,27 @@ export default function TeacherManageAnalyticsPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-50"
+            className="hover:bg-accent inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50"
           >
-            <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`size-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             刷新
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             {selectedClassId === "all"
               ? `全部班级 · 共 ${classes.length} 个班级`
               : `${currentClass?.grade} ${currentClass?.classname} · ${overview.total_students} 人`}
           </div>
+          <Link
+            href="/teacher/manage/analytics/scoring"
+            className="hover:bg-accent inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium"
+          >
+            <Award className="size-4" />
+            平时分
+          </Link>
           <Link
             href={`/teacher/manage/analytics/report?class_id=${selectedClassId}&days=${trendDays}`}
             className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
@@ -224,82 +245,100 @@ export default function TeacherManageAnalyticsPage() {
           icon={<AlertTriangle className="size-5" />}
           label="待关注"
           value={overview.pending_alert_count}
-          color={overview.pending_alert_count > 0 ? "text-red-600" : "text-gray-600"}
+          color={
+            overview.pending_alert_count > 0 ? "text-red-600" : "text-gray-600"
+          }
         />
       </div>
 
       {/* 学习趋势 + 对话模式占比 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-8">
         {/* 学习趋势 */}
-        <div className="rounded-lg border bg-card p-4 lg:col-span-6">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="size-4 text-muted-foreground" />
-            <h3 className="font-medium">最近{trendDays}天学习趋势</h3>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setTrendDays(7)}
-              className={`rounded px-2 py-1 text-xs ${trendDays === 7 ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
-            >
-              7天
-            </button>
-            <button
-              onClick={() => setTrendDays(30)}
-              className={`rounded px-2 py-1 text-xs ${trendDays === 30 ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
-            >
-              30天
-            </button>
-          </div>
-        </div>
-        <div className="h-64">
-          {trend.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} interval={4} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="session_count"
-                  name="对话数"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="active_student_count"
-                  name="活跃学生"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              暂无趋势数据
+        <div className="bg-card rounded-lg border p-4 lg:col-span-6">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="text-muted-foreground size-4" />
+              <h3 className="font-medium">最近{trendDays}天学习趋势</h3>
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setTrendDays(7)}
+                className={`rounded px-2 py-1 text-xs ${trendDays === 7 ? "bg-primary text-primary-foreground" : "hover:bg-accent border"}`}
+              >
+                7天
+              </button>
+              <button
+                onClick={() => setTrendDays(30)}
+                className={`rounded px-2 py-1 text-xs ${trendDays === 30 ? "bg-primary text-primary-foreground" : "hover:bg-accent border"}`}
+              >
+                30天
+              </button>
+            </div>
+          </div>
+          <div className="h-64">
+            {trend.length > 0 ? (
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
+                <LineChart data={trend}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11 }}
+                    interval={4}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="session_count"
+                    name="对话数"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="active_student_count"
+                    name="活跃学生"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                暂无趋势数据
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 对话模式占比 */}
-        <div className="rounded-lg border bg-card p-4 lg:col-span-2">
+        <div className="bg-card rounded-lg border p-4 lg:col-span-2">
           <div className="mb-3 flex items-center gap-2">
-            <PieChartIcon className="size-4 text-muted-foreground" />
+            <PieChartIcon className="text-muted-foreground size-4" />
             <h3 className="font-medium">对话模式占比</h3>
           </div>
           {modeTotal === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground py-6 text-center text-sm">
               暂无对话数据
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-48 w-48 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={modeDistribution}
@@ -314,7 +353,8 @@ export default function TeacherManageAnalyticsPage() {
                     </Pie>
                     <Tooltip
                       formatter={(value: number, name: string) => {
-                        const label = name === "project" ? "案例模式" : "自由模式";
+                        const label =
+                          name === "project" ? "案例模式" : "自由模式";
                         return [`${value} 次`, label];
                       }}
                     />
@@ -322,21 +362,33 @@ export default function TeacherManageAnalyticsPage() {
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xl font-semibold">{modeTotal}</span>
-                  <span className="text-xs text-muted-foreground">总对话</span>
+                  <span className="text-muted-foreground text-xs">总对话</span>
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
                 {modeDistribution.map((m) => {
-                  const pct = modeTotal > 0 ? Math.round((m.count / modeTotal) * 100) : 0;
+                  const pct =
+                    modeTotal > 0 ? Math.round((m.count / modeTotal) * 100) : 0;
                   const label = m.mode === "project" ? "案例模式" : "自由模式";
-                  const color = m.mode === "project" ? "text-indigo-600" : "text-green-600";
-                  const dotColor = m.mode === "project" ? "bg-indigo-500" : "bg-green-500";
+                  const color =
+                    m.mode === "project" ? "text-indigo-600" : "text-green-600";
+                  const dotColor =
+                    m.mode === "project" ? "bg-indigo-500" : "bg-green-500";
                   return (
-                    <div key={m.mode} className="flex items-center gap-2">
+                    <div
+                      key={m.mode}
+                      className="flex items-center gap-2"
+                    >
                       <span className={`size-3 rounded-full ${dotColor}`} />
-                      <span className="text-sm text-muted-foreground">{label}</span>
-                      <span className={`text-sm font-medium ${color}`}>{m.count} 次</span>
-                      <span className="text-sm text-muted-foreground">({pct}%)</span>
+                      <span className="text-muted-foreground text-sm">
+                        {label}
+                      </span>
+                      <span className={`text-sm font-medium ${color}`}>
+                        {m.count} 次
+                      </span>
+                      <span className="text-muted-foreground text-sm">
+                        ({pct}%)
+                      </span>
                     </div>
                   );
                 })}
@@ -349,44 +401,56 @@ export default function TeacherManageAnalyticsPage() {
       {/* 待关注 + 班级对比 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* 异常预警列表 */}
-        <div className="rounded-lg border bg-card p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="mb-3 flex items-center gap-2">
             <AlertTriangle className="size-4 text-red-500" />
             <h3 className="font-medium">待关注学生 ({anomalies.length})</h3>
           </div>
           {anomalies.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center text-sm">
               所有学生状态良好 👍
             </div>
           ) : (
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="max-h-80 space-y-2 overflow-y-auto">
               {anomalies.map((s) => (
-                <AnomalyRow key={s.user_id} student={s} />
+                <AnomalyRow
+                  key={s.user_id}
+                  student={s}
+                />
               ))}
             </div>
           )}
         </div>
 
         {/* 班级活跃率对比 */}
-        <div className="rounded-lg border bg-card p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="mb-3 flex items-center gap-2">
-            <BarChart3 className="size-4 text-muted-foreground" />
+            <BarChart3 className="text-muted-foreground size-4" />
             <h3 className="font-medium">班级活跃率对比</h3>
           </div>
           {classComparison.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center text-sm">
               暂无班级数据
             </div>
           ) : classComparison.length === 1 ? (
-            <div className="py-4 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground py-4 text-center text-sm">
               仅管理一个班级
             </div>
           ) : (
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
                 <BarChart data={classComparison}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="class_name" tick={{ fontSize: 11 }} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                  />
+                  <XAxis
+                    dataKey="class_name"
+                    tick={{ fontSize: 11 }}
+                  />
                   <YAxis
                     domain={[0, 1]}
                     tick={{ fontSize: 11 }}
@@ -413,29 +477,31 @@ export default function TeacherManageAnalyticsPage() {
       </div>
 
       {/* 学生活跃度排行 */}
-      <div className="rounded-lg border bg-card p-4">
+      <div className="bg-card rounded-lg border p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Trophy className="size-4 text-muted-foreground" />
+            <Trophy className="text-muted-foreground size-4" />
             <h3 className="font-medium">学生活跃度排行</h3>
           </div>
           <div className="flex gap-1">
             <button
               onClick={() => setRankingSort("total_sessions")}
-              className={`rounded px-2 py-1 text-xs ${rankingSort === "total_sessions" ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
+              className={`rounded px-2 py-1 text-xs ${rankingSort === "total_sessions" ? "bg-primary text-primary-foreground" : "hover:bg-accent border"}`}
             >
               按对话数
             </button>
             <button
               onClick={() => setRankingSort("active_days")}
-              className={`rounded px-2 py-1 text-xs ${rankingSort === "active_days" ? "bg-primary text-primary-foreground" : "border hover:bg-accent"}`}
+              className={`rounded px-2 py-1 text-xs ${rankingSort === "active_days" ? "bg-primary text-primary-foreground" : "hover:bg-accent border"}`}
             >
               按活跃天数
             </button>
           </div>
         </div>
         {studentRanking.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">暂无学生数据</div>
+          <div className="text-muted-foreground py-8 text-center text-sm">
+            暂无学生数据
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -453,12 +519,19 @@ export default function TeacherManageAnalyticsPage() {
                 {[...studentRanking]
                   .sort((a, b) => b[rankingSort] - a[rankingSort])
                   .map((s, i) => (
-                    <tr key={s.user_id} className="border-t">
+                    <tr
+                      key={s.user_id}
+                      className="border-t"
+                    >
                       <td className="px-4 py-2">
                         {i < 3 ? (
                           <span
                             className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-bold text-white ${
-                              i === 0 ? "bg-yellow-500" : i === 1 ? "bg-gray-400" : "bg-amber-600"
+                              i === 0
+                                ? "bg-yellow-500"
+                                : i === 1
+                                  ? "bg-gray-400"
+                                  : "bg-amber-600"
                             }`}
                           >
                             {i + 1}
@@ -467,7 +540,9 @@ export default function TeacherManageAnalyticsPage() {
                           <span className="text-muted-foreground">{i + 1}</span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-muted-foreground">{s.username}</td>
+                      <td className="text-muted-foreground px-4 py-2">
+                        {s.username}
+                      </td>
                       <td className="px-4 py-2">
                         <Link
                           href={`/teacher/manage/analytics/students/${s.user_id}`}
@@ -476,11 +551,15 @@ export default function TeacherManageAnalyticsPage() {
                           {s.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-right font-medium">{s.total_sessions}</td>
+                      <td className="px-4 py-2 text-right font-medium">
+                        {s.total_sessions}
+                      </td>
                       <td className="px-4 py-2 text-right">{s.active_days}</td>
-                      <td className="px-4 py-2 text-muted-foreground">
+                      <td className="text-muted-foreground px-4 py-2">
                         {s.last_active_at
-                          ? new Date(s.last_active_at).toLocaleDateString("zh-CN").replace(/\//g, "-")
+                          ? new Date(s.last_active_at)
+                              .toLocaleDateString("zh-CN")
+                              .replace(/\//g, "-")
                           : "从未活跃"}
                       </td>
                     </tr>
@@ -490,7 +569,6 @@ export default function TeacherManageAnalyticsPage() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
@@ -510,15 +588,15 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="bg-card rounded-lg border p-4">
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
         <span className={color}>{icon}</span>
         {label}
       </div>
       <div className="mt-2 text-2xl font-semibold">
         {value}
         {suffix && (
-          <span className="ml-1 text-sm font-normal text-muted-foreground">
+          <span className="text-muted-foreground ml-1 text-sm font-normal">
             {suffix}
           </span>
         )}
@@ -552,9 +630,8 @@ function AnomalyRow({ student }: { student: AnomalyStudent }) {
             : "从未登录"}
         </div>
         {student.last_active_at && (
-          <div className="text-xs text-muted-foreground">
-            最后活跃:{" "}
-            {new Date(student.last_active_at).toLocaleDateString()}
+          <div className="text-muted-foreground text-xs">
+            最后活跃: {new Date(student.last_active_at).toLocaleDateString()}
           </div>
         )}
       </div>

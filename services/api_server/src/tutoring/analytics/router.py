@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tutoring.analytics import export as analytics_export
+from tutoring.analytics import scoring_service
 from tutoring.analytics import service as analytics_service
 from tutoring.analytics import summary as analytics_summary
 from tutoring.analytics.schemas import (
@@ -17,7 +18,12 @@ from tutoring.analytics.schemas import (
     DashboardResponse,
     DashboardSummaryResponse,
     ProjectProgressResponse,
+    ScoringGenerateRequest,
+    ScoringPromptResponse,
+    ScoringPromptUpdate,
+    ScoringResultResponse,
     StudentAnalysisResponse,
+    StudentScoreItem,
 )
 from tutoring.core.deps import CurrentUser, get_current_user, get_db
 from tutoring.core.errors import AppError
@@ -132,6 +138,130 @@ async def export_report(
         generated_at=now,
     )
     filename = f"使用统计报告_{now.strftime('%Y%m%d_%H%M')}.docx"
+    return StreamingResponse(
+        buf,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
+
+
+# === 平时分（AI 评分） ===
+
+
+def _get_own_class(cls: Class | None, teacher_id: UUID) -> Class:
+    """校验班级存在且属于该教师，否则 404。"""
+    if (
+        not cls
+        or cls.teacher_id != teacher_id
+        or cls.deleted_at is not None
+        or cls.status != "active"
+    ):
+        raise AppError(404, "CLASS_NOT_FOUND", "班级不存在或不属于当前教师")
+    return cls
+
+
+def _rows_to_items(rows: list[dict]) -> list[StudentScoreItem]:
+    """repos.list_class_student_scores 行 → 响应条目。"""
+    return [
+        StudentScoreItem(
+            student_id=r["student_id"],
+            name=r["name"],
+            username=r["username"],
+            score=r["score"],
+            reason=r["reason"],
+            metrics=r["metrics"],
+        )
+        for r in rows
+    ]
+
+
+# 平时分--提示词读写
+@router.get("/scoring/prompt", response_model=ScoringPromptResponse)
+async def get_scoring_prompt(
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ScoringPromptResponse:
+    """读取评分提示词（未自定义时返回系统默认模板）。"""
+    _require_teacher(user)
+    row = await repos.get_scoring_prompt(db, user.id)
+    if row is None:
+        return ScoringPromptResponse(
+            prompt=scoring_service.DEFAULT_SCORING_PROMPT, is_default=True
+        )
+    return ScoringPromptResponse(prompt=row.prompt, is_default=False)
+
+
+@router.patch("/scoring/prompt", response_model=ScoringPromptResponse)
+async def update_scoring_prompt(
+    body: ScoringPromptUpdate,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ScoringPromptResponse:
+    """保存评分提示词。"""
+    _require_teacher(user)
+    await repos.upsert_scoring_prompt(db, user.id, body.prompt)
+    return ScoringPromptResponse(prompt=body.prompt, is_default=False)
+
+
+# 平时分--生成
+@router.post("/scoring/generate", response_model=ScoringResultResponse)
+async def generate_scoring(
+    body: ScoringGenerateRequest,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ScoringResultResponse:
+    """生成班级平时分（AI 评分，同步，约 30-60s）。"""
+    _require_teacher(user)
+    try:
+        return await scoring_service.generate_scores(db, user.id, body.class_id, body.since)
+    except scoring_service.ScoringUnavailable as exc:
+        raise AppError(503, "SCORING_UNAVAILABLE", f"AI 评分暂不可用：{exc}") from exc
+
+
+# 平时分--读取最近结果
+@router.get("/scoring", response_model=ScoringResultResponse)
+async def get_scoring(
+    class_id: UUID = Query(..., description="班级ID"),
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ScoringResultResponse:
+    """读取该班最近一次平时分结果。"""
+    _require_teacher(user)
+    cls = _get_own_class(await db.get(Class, class_id), user.id)
+    rows = await repos.list_class_student_scores(db, class_id)
+    return ScoringResultResponse(
+        class_id=class_id,
+        class_name=f"{cls.grade} {cls.classname}",
+        since=rows[0]["since"] if rows else None,
+        generated_at=max(r["generated_at"] for r in rows) if rows else None,
+        items=_rows_to_items(rows),
+    )
+
+
+# 平时分--导出 Word
+@router.get("/scoring/export")
+async def export_scoring(
+    class_id: UUID = Query(..., description="班级ID"),
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """导出平时分成绩表（Word .docx 下载）。"""
+    _require_teacher(user)
+    cls = _get_own_class(await db.get(Class, class_id), user.id)
+    rows = await repos.list_class_student_scores(db, class_id)
+    result = ScoringResultResponse(
+        class_id=class_id,
+        class_name=f"{cls.grade} {cls.classname}",
+        since=rows[0]["since"] if rows else None,
+        generated_at=max(r["generated_at"] for r in rows) if rows else None,
+        items=_rows_to_items(rows),
+    )
+    now = datetime.now(ZoneInfo("Asia/Shanghai"))
+    buf = analytics_export.build_scoring_docx(result=result, generated_at=now)
+    filename = f"平时分成绩表_{now.strftime('%Y%m%d_%H%M')}.docx"
     return StreamingResponse(
         buf,
         media_type=(

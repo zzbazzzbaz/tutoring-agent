@@ -401,3 +401,27 @@ export interface StudentAnalysisResponse {
   overview: StudentOverview;
   daily_activity: StudentDailyActivity[];
 }
+
+// ===统计分析--> 平时分（AI 评分）===
+
+export interface ScoringPromptResponse {
+  prompt: string;
+  is_default: boolean;
+}
+
+export interface StudentScoreItem {
+  student_id: string;
+  name: string;
+  username: string;
+  score: number;
+  reason: string;
+  metrics: Record<string, unknown>;
+}
+
+export interface ScoringResultResponse {
+  class_id: string;
+  class_name: string;
+  since: string | null;
+  generated_at: string | null;
+  items: StudentScoreItem[];
+}

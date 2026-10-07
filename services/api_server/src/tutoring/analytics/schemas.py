@@ -1,5 +1,5 @@
 # 统计分析--响应模型
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
@@ -182,3 +182,42 @@ class ClassEvaluationResponse(BaseModel):
     """
     days: int = Field(description="统计窗口天数(7/30)")
     classes: list[ClassEvaluationItem] = Field(description="各班级的评价维度(按班级解析顺序)")
+
+
+# ===========================================================================
+# 平时分（AI 评分）--请求/响应模型
+
+class ScoringPromptResponse(BaseModel):
+    """评分提示词响应"""
+    prompt: str = Field(description="评分提示词(未自定义时为系统默认模板)")
+    is_default: bool = Field(description="是否为系统默认模板(未自定义)")
+
+
+class ScoringPromptUpdate(BaseModel):
+    """评分提示词保存请求"""
+    prompt: str = Field(min_length=1, max_length=20000, description="评分标准")
+
+
+class ScoringGenerateRequest(BaseModel):
+    """平时分生成请求"""
+    class_id: UUID = Field(description="班级ID")
+    since: date | None = Field(default=None, description="统计起始日期(含),缺省为全部历史")
+
+
+class StudentScoreItem(BaseModel):
+    """单个学生的平时分"""
+    student_id: UUID
+    name: str
+    username: str
+    score: int = Field(description="0-100")
+    reason: str
+    metrics: dict = Field(default_factory=dict, description="指标快照")
+
+
+class ScoringResultResponse(BaseModel):
+    """平时分结果"""
+    class_id: UUID
+    class_name: str
+    since: date | None = None
+    generated_at: datetime | None = None
+    items: list[StudentScoreItem] = Field(default_factory=list, description="按分数降序")
