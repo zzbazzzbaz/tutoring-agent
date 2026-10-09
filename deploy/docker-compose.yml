@@ -108,6 +108,10 @@ services:
       DATABASE_URL: postgresql+asyncpg://tutoring:${POSTGRES_PASSWORD}@postgres:5432/tutoring_db
       AGENT_SERVER_SECRET: ${AGENT_SERVER_SECRET}
       LIGHTRAG_BASE_URL: http://lightrag:9621
+      # 平时分评分 / 学情摘要等 LLM 能力（DashScope OpenAI 兼容接口）
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      DASHSCOPE_BASE_URL: ${DASHSCOPE_BASE_URL}
+      LLM_MODEL: ${API_LLM_MODEL:-qwen3.7-flash}
     ports:
       - "10005:8000"
     depends_on:
