@@ -24,6 +24,20 @@ def test_project_prompt_uses_authorized_project_context():
     assert "项目背景" in prompt
 
 
+def test_project_prompt_requires_case_background_in_first_turn():
+    prompt = render_system_prompt(
+        AgentContextV1(
+            mode="project",
+            project_name="园区网络设计",
+            project_background_md="为教学楼规划可靠网络。",
+        )
+    )
+
+    assert "开场：交代案例背景" in prompt
+    assert "首轮对话" in prompt
+    assert "介绍案例背景" in prompt
+
+
 def test_project_prompt_lists_report_stage_progress_tool():
     prompt = render_system_prompt(
         AgentContextV1(
